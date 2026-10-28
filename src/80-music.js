@@ -52,10 +52,12 @@ const O=(ac,type,f)=>{ const o=ac.createOscillator(); o.type=type; o.frequency.v
 const NZ=P=>{ const b=P.ac.createBufferSource(); b.buffer=P.s.noise; b.loop=true; return b; };
 const PAN=(ac,p)=>{ const n=ac.createStereoPanner(); n.pan.value=p; return n; };
 function chain(...n){ for(let i=0;i<n.length-1;i++) n[i].connect(n[i+1]); return n[n.length-1]; }
-/* register a voice: stops every source at `end`, disconnects everything when the first ends */
-function V(P,srcs,nodes,end){ const n=srcs.length+nodes.length; P.live++; P.nodes+=n;
+/* register a voice: stops every source at `end`, disconnects everything when the first ends.
+   Offline, every note is scheduled before rendering starts and onended never fires in time, so the
+   live count is kept from the end times instead (P.ends), or the voice cap would drop every melody. */
+function V(P,srcs,nodes,end){ const n=srcs.length+nodes.length; P.live++; P.nodes+=n; if(P.s.offline) P.ends.push(end);
   for(const o of srcs) o.stop(end);
-  srcs[0].onended=()=>{ P.live--; P.nodes-=n; for(const x of srcs) x.disconnect(); for(const x of nodes) x.disconnect(); }; }
+  srcs[0].onended=()=>{ if(!P.s.offline) P.live--; P.nodes-=n; for(const x of srcs) x.disconnect(); for(const x of nodes) x.disconnect(); }; }
 function startNoise(P,src,t,end){ src.start(t,Math.random()*3); }
 /* percussive gain: 2 ms attack then exponential decay (tau = dec/5) */
 function perc(g,t,peak,dec){ g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+.002); g.gain.setTargetAtTime(0,t+.002,dec/5); }
@@ -215,7 +217,7 @@ function build(spec,key){ if(spec._b) return spec._b; const bs=spec.bar,CD=chord
 
 /* ---------- players ---------- */
 function newPlayer(s,kind,key,fade,lvl){ const ac=s.ac,Lr=s.L[kind],now=ac.currentTime;
-  const P={ac,s,kind,key,live:0,nodes:0,keep:[],keepSrc:[],cont:[],ch:{},lastF:{},lastT:{},ev:[],later:[],nt:now+.06,stopAt:Infinity,dead:false};
+  const P={ac,s,kind,key,live:0,nodes:0,keep:[],keepSrc:[],cont:[],ends:[],ch:{},lastF:{},lastT:{},ev:[],later:[],nt:now+.06,stopAt:Infinity,dead:false};
   P.out=G(ac,0); const lv=G(ac,lvl==null?1:lvl); chain(P.out,lv,Lr.inp); P.keep.push(lv); P.fades=[P.out.gain];
   if(Lr.rev){ P.rv=G(ac,0); const rl=G(ac,lvl==null?1:lvl); chain(P.rv,rl,Lr.rev); P.keep.push(rl); P.fades.push(P.rv.gain); }
   for(const g of P.fades){ g.setValueAtTime(0,now); g.linearRampToValueAtTime(1,now+Math.max(.01,fade)); }
@@ -226,6 +228,7 @@ function musicPlayer(s,key,fade){ const spec=TRACKS[key]; if(!spec) return null;
   if(spec.echo) echoBus(P,spec.echo[0]*(spec.echo[2]?1:60/spec.bpm),spec.echo[1],spec.echo[3]);
   return P; }
 function stepMusic(P,t){ const sp=P.spec,sec=P.spec._b.secs[P.seq[P.si]],evs=sec.ev[P.st];
+  if(P.s.offline&&P.ends.length){ const k=P.ends.length; P.ends=P.ends.filter(e=>e>t); P.live-=k-P.ends.length; }
   if(evs.length){ const sd=P.sd/rate(P,t),pf=pitch(P,t);
     for(const e of evs){ if(e.par>=0&&e.par!==(P.loop&1)) continue; const ps=sp.parts[e.pn],dst=chan(P,e.pn);
       const vel=e.v*(ps.v||.8)*(1+rnd(-.07,.07));
@@ -252,7 +255,7 @@ const T_ACC={w:[['sawtooth',1,-9,.45],['sawtooth',1,9,.45],['square',1,0,.22]],c
 
 /* ---- AQUARIUM: blue velvet lounge, D major, 80 bpm. FM e-piano 9ths through chorus, flute lead,
    bubble arpeggio through a dotted-8th echo, brushes. A = hook (question / answer), B = lift, T = turnaround. */
-TRACKS.aquarium={bpm:80,spb:4,bar:16,vol:0.287,echo:[.75,.34,0,2400],
+TRACKS.aquarium={bpm:80,spb:4,bar:16,vol:0.15,echo:[.75,.34,0,2400],
   chords:{'Dmaj9':'D2|F#3 A3 C#4 E4','Bm9':'B1|F#3 A3 C#4 D4','Gmaj9':'G2|F#3 A3 B3 D4','A7sus':'A1|G3 B3 D4 E4','A7':'A1|G3 B3 C#4 E4',
     'Em9':'E2|G3 B3 D4 F#4','A7b9':'A1|G3 Bb3 C#4 E4','F#m7':'F#2|F#3 A3 C#4 E4','F#7':'F#2|F#3 A#3 C#4 E4','Bm7':'B1|F#3 A3 B3 D4',
     'E9':'E2|G#3 B3 D4 F#4','D/F#':'F#2|F#3 A3 C#4 E4','Em7':'E2|G3 B3 D4 E4'},
@@ -498,6 +501,84 @@ TRACKS.cab={bpm:132,spb:4,bar:16,vol:0.14,echo:[.75,.3,0,2000],
     C:{bars:4,ch:'Cm | Db | Ab | G',
       p:{arp:"0 0' 2 0' 3 0' 2 1' 0 0' 2 0' 3 0' 3' 1'",siren:'x:16',hat:'xgxgxgxgxgxgxgxg',bass:'r:16'},
       last:{snr:'x...x...x...x...x.x.x.x.xxxxXXXX'}}},
+  intro:['I'],loop:['A','B','C']};
+
+/* ---- IZAKAYA: lantern-lit Tokyo izakaya by day, salaryman hitmen three rounds in. City-pop / enka crossover,
+   E minor, 110 bpm shuffle (triplet eighths, bar = 12). Shamisen hook on the minor-pentatonic over an
+   Autumn-Leaves cycle, walking upright bass, cross-stick kit, Rhodes pushes. B is the karaoke chorus:
+   a wobbly detuned synth crooning over the J-pop IVmaj7-III7-vi-v-I7 changes, shamisen answering, koto rolling.
+   A2 brings the hook back with the karaoke synth singing along an octave down. T turns around on IVmaj7-V7. */
+const T_SHAMI={w:[['sawtooth',1,0,.55],['square',2,4,.2],['triangle',1,-6,.3]],cut:4,env:5,ftau:.035,q:3.5,a:.001,dec:.2,sus:0,ring:.3,r:.08,nz:.45,nzf:6,nzd:.012,slide:.985,slideT:.012,amp:.36};
+const T_KARA={w:[['square',1,-15,.45],['sawtooth',1,13,.4],['triangle',2,0,.1]],cut:3.5,q:1.2,a:.025,dec:.6,sus:.8,r:.22,vib:34,vdel:.16,glide:.08,amp:.2};
+const IZ_HOOK='E5:2 E5:1 G5:2 A5:1 B5:3 A5:2 G5:1 | A5:2 G5:1 E5:3 F#5:2 E5:1 D5:3 | B4:2 D5:1 G5:3 F#5:6 | E5:2 G5:1 B5:2 A5:1 G5:3 E5:3 | A5:2 A5:1 C6:2 A5:1 E5:3 F#5:3 | D#5:2 F#5:1 A5:3 C6:2 B5:1 A5:3 | G5:2 F#5:1 E5:3 B4:2 D5:1 E5:3 | E5:6 D#5:3 .:3';
+const IZ_BASS='E2:3 G2:3 B2:2 B2:1 G#2:3 | A2:3 E2:3 D2:3 F#2:3 | G2:3 D2:3 G2:3 B2:3 | C3:3 B2:3 A2:3 G2:3 | F#2:3 A2:3 E2:3 C2:3 | B1:3 D#2:3 F#2:3 D#2:3 | E2:3 G2:3 B2:3 G2:3 | B1:3 E2:3 D#2:3 F#2:3';
+TRACKS.izakaya={bpm:110,spb:3,bar:12,vol:0.18,echo:[.5,.2,0,2600],vibHz:4.8,
+  chords:{'Em9':'E2|G3 B3 D4 F#4','Am9':'A1|G3 B3 C4 E4','D9':'D2|F#3 A3 C4 E4','Gmaj7':'G2|F#3 A3 B3 D4','Cmaj7':'C2|E3 G3 B3 D4',
+    'F#m7b5':'F#2|E3 A3 C4','B7b9':'B1|D#3 A3 C4','B7sus':'B1|E3 F#3 A3 B3','B7':'B1|D#3 F#3 A3 B3','Em7':'E2|G3 B3 D4 E4',
+    'Dm7':'D2|F3 A3 C4 E4','G7':'G1|F3 B3 D4 E4','A7':'A1|G3 C#4 E4','Am7':'A1|G3 C4 E4'},
+  parts:{ shami:{i:'sv',g:.75,rv:.3,dl:.12,pan:-.15,v:.85,hum:.01,o:T_SHAMI},
+    kara:{i:'sv',g:.55,rv:.4,dl:.25,chorus:.7,pan:.1,v:.8,o:T_KARA},
+    karalo:{i:'sv',g:.32,rv:.4,dl:.2,chorus:.7,pan:.2,tr:-12,v:.75,o:T_KARA},
+    koto:{i:'sv',g:.34,rv:.45,dl:.2,pan:.35,hum:0,v:.65,o:T_ZITHER},
+    keys:{i:'ep',g:.42,rv:.3,chorus:.8,pan:-.05,v:.62,o:{idx:1.7,dec:.7,tg:.05,r:.25}},
+    bass:{i:'sv',g:.66,v:.85,pri:1,gap:.02,o:{w:[['triangle',1,0,1],['sine',2,0,.25]],cut:5,env:2.5,ftau:.05,a:.004,dec:.22,sus:.35,r:.06,nz:.12,nzf:2,nzd:.02,amp:.52}},
+    clink:{i:'bell',g:.12,rv:.4,pan:-.35,v:.7,hum:.02,o:{ratio:2.76,idx:.8,dec:.35,amp:.2}},
+    kick:{d:'kick',g:.5,o:{f:58,dec:.28,click:.18}}, rim:{d:'rim',g:.3,rv:.3,pan:.15}, snare:{d:'snare',g:.38,rv:.3,o:{dec:.14,f:2100,tone:210}},
+    hat:{d:'hat',g:.17,pan:.25,o:{dec:.04}}, tamb:{d:'tamb',g:.2,pan:-.3}, crash:{d:'crash',g:.2,o:{dec:1.2}} },
+  sec:{
+    I:{bars:2,ch:'Em9 | B7sus B7',p:{shami:'E5:1 E5:1 E5:1 B4:3 E5:1 E5:1 E5:1 G5:3 | E5:3 F#5:2 A5:1 D#5:3 F#5:2 D#5:1'},
+      first:{clink:'B6:2 E7:10'},last:{bass:'B1:3 E2:3 D#2:3 F#2:3',hat:'x.gx.gx.gx.g',rim:'...x.....x.x'}},
+    A:{bars:8,ch:'Em9 | Am9 D9 | Gmaj7 | Cmaj7 | F#m7b5 | B7b9 | Em9 | B7sus B7',
+      p:{shami:IZ_HOOK,bass:IZ_BASS,keys:'x:2 .:3 x:7',
+        kick:'X.....x....g',rim:'...x.....x..',hat:'x.gx.gx.gx.g'},
+      last:{rim:'...x..x.xx.x',kick:'X.....x.....'}},
+    B:{bars:8,ch:'Cmaj7 | B7 | Em7 | Dm7 G7 | Cmaj7 | B7 | Em7 A7 | Am7 B7',
+      p:{kara:'G5:3 E5:2 D5:1 E5:6 | D#5:3 F#5:2 A5:1 B5:6 | G5:3 F#5:2 E5:1 D5:3 B4:3 | A4:2 C5:1 D5:3 F5:3 D5:2 B4:1 | C5:3 E5:2 G5:1 B5:6 | A5:3 F#5:2 D#5:1 F#5:6 | G5:3 E5:2 B4:1 C#5:3 E5:2 G5:1 | A5:3 G5:2 E5:1 F#5:3 D#5:3',
+        shami:'.:6 B5:1 A5:1 G5:1 E5:3 | .:6 A5:1 F#5:1 D#5:1 B4:3 | .:12 | .:12 | .:6 D6:1 B5:1 G5:1 E5:3 | .:6 C6:1 A5:1 F#5:1 D#5:3 | .:12 | .:12',
+        koto:"0':2 1':2 2':2 3':2 2':2 1':2",keys:'.:2 x:4 .:2 x:4',
+        bass:'C2:3 G2:3 E2:3 C2:3 | B1:3 D#2:3 F#2:3 D#2:3 | E2:3 G2:3 E2:3 C#2:3 | D2:3 A2:3 G2:3 B1:3 | C2:3 E2:3 G2:3 C3:3 | B2:3 A2:3 F#2:3 D#2:3 | E2:3 D2:3 C#2:3 E2:3 | A1:3 C2:3 B1:3 D#2:3',
+        kick:'X....gx....g',snare:'...x.....x..',hat:'x.xx.xx.xx.x',tamb:'...x.....x..'},
+      first:{crash:'X'},last:{snare:'...x..x.xXxX'}},
+    A2:{from:'A',p:{karalo:IZ_HOOK,koto:"0':1 1':1 2':1 3':1 2':1 1':1 0':1 1':1 2':1 3':1 0'':2",hat:'x.xx.gx.xx.g',tamb:'...x.....x..'},first:{crash:'X'}},
+    T:{bars:2,ch:'Cmaj7 | B7b9',
+      p:{shami:'G5:2 E5:1 B5:3 A5:2 G5:1 E5:3 | D#5:2 F#5:1 A5:3 C6:2 B5:1 .:3',kara:'E5:12 | D#5:6 .:6',keys:'x:2 .:3 x:7',
+        bass:'C2:3 G2:3 E2:3 C2:3 | B1:3 D#2:3 F#2:3 D#2:3',kick:'X.....x.....',rim:'...x.....x..',hat:'x.gx.gx.gx.g'},
+      last:{snare:'...x.xx.xXxX',hat:'x.gx.g......',clink:'.:9 B6:1 E7:2'}}},
+  intro:['I'],loop:['A','B','A2','T']};
+
+/* ---- SUSHI: the Kagami-gumi sushi bar under the Pacific at night. F minor, 88 bpm, cold and slow.
+   Heartbeat sub pulse, a glassy bell ostinato through a long dotted-8th echo, breathy shakuhachi on long
+   notes with scoops and fall-offs, dark pads, a sonar ping. A is hirajoshi (F G Ab C Db); B turns to in-sen
+   (F Gb Bb C Eb) over an F pedal and the heartbeat doubles; C is the build: taiko, hyoshigi clappers, gong. */
+const T_SHAKU={w:[['triangle',1,0,1],['sine',2,0,.12],['sine',3,0,.04]],cut:4,a:.12,dec:.6,sus:.8,r:.45,vib:22,vdel:.45,slide:.95,slideT:.09,bend:.985,nz:.8,nzf:1.2,nzd:.45,amp:.32};
+const SU_O1='F4:2 C5:1 Ab5:1 G5:2 C5:2 F4:2 C5:1 Db5:1 C5:2 Ab4:2', SU_O2='F4:2 C5:1 Bb5:1 Gb5:2 C5:2 F4:2 C5:1 Eb5:1 C5:2 Bb4:2',
+  SU_OGB='F4:2 Db5:1 Bb5:1 Gb5:2 Db5:2 F4:2 Db5:1 Eb5:1 Db5:2 Bb4:2', SU_OC='F4:2 C5:1 Bb5:1 G5:2 C5:2 F4:2 C5:1 Db5:1 C5:2 Bb4:2';
+TRACKS.sushi={bpm:88,spb:4,bar:16,vol:0.2,echo:[.75,.42,0,1800],vibHz:4.6,
+  chords:{'Fm9':'F1|Ab3 C4 Eb4 G4','Fm11':'F1|Ab3 Bb3 C4 Eb4','Dbmaj9':'Db2|F3 Ab3 C4 Eb4','Gbmaj7':'Gb1|F3 Bb3 Db4',
+    'C7b9sus':'C2|F3 Bb3 Db4 G4','Gb/F':'F1|Gb3 Bb3 Db4 F4','Bbm9':'Bb1|Db3 F3 Ab3 C4'},
+  parts:{ lead:{i:'sv',g:.44,rv:.55,dl:.32,pan:-.1,v:.8,hum:.01,o:T_SHAKU},
+    ost:{i:'bell',g:.32,rv:.5,dl:.45,pan:.3,tr:12,v:.6,hum:0,o:{ratio:3.5,idx:1.2,idx2:.12,itau:.06,dec:.8,amp:.24}},
+    pad:{i:'sv',g:.38,rv:.6,chorus:.25,v:.7,o:{w:[['sawtooth',1,-7,.5],['sawtooth',1,7,.5],['triangle',.5,0,.4]],cut:1.6,q:1.5,a:.9,dec:1,sus:.9,r:1.2,amp:.12}},
+    bass:{i:'sv',g:.6,v:.9,pri:1,hum:0,o:{w:[['sine',1,0,.7],['sine',2,0,.6],['triangle',3,0,.08]],a:.012,dec:.45,sus:.35,r:.25,amp:.4}},
+    ping:{i:'bell',g:.14,rv:.7,dl:.6,pan:-.35,v:.7,o:{ratio:1,idx:.35,idx2:.05,dec:3.2,amp:.2}},
+    taiko:{d:'tom',g:.5,rv:.5,o:{f:66,sweep:1.7,dec:.9,nz:.55,nzf:280}}, shime:{d:'tom',g:.24,rv:.3,pan:.25,o:{f:340,dec:.1,nz:.35,nzf:2600}},
+    hyo:{d:'wood',g:.26,rv:.5,pan:-.2,o:{f:2100,dec:.05}}, gong:{d:'gong',g:.42,rv:.7,o:{f:62,dec:5}} },
+  sec:{
+    I:{bars:2,ch:'Fm9 | Fm9',p:{pad:'x:32'},first:{gong:'X',ping:'C6:16'},last:{ost:SU_O1,bass:'r:2 r_:6 .:8'}},
+    A:{bars:8,ch:'Fm9 | Fm9 | Dbmaj9 | Dbmaj9 | Fm9 | Fm9 | Gbmaj7 | C7b9sus',
+      p:{lead:'.:4 C5:6 Db5:2 C5:4 | Ab4:12 G4:2 Ab4:2 | F4:8 Ab4:4 C5:4 | Db5:12 .:4 | .:4 F5:6 Db5:2 C5:4 | Ab5:8 G5:4 F5:4 | Gb5:8 F5:4 Db5:4 | C5:16',
+        ost:[SU_O1,SU_O1,SU_O1,SU_O1,SU_O1,SU_O1,SU_OGB,SU_OC].join(' | '),pad:'x:16',bass:'r:2 r_:6 .:8',ping:'C6:16 .:48',
+        taiko:'X...............|................'},
+      last:{taiko:'X...............|X.......X..xX.x.'}},
+    B:{bars:8,ch:'Fm11 | Gb/F | Fm11 | Gb/F | Dbmaj9 | Bbm9 | Gbmaj7 | C7b9sus',
+      p:{lead:'C6:10 Bb5:2 C6:4 | Db6:8 C6:4 Bb5:4 | C6:12 Ab5:2 Bb5:2 | Gb5:16 | F5:4 Ab5:4 C6:8 | Db6:6 C6:2 Bb5:4 Ab5:4 | Bb5:8 Gb5:4 F5:4 | Db5:8 C5:8',
+        ost:[SU_O2,SU_O2,SU_O2,SU_O2,SU_O1,SU_O2,SU_OGB,SU_OC].join(' | '),pad:'x:16',bass:'r:2 r_:6 r:2 r_:6',
+        taiko:'X.......X..x....',shime:'....x.......x...'},
+      last:{taiko:'X..x..X.X.xxXxXX'}},
+    C:{bars:4,ch:'Fm11 | Gb/F | Dbmaj9 | C7b9sus',
+      p:{lead:'.:16 | .:16 | .:8 Ab5:8 | C6:8 Db6:8',ost:[SU_O2,SU_O2,SU_O1,SU_OC].join(' | '),pad:'x:16',
+        bass:'r:2 r_:2 r:2 r_:2 r:2 r_:2 r:2 r12_:2',taiko:'X..x..X.X..x..x.',shime:'..x...x...x...xx',hyo:'X.......X.......'},
+      last:{taiko:'XxgXxgXxXxXxXXXX',hyo:'X...X...X.X.XXXX',gong:'X'}}},
   intro:['I'],loop:['A','B','C']};
 
 /* =====================================================================

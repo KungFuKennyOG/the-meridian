@@ -2300,12 +2300,505 @@ CAR_BUILD.izakaya=function izakaya(){
   WG.izakaya.spots={tanaka:{x:8,z:0,ry:-Math.PI/2},tanaka_c1:{x:-4,z:1.2,ry:-Math.PI/2},tanakab_1:{x:0,z:-1.2,ry:-Math.PI/2},tanaka_c2:{x:4,z:1.4,ry:-Math.PI/2},tanakab_2:{x:5.5,z:-1.3,ry:-Math.PI/2}};
 };
 
-/* ---------- 03 · Sushi Bar Kaiten: the Pacific tunnel, Kagami-gumi sleepers (placeholder: the art pass builds this) ---------- */
+/* ---------- 03 · Sushi Bar Kaiten: the Pacific tunnel by night, Kagami-gumi sleepers behind the counter ----------
+   You come in under an indigo noren into a stone genkan: a host stand with a lucky cat, the ticket machine, a
+   bench. Ahead, a U of pale hinoki counter runs down the car under its own tiled roof, a conveyor carrying plates
+   round it, the open end of the U facing you like a corridor into the chefs' well. Stools all round the outside,
+   glass to the sea floor on both walls. At the far end: the live tank, the tuna on the block, the knives, the
+   house shrine over the exit. Painters and the moving belt live in src/44s-sushi-paint.js. */
 CAR_BUILD.sushi=function sushi(){
-  const g=shell('sushi',{floor:C('#3a3430'),ceil:C('#e8e4d8'),dado:C('#a87a4a'),upper:C('#e8e4d8'),pier:C('#e8e4d8'),trim:C('#2a2420'),end:C('#a87a4a'),
-    wins:[[-12.4,12.4]],lamps:[lamp(-8,2.8,0,[1,.95,.85],7),lamp(0,2.8,0,[1,.95,.85],7),lamp(8,2.8,0,[1,.95,.85],7)]});
-  WG.sushi.spots={chefc_1:{x:-3,z:.6,ry:-Math.PI/2},chefc_2:{x:2,z:-.6,ry:-Math.PI/2},chefc_3:{x:6,z:.8,ry:-Math.PI/2},chefc_4:{x:9.5,z:-.5,ry:-Math.PI/2}};
+  const T=suTex(), atl=M(T.atl), atlU=M(T.atl,{unlit:true}), atlD=M(T.atl,{double:true});
+  const mSlat=M(T.slat), mHin=M(T.hinoki), mSteel=M(T.steel), mDoors=M(T.doors), mFab=M(T.fab), mRoof=M(T.roof), mGlass=M(T.streak,{unlit:true,cut:true});
+  const trimC=C('#2e2218'), dark=C('#1c1612'), sumi=C('#2a221c'), chrome=C('#d4d8dc'), black=C('#121010'), white=C('#dcd8d0'), lac=C('#14100e'), hinC=C('#dcc090'), copper=C('#b8743a'), red=C('#b81e24'), beltC=C('#dcd8d0');
+  const wins=winsEvery(5,3.4,-10.2,6.8);
+  const g=shell('sushi',{floor:M(T.floor),floorTile:1.2,ceil:M(T.ceil),ceilTile:1.2,dado:mSlat,upper:M(T.shoji,{emissive:0x3a3020}),pier:M(T.pier),end:M(T.pier),door:M(T.door),lo:.9,hi:2.62,wallTile:.9,wins,
+    lamps:[lamp(-4.0,2.3,0,[2.3,1.72,1.15],8),lamp(2.4,2.3,0,[2.3,1.72,1.15],8),lamp(10.8,2.6,-.4,[2.0,1.6,1.2],6.5),lamp(-12.0,2.6,0,[2.1,1.6,1.1],6),lamp(11.5,1.4,2.45,[.35,.95,1.4],3.2),lamp(7.0,2.3,0,[2.0,1.5,1.05],5)],
+    ambK:1.0,sunK:.2,minLamp:1.0});
+  const W=WG.sushi, XM=-6.8, XB=6.0, ZO=1.65, ZI=.55, BY=.875, HP=Math.PI/2;
+  /* an atlas box: face rects [+x,-x,+y,-y,+z,-z], unlisted faces take the plain rect */
+  const abox=(par,mat,x,y,z,w,h,d,faces,ry=0,rx=0,rz=0,o)=>{ const pl=suAt('plain'), r=[0,1,2,3,4,5].map(i=>faces&&faces[i]?suAt(faces[i]):(faces&&faces.all?suAt(faces.all):pl)); return mk(suBox(w,h,d,r,o),mat,par,x,y,z,rx,ry,rz); };
+  /* a framed picture on a wall: black lacquer frame strips in relief, the picture on a slightly inset board; faces local +z */
+  const framed=(par,x,y,z,ry,w,h,rect,mat=atl,fr=lac)=>{ const n=N(par,x,y,z,0,ry,0); B(n,sumi,0,0,.01,w+.04,h+.04,.02); mk(suPlane(w,h,rect),mat,n,0,h/2+.02,.022);
+    B(n,fr,0,-.01,.035,w+.08,.04,.03); B(n,fr,0,h+.01,.035,w+.08,.04,.03); B(n,fr,-w/2-.02,0,.035,.04,h+.06,.03); B(n,fr,w/2+.02,0,.035,.04,h+.06,.03); return n; };
+
+  /* ---------- walls: modelled skirting, dado rail, sills, a nageshi rail and cornice, beams, menu tags on the piers ---------- */
+  for(const s of [-1,1]){ const sg=W.side[s], zw=s*WZ, ry=s<0?0:Math.PI;
+    B(sg,lac,0,0,zw-s*.02,WL,.12,.04); B(sg,hinC,0,.12,zw-s*.025,WL,.015,.05);
+    B(sg,mHin,0,.86,zw-s*.03,WL,.04,.06); B(sg,mHin,0,2.62,zw-s*.04,WL,.09,.08); B(sg,sumi,0,3.3,zw-s*.05,WL,.1,.1); B(sg,hinC,0,3.28,zw-s*.04,WL,.02,.08);
+    for(const [a,b] of wins){ const cx=(a+b)/2; B(sg,mHin,cx,.88,zw-s*.07,b-a+.12,.035,.14).noCollide=1; B(sg,trimC,cx,2.6,zw-s*.03,b-a+.1,.06,.08); for(const x of [a,b]) B(sg,trimC,x,.9,zw-s*.03,.06,1.72,.08); mk(plane(b-a-.06,1.66),M(T.streak,{unlit:true,cut:true,repeat:[(b-a)/3.4,1]}),sg,cx,.9+.86,zw-s*.008,0,ry,0); B(sg,C('#2e2218'),cx,.9,zw-s*.01,.05,1.72,.03); }
+    for(let k=0;k<wins.length-1;k++){ const x=(wins[k][1]+wins[k+1][0])/2, n=N(sg,x,0,zw-s*.02,0,ry,0);
+      B(n,mHin,0,1.5,.012,.62,.66,.025); B(n,lac,0,2.15,.03,.68,.03,.05); for(let t=0;t<6;t++) mk(suBox(.085,.5,.01,suSub('tags',(t+k*3)%8,8)),atl,n,-.25+t*.1,1.58,.03+(t%2)*.004);
+      B(n,mHin,0,1.18,.07,.5,.03,.14).noCollide=1; mk(lathe([[0,.035,.035],[.06,.05,.05],[.14,.03,.03],[.2,.022,.022],[.22,.028,.028]],8),C('#7a9a8a'),n,0,1.21,.08);
+      for(let b=0;b<3;b++){ B(n,C('#5a3a22'),.0,1.4,.08,.012,.35,.012,0,0,(b-1)*.35); mk(box(.05,.012,.03),C(['#f2f0f4','#e86a8a','#f2f0f4'][b]),n,(b-1)*.11,1.68+b*.04,.08); }
+      for(const k of n.kids) k.noCollide=1; }
+  }
+  for(let x=-12.75;x<=12.8;x+=4.25) B(g,mHin,x,3.24,0,.14,.16,WZ*2);
+  /* the ceiling cove lights along both walls */
+  for(const s of [-1,1]){ B(g,hinC,0,3.12,s*(WZ-.32),WL-.6,.03,.14); B(g,U('#ffe8c0'),0,3.15,s*(WZ-.3),WL-.8,.02,.08); }
+
+  /* ---------- the counter: a U of hinoki, the belt round its outside edge, the chefs' well inside ---------- */
+  const L=XB-XM, cx=(XM+XB)/2;
+  for(const s of [-1,1]){ const zc=(a,b)=>s*(a+b)/2;
+    B(g,dark,cx,0,zc(ZI+.03,ZO-.07),L,.1,ZO-ZI-.1);                              /* kick recess */
+    suBW(g,mSlat,cx,.1,zc(ZI+.03,ZO),L,.68,ZO-ZI-.03,.9,.68);                     /* slatted front */
+    suBW(g,mDoors,cx,0,s*(ZI+.015),L,.8,.03,.6,.8);                               /* stainless doors on the chefs' side */
+    suBW(g,mHin,cx,.78,zc(1.38,ZO+.045),L,.04,ZO+.045-1.38,1,.5);                 /* the customers' ledge, overhanging */
+    B(g,U('#ffc878'),cx,.765,s*(ZO+.02),L,.008,.02);                               /* warm light strip under the overhang */
+    suBW(g,mSteel,cx,.78,zc(1.10,1.40),L,.08,.30,.6,.3);                          /* belt housing */
+    B(g,beltC,cx,.86,s*1.25,L,.015,.26);                                           /* belt bed */
+    for(const zz of [1.104,1.396]) B(g,chrome,cx,.86,s*zz,L,.036,.012);           /* belt rails */
+    suBW(g,mHin,cx,.78,zc(.92,1.10),L,.12,.18,1,.5);                              /* the shelf the neta cases stand on */
+    B(g,white,cx,.78,zc(ZI+.03,.92),L,.06,.92-ZI-.03);                             /* chefs' worktop */
+    B(g,chrome,cx,.84,s*(ZI+.02),L,.014,.035); }
+  /* the round end */
+  { const bn=N(g,XB,0,0), A0=-HP, A1=HP, S=24;
+    mk(suRingWall(ZO-.07,0,.1,A0,A1,S,1),dark,bn); mk(suRingWall(ZO,.1,.78,A0,A1,S,1,.9,.68),mSlat,bn);
+    mk(suRingWall(ZO+.045,.78,.82,A0,A1,S,1,1,.5),mHin,bn); mk(suRingWall(ZO+.03,.757,.773,A0,A1,S,1),U('#ffc878'),bn); mk(suRingTop(1.38,ZO+.045,.82,A0,A1,S,1),mHin,bn);
+    mk(suRingWall(1.402,.82,.896,A0,A1,S,1),chrome,bn); mk(suRingTop(1.39,1.402,.896,A0,A1,S),chrome,bn); mk(suRingWall(1.39,.875,.896,A0,A1,S,-1),chrome,bn);
+    mk(suRingTop(1.112,1.39,BY,A0,A1,S),beltC,bn);
+    mk(suRingWall(1.112,.875,.896,A0,A1,S,1),chrome,bn); mk(suRingTop(1.098,1.112,.896,A0,A1,S),chrome,bn);
+    mk(suRingTop(.92,1.098,.90,A0,A1,S,1),mHin,bn); mk(suRingWall(.92,.84,.90,A0,A1,S,-1,1,.5),mHin,bn);
+    mk(suRingTop(ZI,.92,.84,A0,A1,S),white,bn); mk(suRingWall(ZI,0,.84,A0,A1,S,-1,.6,.8),mDoors,bn); }
+  /* hinoki pilasters in relief down the counter front */
+  for(const s of [-1,1]) for(let x=XM+.4;x<XB;x+=1.5) B(g,hinC,x,.1,s*(ZO+.008),.045,.67,.018);
+  for(let a=-HP+.4;a<HP-.2;a+=.52) B(g,hinC,XB+(ZO+.008)*Math.cos(a),.1,(ZO+.008)*Math.sin(a),.018,.67,.045,-a);
+  /* the duckboard floor of the well */
+  suBW(g,M(T.duck),(XM+XB)/2+.1,0,0,L+.2,.025,ZI*2,.6,.6);
+
+  /* ---------- the belt hoods at the mouth of the U: stainless towers the belt comes out of, signs facing the door, knives on the inside ---------- */
+  const hx=XM-.3, knife=(par,x,y,z,face,len=.27)=>{ mk(suBox(len,.034,.004,suAt('blade')),atl,par,x+.017,y+len/2,z,0,0,HP); B(par,lac,x,y+len,z,.026,.028,.02); B(par,C('#e6d8b4'),x,y+len+.028,z,.024,.11,.018); };
+  for(const s of [-1,1]){ const zc=(a,b)=>s*(a+b)/2;
+    suBW(g,mSteel,hx,0,zc(ZI,ZO+.045),.64,1.5,ZO+.045-ZI,.6,.75); B(g,lac,hx,0,zc(ZI,ZO+.045),.66,.1,ZO+.065-ZI);
+    /* raised panels and a hinoki band on the aisle face of the hood */
+    for(const py of [.16,.86]) B(g,C('#a8aeb4'),hx,py,s*(ZO+.05),.5,.56,.015); B(g,mHin,hx,.78,s*(ZO+.055),.66,.045,.02); B(g,mHin,hx,1.42,zc(ZI,ZO+.06),.66,.035,ZO+.06-ZI);
+    suBW(g,mHin,hx,1.5,zc(ZI-.03,ZO+.075),.72,.05,ZO+.105-ZI,1,.5);
+    B(g,black,XM+.022,.86,s*1.25,.01,.14,.34); mk(suBox(.006,.12,.34,suSub('noren',s<0?1:2,4)),atl,g,XM+.032,.875,s*1.25);
+    abox(g,atl,XM-.64,.92,zc(ZI+.12,ZO-.08),.03,.44,.92,{1:s<0?'sign':'price',all:'wood'});
+    /* magnetic knife strip on the inside, facing the chefs */
+    const zi=s*(ZI-.004); B(g,black,hx,1.14,zi-s*.01,.52,.035,.02); for(let k=0;k<4;k++) knife(g,hx-.2+k*.13,.88,zi-s*.024,s<0?0:Math.PI,k===3?.21:.27);
+    /* posts up to the roof */
+    B(g,hinC,hx,1.55,s*(ZI+.12),.13,1.3,.13); B(g,lac,hx,1.55,s*(ZI+.12),.15,.04,.15); }
+  /* a beam and a short noren across the mouth */
+  B(g,hinC,hx,2.42,0,.1,.1,(ZI+.2)*2); for(let k=0;k<3;k++) mk(suPlane(.34,.42,suSub('noren',k+.5,4)),atlD,g,hx+.05,2.21,(k-1)*.355,0,HP,0);
+
+  /* ---------- the roof over the well: boarded underside, real rafters, a ridge beam, round tile ends along the eaves, red lanterns ---------- */
+  { const X0=XM-.75, X1=XB+1.35, RL=X1-X0, RC=(X0+X1)/2, th=Math.atan2(.45,1.95), sl=Math.hypot(.45,1.95);
+    for(const s of [-1,1]){ const zc=s*.975, yc=2.725, rn=N(g,RC,yc,zc,s*th,0,0);
+      mk(suBoxW(RL,.05,sl+.06,1,1),mRoof,rn,0,0,0); mk(suBoxW(RL+.04,.03,sl+.1,1,1),C('#3a3a40'),rn,0,.05,0);
+      for(let x=-RL/2+.12;x<RL/2;x+=.3) B(rn,hinC,x,-.055,0,.045,.055,sl);
+      B(rn,sumi,0,-.11,s*(sl/2-.03),RL,.11,.06); B(rn,hinC,0,-.13,s*(sl/2-.03),RL,.02,.065);
+      const te=suRemap(cyl(.052,.052,.04,10),suAt('crest',1.5)); for(let x=X0+.1;x<X1;x+=.18) mk(te,atl,g,x,2.47,s*1.99,s*HP,0,0);
+      for(let k=0;k<5;k++){ const lx=-5.4+k*2.7, wh=k===2; B(g,black,lx,2.38,s*2.06,.008,.1,.008);
+        mk(suRemap(lathe([[0,.07,.07],[.04,.13,.13],[.17,.15,.15],[.3,.13,.13],[.34,.07,.07]],12),suAt(wh?'lanW':'lanR')),atlU,g,lx,2.02,s*2.06);
+        mk(cyl(.075,.075,.035,10),lac,g,lx,2.02,s*2.06); mk(cyl(.075,.075,.035,10),lac,g,lx,2.36,s*2.06); } }
+    B(g,hinC,RC,2.86,0,RL,.13,.14); B(g,sumi,RC,2.84,0,RL+.02,.02,.16);
+    for(let x=X0+.6;x<X1;x+=3.4){ B(g,black,x,2.99,0,.02,.41,.02); }
+    /* a long paper light box under the ridge, over the chefs */
+    B(g,hinC,RC,2.6,0,RL-1.6,.03,.3); B(g,U('#fff2dc'),RC,2.6,0,RL-1.7,.012,.26); for(let x=X0+1.4;x<X1-1;x+=1.6) B(g,hinC,x,2.62,0,.03,.23,.03);
+    for(const z of [-.15,.15]) B(g,hinC,RC,2.63,z,RL-1.6,.2,.025); }
+
+  /* ---------- stools round the outside of the U ---------- */
+  const stools=[]; for(let x=XM+.45;x<XB;x+=.75) for(const s of [-1,1]) stools.push([x,s*1.9]);
+  for(const a of [-1.08,-.38,.38,1.08]) stools.push([XB+1.9*Math.cos(a),1.9*Math.sin(a)]);
+  for(const [x,z] of stools){ mk(cyl(.2,.22,.025,14),C('#2a2a2e'),g,x,.012,z); mk(cyl(.03,.03,.56,8),chrome,g,x,.3,z); mk(cyl(.07,.05,.06,10),C('#2a2a2e'),g,x,.55,z);
+    mk(cyl(.185,.18,.045,16),mHin,g,x,.6,z); mk(cyl(.165,.17,.05,16),mFab,g,x,.645,z); mk(torus(.2,.012,4,16),chrome,g,x,.27,z,HP); }
+
+  /* ---------- on the ledge: tea, taps, soy, ginger, chopsticks; every seat its cup ---------- */
+  const cup=suRemap(cyl(.033,.028,.08,10,{open:true}),suAt('yunomi')), soy=lathe([[0,.022,.022],[.05,.024,.024],[.08,.016,.016],[.1,.008,.008],[.11,.009,.009]],8), soyM=C('#2a1810'), tin=suRemap(cyl(.03,.03,.09,10),suAt('tin'));
+  for(const [x,z] of stools){ const s=Math.sign(z)||1, bend=x>XB+.05; if(bend) continue;
+    mk(cup,atl,g,x+.13,.86,s*1.56); mk(cyl(.027,.027,.004,10),C('#7a9a3a'),g,x+.13,.885,s*1.56); mk(cyl(.026,.026,.01,10),C('#8a9a80'),g,x+.13,.825,s*1.56);
+    B(g,mHin,x-.06,.82,s*1.6,.03,.008,.03); B(g,lac,x-.06,.828,s*1.6,.2,.006,.012,0.12);
+    if(((x-XM)/.75|0)%2===0){ const cxp=x+.37;
+      B(g,chrome,cxp,.822,s*1.418,.07,.05,.03); B(g,black,cxp,.85,s*1.432,.026,.014,.006); B(g,chrome,cxp,.83,s*1.44,.012,.01,.03);
+      mk(soy,soyM,g,cxp-.07,.82,s*1.5); mk(cyl(.01,.01,.012,6),red,g,cxp-.07,.935,s*1.5);
+      B(g,mHin,cxp+.07,.82,s*1.5,.09,.05,.07); B(g,hinC,cxp+.07,.87,s*1.5,.095,.01,.075); mk(tin,atl,g,cxp,.866,s*1.52);
+      B(g,lac,cxp+.02,.82,s*1.62,.16,.05,.05); } }
+  /* the hot water / tea urn station by the bench */
+
+  /* ---------- the neta cases: fish on ice under glass, along both arms ---------- */
+  const caseSegs=[]; for(let x=XM+.5;x<XB-.6;x+=2.6) caseSegs.push([x,Math.min(x+2.4,XB-.3)]);
+  for(const s of [-1,1]) for(const [a,b] of caseSegs){ const len=b-a, cxs=(a+b)/2;
+    B(g,mSteel,cxs,.9,s*1.01,len,.015,.18); mk(suBox(len,.02,.17,suAt('ice')),atl,g,cxs,.915,s*1.01);
+    B(g,chrome,cxs,1.11,s*1.10,len,.012,.012); for(let px=a+.6;px<b-.3;px+=.6) B(g,chrome,px,.92,s*1.10,.008,.19,.008); B(g,chrome,cxs,1.11,s*.93,len,.012,.012); for(const x of [a,b]) B(g,chrome,x,.9,s*1.06,.012,.22,.012);
+    
+    B(g,U('#f4fbff'),cxs,1.09,s*.95,len-.04,.01,.015); }
+
+  /* ---------- chefs' tools on the worktop ---------- */
+  const boardM=C('#f0ece2');
+  for(const s of [-1,1]) for(let x=XM+1.4;x<XB-.5;x+=3.1){ const z=s*.74;
+    B(g,mHin,x,.84,z,.48,.03,.26); B(g,C('#c8a878'),x,.84,z,.5,.008,.27);
+    { const n=N(g,x+.02,.873,z-s*.02,0,.15,0); mk(suBox(.27,.004,.035,suAt('blade')),atl,n,0,0,0); mk(suBox(.13,.022,.026,suAt('handle')),atl,n,-.2,-.004,0); }
+    mk(cyl(.075,.07,.07,12,{open:true}),chrome,g,x+.4,.875,z); mk(cyl(.07,.07,.004,12),C('#8ab0c0'),g,x+.4,.89,z);
+    B(g,C('#f4f4f0'),x-.38,.84,z,.14,.02,.1); B(g,C('#e8e8e4'),x-.38,.86,z,.12,.012,.08); }
+  /* the head chef's station in the round end: rice tub, rice paddle */
+  { const hx2=XB+.66; mk(cyl(.2,.2,.1,16),C('#d8b47c'),g,hx2,.89,0); for(const y of [.905,.965]) mk(torus(.202,.008,4,16),copper,g,hx2,y,0,HP); B(g,mHin,hx2+.02,.98,0,.04,.012,.25,.3);
+    mk(cyl(.07,.07,.12,12),C('#8a6a4a'),g,XB+.62,.9,.62); mk(cyl(.072,.072,.012,12),hinC,g,XB+.62,.966,.62); }
+
+  /* ---------- the genkan: noren, host stand and lucky cat, the ticket machine, a bench, bamboo ---------- */
+  { const xn=-9.5; B(g,hinC,xn,3.0,0,.12,.12,WZ*2); for(let k=0;k<6;k++){ const z=-WZ+.5+k*(WZ*2-1)/5; mk(suPlane(.88,.52,suSub('noren',k%4,4)),atlD,g,xn+.07,2.76,z,0,HP,0); }
+    B(g,mHin,xn,0,0,.14,.012,WZ*2-.1); }
+  mk(suBoxW(1.8,.012,1.6,.6,.6),mFab,g,-12.7,0,0);
+  /* a carved sea bream hanging over the genkan, lacquered red, on two chains */
+  { const n=N(g,-10.5,2.45,0), body=C('#c8382a'), gold=C('#e8c048');
+    mk(lathe([[0,.0,.0],[.05,.03,.07],[.16,.045,.15],[.36,.05,.16],[.52,.04,.1],[.62,.02,.04]],12),body,n,0,0,-.31,HP,0,0);
+    for(const s of [-1,1]) mk(box(.012,.16,.12),C('#c8302a'),n,0,-.02+s*.07,.36,s*.5,0,0);
+    mk(box(.01,.08,.18),C('#c8302a'),n,0,.13,.0,0,0,0); mk(box(.01,.05,.1),C('#c8302a'),n,0,-.17,.06,0,0,0);
+    for(const s of [-1,1]){ mk(cyl(.022,.022,.01,10),gold,n,s*.04,.03,-.2,0,0,HP); mk(cyl(.01,.01,.012,8),black,n,s*.045,.03,-.2,0,0,HP); mk(box(.004,.07,.03),C('#a82418'),n,s*.045,-.02,-.13,0,0,0); }
+    for(const z of [-.18,.2]){ B(g,black,-10.5,2.58,z,.012,.82,.012); } }
+  { const sx=-11.6, sz=-2.42; suBW(g,mSlat,sx,.08,sz,.5,.92,.78,.9,.92); B(g,lac,sx,0,sz,.46,.08,.74); suBW(g,mHin,sx,1.0,sz,.58,.04,.86,1,.5);
+    B(g,white,sx+.05,1.04,sz+.2,.18,.02,.24); B(g,lac,sx+.05,1.06,sz+.2,.12,.005,.006); B(g,red,sx+.12,1.04,sz-.22,.06,.04,.08);
+    const c=N(g,sx-.02,1.04,sz-.06,0,-1.98,0), pl=suAt('plain');
+    B(c,red,0,0,0,.2,.03,.2); for(const [dx,dz] of [[-.1,-.1],[.1,-.1],[-.1,.1],[.1,.1]]) B(c,C('#e8c040'),dx,.0,dz,.015,.035,.015);
+    mk(suBox(.13,.14,.15,pl,{tw:.85,td:.85}),atl,c,0,.03,0); B(c,red,0,.15,0,.12,.02,.135); mk(cyl(.017,.017,.02,8),C('#e8c040'),c,.068,.14,0,0,0,HP);
+    mk(suBox(.14,.12,.16,[suAt('catface'),pl,pl,pl,pl,pl],{tw:.92,td:.92}),atl,c,.005,.17,0);
+    for(const s of [-1,1]){ mk(suBox(.045,.05,.035,pl,{tw:.2,td:.4}),atl,c,0,.285,s*.052,s*-.2,0,0); B(c,C('#f0a0b0'),.018,.29,s*.052,.004,.025,.018); }
+    mk(suBox(.045,.1,.045,pl),atl,c,.02,.17,-.1,0,0,.2); B(c,C('#f0f0f0'),.02,.27,-.11,.05,.035,.05);
+    mk(suBox(.012,.085,.065,[suAt('koban'),pl,pl,pl,pl,pl]),atl,c,.075,.04,.03); B(c,white,.07,.06,.065,.04,.06,.04); }
+  { const kx=-13.45, kz=-2.25; B(g,C('#24262c'),kx,0,kz,.42,1.45,.56); B(g,C('#3a3c44'),kx,1.45,kz,.44,.04,.58); B(g,red,kx,1.49,kz,.3,.12,.5);
+    mk(suPlane(.34,.34,suAt('screen')),atlU,g,kx+.215,1.1,kz,0,HP,0); B(g,black,kx+.215,.72,kz,.01,.04,.14); B(g,C('#3a3c44'),kx+.24,.5,kz,.06,.12,.32);
+    mk(suPlane(.3,.14,suSub('noren',1,4)),atl,g,kx+.22,1.37,kz,0,HP,0); }
+  { const bx=-12.45, bz=2.5; suBW(g,mHin,bx,.4,bz,1.7,.05,.42,1,.5); for(const dx of [-.75,.75]) for(const dz of [-.15,.15]) B(g,lac,bx+dx,0,bz+dz,.05,.4,.05); B(g,lac,bx,.15,bz,1.5,.03,.03);
+    for(let k=0;k<3;k++) mk(suBoxW(.46,.06,.36,.4,.4),mFab,g,bx-.52+k*.52,.45,bz-.01); mk(cyl(.12,.1,.5,12),C('#6a8aa8'),g,-13.62,.25,2.55); mk(torus(.12,.01,4,12),C('#4a6a88'),g,-13.62,.5,2.55,HP); B(g,black,-13.6,.3,2.52,.015,.62,.015,0,0,.15); }
+  { const px=-13.55, pz=1.45; mk(cyl(.2,.16,.42,12),C('#2a2a30'),g,px,.21,pz); mk(cyl(.19,.19,.02,12),C('#3a2a1e'),g,px,.42,pz);
+    for(let k=0;k<5;k++){ const ang=k*1.3, ox=Math.cos(ang)*.08, oz=Math.sin(ang)*.08, h=1.4+k*.25; B(g,C('#6a8a3a'),px+ox,.42,pz+oz,.025,h,.025); for(let y=.6;y<h;y+=.25) B(g,C('#4a6a2a'),px+ox,.42+y,pz+oz,.03,.01,.03);
+      for(let j=0;j<4;j++) mk(box(.2,.005,.035),C(j%2?'#5a8a3a':'#6a9a42'),g,px+ox+Math.cos(ang+j)*.1,.42+h-.15+j*.06,pz+oz+Math.sin(ang+j)*.1,.2,ang+j*1.6,-.4); } }
+  /* end walls: slatted wainscot, the KAITEN board over the door, posters */
+  for(const e of [-1,1]){ const x=e*(WL/2-.02), ry=e<0?HP:-HP;
+    for(const z of [-1,1]){ const n=N(g,x,0,z*1.75,0,ry,0); mk(suBoxW(2.3,.9,.03,.9,.9),mSlat,n,0,0,0); B(n,lac,0,0,.02,2.3,.12,.03); B(n,mHin,0,.88,.025,2.34,.04,.05); } }
+  framed(g,-13.97,2.38,0,HP,.95,.32,suAt('sign'));
+  framed(g,-13.97,1.25,-1.65,HP,.7,1.05,suAt('poster')); framed(g,-13.97,1.4,1.75,HP,.86,.64,suAt('board'));
+
+  /* ---------- the front: live tank, the tuna block, knives, the house shrine over the exit ---------- */
+  { const x0=9.5, x1=13.55, tz0=2.1, tz1=2.86, txc=(x0+x1)/2, tl=x1-x0, y0=.76, y1=1.82;
+    suBW(g,mSlat,txc,.1,(tz0+tz1)/2,tl+.1,.66,tz1-tz0+.06,.9,.66); B(g,lac,txc,0,(tz0+tz1)/2,tl+.06,.1,tz1-tz0); suBW(g,mHin,txc,y0-.04,(tz0+tz1)/2-.02,tl+.16,.04,tz1-tz0+.1,1,.5);
+    for(let k=0;k<3;k++) mk(suPlane(tl/3,y1-y0,suAt('water')),atlU,g,x0+tl*(k+.5)/3,(y0+y1)/2,tz1-.02,0,Math.PI,0);
+    for(const x of [x0,x1]) mk(suPlane(tz1-tz0,y1-y0,suAt('water')),atlU,g,x,(y0+y1)/2,(tz0+tz1)/2,0,x===x0?HP:-HP,0);
+    B(g,C('#a89878'),txc,y0,(tz0+tz1)/2,tl,.05,tz1-tz0); for(let k=0;k<7;k++) mk(box(.18+k%3*.06,.12+k%2*.08,.14),C(['#5a5e66','#6a6e74','#4a4e56'][k%3]),g,x0+.3+k*.55,y0+.08,tz1-.18-(k%2)*.2,0,k*.7,.1);
+    for(let k=0;k<9;k++){ const px=x0+.2+k*.44; for(let j=0;j<5;j++) B(g,C(j%2?'#2a7a3a':'#3a9a4a'),px+Math.sin(j+k)*.02,y0+.05+j*.09,tz1-.08,.025,.1,.012,0,0,Math.sin(j*1.3+k)*.3); }
+    for(let j=0;j<12;j++) mk(box(.012,.012,.012),U('#e8faff'),g,x1-.25+Math.sin(j*2)*.02,y0+.12+j*.075,tz1-.25);
+    for(let k=0;k<3;k++) mk(plane(tl/3-.02,y1-y0-.04),M(T.streak,{unlit:true,cut:true,repeat:[.8,1]}),g,x0+tl*(k+.5)/3,(y0+y1)/2,tz0-.005,0,Math.PI,0);
+    for(const x of [x0,x0+tl/3,x0+tl*2/3,x1]) B(g,lac,x,y0,tz0-.01,.035,y1-y0,.035); B(g,lac,txc,y1,(tz0+tz1)/2,tl+.06,.06,tz1-tz0+.04); B(g,lac,txc,y0,tz0-.01,tl+.04,.04,.04);
+    B(g,U('#e8f8ff'),txc,y1-.012,(tz0+tz1)/2,tl-.1,.012,.1);
+    framed(g,13.97,1.92,1.75,-HP,.9,.66,suAt('board')); }
+  { const x0=9.3, x1=13.62, sz=-2.53, sxc=(x0+x1)/2, sl=x1-x0;
+    suBW(g,mDoors,sxc,.08,sz,sl,.8,.66,.6,.8); B(g,lac,sxc,0,sz+.02,sl-.04,.08,.62); suBW(g,mSteel,sxc,.88,sz-.01,sl+.04,.04,.72,.6,.6); B(g,chrome,sxc,.88,sz+.35,sl+.04,.06,.02);
+    suBW(g,mSteel,sxc,.92,-WZ+.02,sl,.62,.03,.6,.6);
+    /* knives on the wall */
+    B(g,black,10.6,1.36,-WZ+.04,1.1,.04,.03); for(let k=0;k<7;k++) knife(g,10.15+k*.15,1.1,-WZ+.06,0,k===0?.33:k===6?.18:.27);
+    /* shelf: sake, tea tins, lacquer bowls */
+    suBW(g,mHin,11.5,1.82,-WZ+.15,3.4,.04,.28,1,.5); for(const x of [10.0,13.0]) B(g,lac,x,1.6,-WZ+.06,.03,.22,.2);
+    const sake=suRemap(lathe([[0,.045,.045],[.18,.048,.048],[.24,.03,.03],[.3,.016,.016],[.34,.017,.017]],10),suAt('sake'));
+    for(let k=0;k<6;k++) mk(sake,atl,g,10.1+k*.2,1.86,-WZ+.15); for(let k=0;k<3;k++) mk(tin,atl,g,11.45+k*.12,1.906,-WZ+.14);
+    for(let k=0;k<4;k++) mk(cyl(.07,.05,.04,12),C(k%2?'#a81c1c':'#141010'),g,12.2+(k>>1)*.2,1.88+(k%2)*.042,-WZ+.15);
+    for(let k=0;k<3;k++){ mk(cyl(.16,.16,.07,14),C('#d4b07a'),g,12.95,1.94+k*.075,-WZ+.15); mk(torus(.162,.006,4,14),copper,g,12.95,1.955+k*.075,-WZ+.15,HP); }
+    /* the tuna on the block */
+    suBW(g,mHin,11.1,.92,sz+.02,1.3,.07,.56,1,.5);
+    const tuna=suRemap(lathe([[0,.0,.0],[.05,.09,.07],[.25,.17,.13],[.55,.19,.15],[.85,.15,.11],[1.05,.07,.05],[1.18,.03,.025]],12),suAt('tuna'));
+    const tn=N(g,10.45,1.13,sz+.02,0,0,-HP); mk(tuna,atl,tn,0,0,0,0,HP,0);
+    for(const s of [-1,1]) mk(box(.02,.18,.12),C('#1e2a44'),g,11.72,1.1+s*.09,sz+.02,0,0,s*.6);
+    mk(box(.12,.06,.012),C('#c8ccd4'),g,10.62,1.08,sz+.02+.12,0,0,-.3); mk(box(.03,.012,.012),C('#101010'),g,10.5,1.13,sz+.02+.13);
+    B(g,C('#c81a2c'),10.0,.99,sz+.02,.16,.06,.2); B(g,C('#e8707a'),10.0,1.05,sz+.02,.14,.005,.18);
+    { const n=N(g,11.2,1.0,sz+.24,0,-.2,0); mk(suBox(.55,.004,.05,suAt('blade')),atl,n,0,0,0); mk(suBox(.18,.026,.03,suAt('handle')),atl,n,-.36,-.004,0); }
+    /* rice cooker, tubs */
+    mk(cyl(.17,.17,.26,14),C('#e8e8e2'),g,13.2,.92+.13,sz); mk(cyl(.16,.17,.04,14),chrome,g,13.2,1.2,sz); B(g,black,13.2,1.0,sz+.17,.06,.03,.01); mk(cyl(.025,.025,.02,8),black,g,13.2,1.23,sz);
+    for(let k=0;k<2;k++){ mk(cyl(.24,.24,.09,16),C('#d8b47c'),g,9.75,.92+.045+k*.095,sz-.05); mk(torus(.242,.007,4,16),copper,g,9.75,.94+k*.095,sz-.05,HP); }
+    /* fish crates */
+    for(let k=0;k<3;k++){ const cy=k*.22; mk(suBox(.5,.2,.36,[suAt('crate'),suAt('crate'),suAt('plain'),suAt('plain'),suAt('crate'),suAt('crate')]),atl,g,13.25,cy,-1.55,0,(k%2)*.08,0); B(g,white,13.25,cy+.2,-1.55,.51,.02,.37,(k%2)*.08); } }
+  /* the poster and the house shrine on the front wall */
+  framed(g,13.97,1.3,-1.6,-HP,.7,1.05,suAt('poster'));
+  { const n=N(g,13.85,2.52,0,0,-HP,0); suBW(n,mHin,0,0,.05,1.1,.04,.32,1,.5); for(const s of [-1,1]) B(n,hinC,s*.45,-.18,.0,.04,.18,.06);
+    B(n,hinC,0,.04,.08,.42,.06,.24); B(n,C('#e8d8b0'),0,.1,.08,.34,.22,.2); B(n,C('#3a2a1e'),0,.12,.181,.12,.18,.004); mk(box(.5,.03,.18),sumi,n,0,.36,.04,.4); mk(box(.5,.03,.18),sumi,n,0,.36,.12,-.4); B(n,hinC,0,.38,.08,.5,.03,.03);
+    for(const s of [-1,1]){ mk(cyl(.025,.022,.07,8),white,n,s*.36,.04+.035,.12); for(let j=0;j<4;j++) mk(box(.03,.07,.006),C('#2a5a2a'),n,s*.36+Math.sin(j*1.7)*.03,.12+j*.03,.12,0,j*.8,Math.sin(j)*.4); }
+    mk(cyl(.025,.025,1.0,8),C('#d8c890'),n,0,.42,.16,0,0,HP); for(let j=0;j<3;j++) for(let q=0;q<3;q++) B(n,white,-.3+j*.3+(q%2)*.02,.24-q*.05,.165,.035,.05,.004); }
+
+  /* ---------- the moving counter: plates of sushi on the chain, the fish in the tank, and every other piece of sushi in the car ---------- */
+  suConveyor(g,T,{XS:XM-.3,XB,RB:1.25,BY,W:.25,stools,XM});
+
+  /* small things standing on counters and shelves don't need colliders of their own (the counter under them has one) */
+  (function nc(n,y){ for(const k of n.kids){ const yy=y+k.p[1]; if(k.mesh&&!k.mesh.geo.noCull&&yy>.45&&geoBounds(k.mesh.geo).r<.15) k.noCollide=1; nc(k,yy); } })(g,0);
+
+  /* ---------- the crew: chefs down the well, one at the tuna, one pouring tea ---------- */
+  W.spots={chefc_1:{x:5.2,z:0,ry:-HP},chefc_2:{x:1.6,z:0,ry:-HP},chefc_3:{x:-2.4,z:0,ry:-HP},chefc_4:{x:-5.6,z:0,ry:-HP},chefc_5:{x:10.4,z:-1.55,ry:-HP},chefc_6:{x:-.6,z:2.42,ry:-HP}};
 };
+
+/* the conveyor and every other sushi-atlas thing, built as one mesh. The moving part (chain slats, plates, fish)
+   is the front of the vertex buffer and is rewritten each frame; the still part (neta, plate stacks) is written once. */
+function suConveyor(g,T,o){ const {XS,XB,RB,BY}=o, L1=XB-XS, arc=Math.PI*RB, LEN=2*L1+arc, HP=Math.PI/2;
+  const path=(s,out)=>{ s=((s%LEN)+LEN)%LEN; if(s<L1){ out[0]=XS+s; out[1]=RB; out[2]=0; } else if((s-=L1)<arc){ const th=s/RB; out[0]=XB+RB*Math.sin(th); out[1]=RB*Math.cos(th); out[2]=th; } else { s-=arc; out[0]=XB-s; out[1]=-RB; out[2]=Math.PI; } return out; };
+  const S=suMB(), mov=[], put=(fn,x,y,z,a)=>{ const v0=S.P.length/3; fn(); const c=Math.cos(a),sn=Math.sin(a); for(let v=v0;v<S.P.length/3;v++){ const px=S.P[v*3],pz=S.P[v*3+2],nx=S.N[v*3],nz=S.N[v*3+2];
+      S.P[v*3]=px*c+pz*sn+x; S.P[v*3+1]+=y; S.P[v*3+2]=-px*sn+pz*c+z; S.N[v*3]=nx*c+nz*sn; S.N[v*3+2]=-nx*sn+nz*c; } };
+  const PLATE={white:[.96,.95,.92],blue:[.28,.46,.86],red:[.86,.2,.2],gold:[.95,.74,.24],black:[.14,.13,.15],green:[.3,.62,.36]};
+  const MENU=[['tamago','white'],['maki','white'],['salmon','red'],['akami','red'],['gunkan','gold'],['ebi','blue'],['hamachi','red'],['chutoro','gold'],['ika','blue'],['unagi','black'],['uni','gold'],['salmon','blue'],['chutoro','black']];
+  /* the chain: crescent slats */
+  const nSeam=Math.round(LEN/.09), seam=suHalf(14,true), sc=[(seam[0]+seam[2])/2,(seam[1]+seam[3])/2], bw=o.W/2;
+  for(let i=0;i<nSeam;i++){ const v0=S.P.length/3; for(const [z0,z1] of [[-bw,0],[0,bw]]){ const xa=z0===0?.022:0, xb=z0===0?0:.022; suQ(S,[[xa,.0012,z0],[xa+.007,.0012,z0],[xb+.007,.0012,z1],[xb,.0012,z1]],[0,1,0],[sc,sc,sc,sc],[1,1,1]); }
+    mov.push({v0,v1:S.P.length/3,s0:i*LEN/nSeam}); }
+  /* plates: a slot every ~0.45 m, most of them full */
+  const nSlot=Math.round(LEN/.45), r=rng(1501);
+  for(let i=0;i<nSlot;i++){ if(i%6===5) continue; const v0=S.P.length/3, [kind,pc]=MENU[(i*7+(r()*3|0))%MENU.length];
+    suMPlate(S,PLATE[pc]); suMSushi(S,kind); if(r()<.25){ const v1=S.P.length/3; for(let v=v0;v<v1;v++){ const x=S.P[v*3],z=S.P[v*3+2]; S.P[v*3]=x*.7071+z*.7071; S.P[v*3+2]=-x*.7071+z*.7071; const nx=S.N[v*3],nz=S.N[v*3+2]; S.N[v*3]=nx*.7071+nz*.7071; S.N[v*3+2]=-nx*.7071+nz*.7071; } }
+    mov.push({v0,v1:S.P.length/3,s0:i*LEN/nSlot,y:.0022}); }
+  /* fish in the tank */
+  const fishUV=[suHalf(15,false),suHalf(15,true)], fishV0=S.P.length/3;
+  for(let k=0;k<7;k++){ const v0=S.P.length/3, f=fishUV[k%2], len=k%2?.16:.22, ht=len*.46; suQ(S,[[len/2,-ht/2,0],[-len/2,-ht/2,0],[-len/2,ht/2,0],[len/2,ht/2,0]],[0,0,1],[[f[0],f[1]],[f[2],f[1]],[f[2],f[3]],[f[0],f[3]]],[1,1,1]);
+    mov.push({v0,v1:S.P.length/3,fish:k}); }
+  const nMov=S.P.length/3;
+  /* ---- the still part ---- */
+  /* neta laid out on the ice in the cases */
+  const NT=[4,5,6,7,10,11,9,4,5,6], rice=suCell(2);
+  for(const s of [-1,1]) for(let x=o.XM+.6;x<XB-.5;x+=.32){ const c=NT[Math.abs(Math.round(x*3.1+s))%NT.length], nt=suCell(c);
+    put(()=>{ suMBox(S,0,0,0,.22,.045,.09,[nt,nt,nt,nt,nt,nt],[1,1,1],.95,.92); },x,.935,s*1.01,s*.05); }
+  for(const s of [-1,1]) for(let x=o.XM+1.9;x<XB-.5;x+=2.6) put(()=>{ suMCyl(S,0,0,0,.05,.03,10,suCell(3),suCell(12),[1,1,1]); },x,.935,s*1.015,0);
+  /* on the ledge: stacks of empty plates, the odd full one taken off the belt */
+  const cols=Object.keys(PLATE);
+  o.stools.forEach(([x,z],i)=>{ const s=Math.sign(z)||1; if(x>XB+.05||i%3===2) return; const n=1+(i*7)%5, pc=PLATE[cols[(i*3)%5]];
+    put(()=>{ for(let k=0;k<n;k++){ const v0=S.P.length/3; suMPlate(S,k===n-1?pc:PLATE[cols[(i+k)%5]]); for(let v=v0;v<S.P.length/3;v++) S.P[v*3+1]+=k*.019; } if(i%4===0) suMSushi(S,MENU[i%MENU.length][0],.017+(n-1)*.019); },x-.09,.82,s*1.52,i);
+    if(i%5===1) put(()=>{ suMPlate(S,PLATE.red); suMSushi(S,'salmon'); },x+.1,.82,s*1.5,.4); });
+  /* chefs' side: plates ready to go out, a geta board of nigiri in the round end */
+  for(const s of [-1,1]) for(let x=o.XM+2.6;x<XB-.5;x+=3.1) put(()=>{ for(let k=0;k<6;k++){ const v0=S.P.length/3; suMPlate(S,PLATE[cols[k%5]]); for(let v=v0;v<S.P.length/3;v++) S.P[v*3+1]+=k*.019; } },x,.84,s*.74,0);
+  for(const a of [-.85,.85]){ const gx=XB+.74*Math.cos(a), gz=.74*Math.sin(a);
+    put(()=>{ suMBox(S,0,0,0,.3,.02,.14,suCell(2),[.85,.68,.45]); for(let k=0;k<4;k++) put0(k); },gx,.84,gz,-a); }
+  function put0(k){ const v0=S.P.length/3; suMSushi(S,['akami','salmon','chutoro','ebi'][k],.02); for(let v=v0;v<S.P.length/3;v++){ S.P[v*3]=S.P[v*3]*.5+(k-1.5)*.07; } }
+  /* the rice in the head chef's tub, plates on the back station */
+  put(()=>{ suMCyl(S,0,0,0,.185,.02,14,rice,rice,[1,1,1]); },XB+.66,.925,0,0);
+  put(()=>{ for(let k=0;k<8;k++){ const v0=S.P.length/3; suMPlate(S,PLATE[cols[k%5]]); for(let v=v0;v<S.P.length/3;v++) S.P[v*3+1]+=k*.019; } },12.4,.92,-2.45,0);
+
+  /* ---- into one mesh ---- */
+  const nV=S.P.length/3, LP=new Float32Array(S.P), LN=new Float32Array(S.N), P=new Float32Array(S.P), Nn=new Float32Array(S.N);
+  const geo=new Geo(); geo.P=P; geo.Nm=Nn; geo.T=S.T; geo.C=S.C; geo.I=S.I; geo.noCull=true; geo.groups=[{start:0,count:S.I.length,mi:0}];
+  const node=mk(geo,M(T.sushi,{cut:true,double:true}),g,0,0,0); node.noCollide=true;
+  const tmp=[0,0,0], TK={x0:9.7,x1:13.35,y0:.95,y1:1.7,z0:2.25,z1:2.7};
+  /* positions every frame (at most ~45 times a game-second); normals only for the fish, which turn a lot: a plate's normals keep
+     their build orientation, which only shades a few rims differently in the bend */
+  let last=-1;
+  const update=t=>{ if(Math.abs(t-last)<.022) return; last=t; for(const it of mov){ let x,y,z,a;
+      if(it.fish!==undefined){ const k=it.fish, sp=.18+(k%3)*.05, ph=k*1.9, cxk=(TK.x0+TK.x1)/2, rx=(TK.x1-TK.x0)/2-.15-(k%3)*.25, u=t*sp/rx*.8+ph;
+        x=cxk+Math.cos(u)*rx; z=(TK.z0+TK.z1)/2+Math.sin(u)*.16; y=TK.y0+.1+(k%4)*.17+Math.sin(t*.7+ph)*.04; a=Math.atan2(Math.cos(u)*.16,Math.sin(u)*rx)+Math.PI; }
+      else { path(it.s0+t*.11,tmp); x=tmp[0]; z=tmp[1]; a=tmp[2]; y=BY+(it.y||0); }
+      const c=Math.cos(a),sn=Math.sin(a);
+      for(let v=it.v0;v<it.v1;v++){ const i=v*3,px=LP[i],pz=LP[i+2],nx=LN[i],nz=LN[i+2]; P[i]=px*c+pz*sn+x; P[i+1]=LP[i+1]+y; P[i+2]=-px*sn+pz*c+z; if(v>=fishV0){ Nn[i]=nx*c+nz*sn; Nn[i+2]=-nx*sn+nz*c; } } }
+    if(geo.vao){ gl.bindBuffer(gl.ARRAY_BUFFER,geo.bufs[0]); gl.bufferSubData(gl.ARRAY_BUFFER,0,P,0,nMov*3); gl.bindBuffer(gl.ARRAY_BUFFER,geo.bufs[1]); gl.bufferSubData(gl.ARRAY_BUFFER,fishV0*12,Nn,fishV0*3,(nMov-fishV0)*3); } };
+  update(0); WG.sushi.anim.push(update);
+  WG.sushi.conveyor={verts:nV,moving:nMov}; }
+
+/* =====================================================================================================
+   SUSHI BAR KAITEN · painters, atlas helpers and the moving conveyor (used by src/44d-sushi.js).
+   Two atlases carry almost every small thing in the car: SU.atl (signs, posters, lanterns, the noren,
+   knives, the lucky cat, the tank water...) and SU.sushi (plates, rice, nori and every kind of neta).
+   The belt is ONE mesh: every plate, every piece of sushi, every crescent slat of the chain and the fish in
+   the tank are rewritten into a single vertex buffer each frame, so the whole moving counter is one draw call.
+   ===================================================================================================== */
+let SU_TEX=null;
+const SU_A=192, SU_S=128;                       /* atlas sizes in painter units */
+const SU_R={ /* [x,y,w,h] in SU.atl */
+  poster:[0,0,64,96], price:[64,0,64,48], tags:[128,0,64,48], board:[64,48,64,48], screen:[128,48,32,32],
+  blade:[160,48,32,8], handle:[160,56,32,8], koban:[160,64,16,16], catface:[176,64,16,16],
+  crest:[128,80,16,16], tin:[144,80,16,16], sake:[160,80,16,16], plain:[176,80,16,16],
+  sign:[0,96,96,32], noren:[96,96,96,48], lanR:[0,128,32,48], lanW:[32,128,32,48], wood:[64,128,32,16],
+  water:[64,144,48,48], tuna:[112,144,64,24], yunomi:[112,168,32,24], crate:[144,168,48,24], ice:[176,144,16,24] };
+/* atlas rect -> [u0,v0,u1,v1] (canvas y runs down, texture v runs up) */
+function suUVr(S,r,ins=.6){ const [x,y,w,h]=r; return [(x+ins)/S,1-(y+h-ins)/S,(x+w-ins)/S,1-(y+ins)/S]; }
+const suAt=(k,ins)=>suUVr(SU_A,SU_R[k],ins);
+const suSub=(k,i,n,ins=.6)=>{ const [x,y,w,h]=SU_R[k]; return suUVr(SU_A,[x+w*i/n,y,w/n,h],ins); };   /* the i-th of n vertical slices */
+const suCell=(c,ins=1)=>suUVr(SU_S,[(c%4)*32,(c>>2)*32,32,32],ins);
+const suHalf=(c,bottom,ins=1)=>suUVr(SU_S,[(c%4)*32,(c>>2)*32+(bottom?16:0),32,16],ins);
+
+/* ---------- small painting helpers ---------- */
+function suWood(g,x,y,w,h,a,b,seed,vert=false,lines=10){ const r=rng(seed);
+  if(vert) hfill(g,x,y,w,h,[[0,mix(a,b,.3)],[.5,a],[1,b]]); else vfill(g,x,y,w,h,[[0,a],[1,b]]);
+  for(let i=0;i<lines;i++){ const p=r(), wob=r()*6, ph=r()*6, al=.05+r()*.09; g.strokeStyle=rgba(r()<.7?'#5a3a1a':'#ffffff',r()<.7?al:al*.8); g.lineWidth=.35+r()*.5; g.beginPath();
+    if(vert){ const cx=x+p*w; for(let t=0;t<=h;t+=2) g.lineTo(cx+Math.sin(t*.08+ph)*wob*.25,y+t); }
+    else { const cy=y+p*h; for(let t=0;t<=w;t+=2) g.lineTo(x+t,cy+Math.sin(t*.06+ph)*wob*.25); } g.stroke(); }
+  for(let i=0;i<2;i++) if(r()<.5){ const kx=x+r()*w,ky=y+r()*h; ell(g,kx,ky,vert?.8:1.8,vert?1.8:.8,rgba('#5a3a1a',.28)); ell(g,kx,ky,vert?.35:.8,vert?.8:.35,rgba('#3a2410',.35)); } }
+function suGlyphCol(g,x,y,n,cell,col,seed){ glyphs(g,x,y,n,cell,col,seed,true); }
+
+function suTex(){ if(SU_TEX) return SU_TEX; const T={};
+  /* dark charcoal stone, 60 cm tiles, each its own tone, polished with a soft sheen; 1.2 m per repeat */
+  T.floor=P2(64,64,(g,w,h)=>{ const r=rng(901);
+    for(let ty=0;ty<2;ty++) for(let tx=0;tx<2;tx++){ const x=tx*32,y=ty*32,b=mix('#45403a','#34302c',r());
+      vfill(g,x,y,32,32,[[0,mix(b,'#ffffff',.05)],[1,mix(b,'#000000',.06)]]);
+      for(let i=0;i<26;i++) ell(g,x+2+r()*28,y+2+r()*28,1+r()*4,.4+r()*1.4,rgba(r()>.5?'#ffffff':'#000000',.035));
+      for(let i=0;i<10;i++) R(g,rgba('#d8d0c0',.12),x+1+r()*30,y+1+r()*30,.6,.6);
+      g.strokeStyle=rgba('#ffffff',.06); g.lineWidth=2.5; g.beginPath(); g.moveTo(x+4,y+30); g.lineTo(x+30,y+6); g.stroke();
+      R(g,'#1a1816',x,y,32,.9); R(g,'#1a1816',x,y,.9,32); R(g,rgba('#ffffff',.1),x+.9,y+.9,31,.5); R(g,rgba('#ffffff',.06),x+.9,y+.9,.5,31); R(g,rgba('#000000',.18),x+.9,y+31,31,1); R(g,rgba('#000000',.14),x+31,y+.9,1,31); } },5,901);
+  /* duckboard (sunoko) for the chefs' well: hinoki slats with dark gaps, along x */
+  T.duck=P2(32,32,(g,w,h)=>{ R(g,'#1a1410',0,0,w,h); for(let k=0;k<4;k++){ suWood(g,0,k*8+1,w,6,'#d8b884','#b8935e',910+k,false,4); R(g,rgba('#ffffff',.25),0,k*8+1,w,.5); R(g,rgba('#000000',.25),0,k*8+6.5,w,.5); }
+    for(let k=0;k<4;k++) ell(g,6+k%2*20,k*8+4,.5,.5,'#5a4a3a'); },5,910);
+  /* pale hinoki, long grain along u, a plank seam per repeat and a painted sheen */
+  T.hinoki=P2(64,32,(g,w,h)=>{ suWood(g,0,0,w,16,'#ecd6ac','#dcc090',920,false,9); suWood(g,0,16,w,16,'#e8d0a2','#d8ba86',921,false,9);
+    R(g,rgba('#ffffff',.18),0,3,w,2); R(g,rgba('#ffffff',.12),0,19,w,2); R(g,rgba('#7a5a32',.5),0,15.5,w,.6); R(g,rgba('#7a5a32',.4),w-.6,0,.6,h); },4,920);
+  /* vertical hinoki slats (walls under the windows, the counter fronts): grooved, rounded, light from above */
+  T.slat=P2(64,64,(g,w,h)=>{ R(g,'#2a1c12',0,0,w,h); for(let k=0;k<8;k++){ const x=k*8+.8;
+      suWood(g,x,0,6.4,h,mix('#e2c494','#d2b07a',(k*37%10)/10),'#b89058',930+k,true,4); hfill(g,x,0,6.4,h,[[0,rgba('#000000',.18)],[.25,rgba('#ffffff',.12)],[.6,rgba('#ffffff',0)],[1,rgba('#000000',.22)]]); }
+    vfill(g,0,0,w,h,[[0,rgba('#ffffff',.1)],[.5,rgba('#000000',0)],[1,rgba('#000000',.18)]]); },4,930);
+  /* shoji: warm lit paper in a dark kumiko lattice */
+  T.shoji=P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#f6ecd4'],[1,'#ecdcb8']]); radial(g,16,16,20,[[0,rgba('#fff8e8',.6)],[1,rgba('#fff8e8',0)]]);
+    for(let i=0;i<4;i++){ R(g,'#4a3422',i*8,0,1.2,h); R(g,'#4a3422',0,i*8,w,1.2); R(g,rgba('#ffffff',.25),i*8+1.2,0,.4,h); }
+    for(let y=0;y<h;y+=8) for(let x=0;x<w;x+=8){ R(g,rgba('#a88a5a',.12),x+1.2,y+1.2,6.8,.6); } },3,940);
+  /* sumi-indigo plaster for the piers and end walls: trowel marks, a soft top light */
+  T.pier=P2(64,64,(g,w,h)=>{ R(g,'#262a3a',0,0,w,h); const r=rng(950); for(let i=0;i<60;i++){ const x=r()*w,y=r()*h; ell(g,x,y,3+r()*7,1+r()*2.5,rgba(r()>.5?'#3a3e54':'#1a1c28',.35)); }
+    for(let i=0;i<30;i++){ g.strokeStyle=rgba('#4a4e66',.18); g.lineWidth=.6; g.beginPath(); const x=r()*w,y=r()*h; g.moveTo(x,y); g.quadraticCurveTo(x+5,y-2,x+10,y+1); g.stroke(); } },6,950);
+  /* ceiling: dark boards, pale battens across the car */
+  T.ceil=P2(64,64,(g,w,h)=>{ suWood(g,0,0,w,h,'#3a2c22','#2c2018',960,false,10); for(let k=0;k<4;k++){ const x=k*16+6; R(g,rgba('#000000',.35),x-1.5,0,1.5,h); suWood(g,x,0,4,h,'#c8a878','#a8885a',961+k,true,3); R(g,rgba('#ffffff',.2),x,0,.6,h); R(g,rgba('#000000',.25),x+3.4,0,.6,h); } },5,960);
+  /* the underside of the counter roof: dark boards over rafters (the rafters are modelled; this is the boarding) */
+  T.roof=P2(32,32,(g,w,h)=>{ for(let k=0;k<4;k++) suWood(g,0,k*8,w,8,'#4a3424','#3a281a',970+k,false,3); for(let k=0;k<4;k++) R(g,rgba('#000000',.4),0,k*8,w,.6); },5,970);
+  /* brushed stainless: horizontal brushing, a painted bevel at the top, darker below */
+  T.steel=P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#d6dadc'],[.5,'#b2b8bc'],[1,'#8e949a']]); const r=rng(980); for(let y=0;y<h;y+=.5) R(g,rgba(r()>.5?'#ffffff':'#000000',.04+r()*.05),0,y,w,.5);
+    g.strokeStyle=rgba('#ffffff',.25); g.lineWidth=3; g.beginPath(); g.moveTo(-4,h); g.lineTo(14,0); g.stroke(); g.lineWidth=1.2; g.beginPath(); g.moveTo(6,h); g.lineTo(22,0); g.stroke(); },3,980);
+  /* stainless doors under the counter on the chefs' side: panels with pulls */
+  T.doors=P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8ccd0'],[1,'#8a9096']]); const r=rng(985); for(let y=0;y<h;y+=.5) R(g,rgba(r()>.5?'#ffffff':'#000000',.04),0,y,w,.5);
+    for(const x of [0,16]){ R(g,'#4a4e54',x,0,.8,h); R(g,rgba('#ffffff',.35),x+.8,0,.5,h); R(g,'#5a5e64',x+3,5,10,1.4); R(g,'#e8ecee',x+3,5,10,.5); } R(g,'#3a3e44',0,h-3,w,3); },3,985);
+  /* indigo stool cushions with white sashiko stitching */
+  T.fab=P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#2a3a72'],[1,'#1e2a58']]); const r=rng(990); for(let y=0;y<h;y+=1) R(g,rgba(r()>.5?'#ffffff':'#000000',.03),0,y,w,.5);
+    g.fillStyle=rgba('#e8e8f0',.8); for(let y=4;y<h;y+=8) for(let x=0;x<w;x+=3) g.fillRect(x,y,1.6,.5); for(let x=4;x<w;x+=8) for(let y=0;y<h;y+=3) g.fillRect(x,y,.5,1.6); },4,990);
+  /* the exit door: black lacquer frame, frosted glass with the house crest, slatted kick panel */
+  T.door=P2(32,64,(g,w,h)=>{ R(g,'#16120e',0,0,w,h); R(g,rgba('#ffffff',.12),1,1,w-2,.6);
+    vfill(g,4,6,24,30,[[0,'#d8e2e6'],[1,'#a8b8c0']]); ell(g,16,18,6.5,6.5,rgba('#2a3a5a',.75)); ell(g,16,18,5,5,'#c8d4da'); g.strokeStyle='#2a3a5a'; g.lineWidth=1; g.beginPath(); g.moveTo(11.5,19); g.quadraticCurveTo(14,15,16,19); g.quadraticCurveTo(18,23,20.5,18); g.stroke();
+    R(g,rgba('#ffffff',.3),6,8,1,26); for(let k=0;k<5;k++) R(g,'#c8a878',4+k*5,40,4,20); R(g,'#3a2a1e',4,39,24,1); R(g,'#e8c860',25,30,1.2,6); },3,1000);
+  /* painted reflection streaks for every pane of glass (alpha-cut, unlit) */
+  T.streak=P2(64,64,(g,w,h)=>{ g.lineCap='round'; for(const [x,wd,c] of [[10,1.0,'#6a98b4'],[13.5,.45,'#8ab8d0'],[44,.6,'#5a88a4']]){ g.strokeStyle=c; g.lineWidth=wd; g.beginPath(); g.moveTo(x,h*.85); g.lineTo(x+14,h*.15); g.stroke(); } },0,1010);
+
+  /* ---------- the sign atlas ---------- */
+  T.atl=P2(SU_A,SU_A,(g)=>{ const r=rng(1100), at=(k)=>SU_R[k];
+    { const [x,y,w,h]=at('poster'); vfill(g,x,y,w,h,[[0,'#f6eedc'],[1,'#e6d8b8']]); R(g,'#2a2420',x,y,w,1); R(g,'#2a2420',x,y+h-1,w,1); R(g,'#2a2420',x,y,1,h); R(g,'#2a2420',x+w-1,y,1,h);
+      vfill(g,x+3,y+3,w-6,15,[[0,'#c8242a'],[1,'#9a1418']]); text(g,'MAGURO',x+(w-textW('MAGURO',2))/2+1,y+6,'#f6eedc',2);
+      /* the tuna with its cuts */
+      const tx=x+6,ty=y+44; g.fillStyle='#22345a'; g.beginPath(); g.moveTo(tx,ty); g.quadraticCurveTo(tx+20,ty-16,tx+44,ty-6); g.lineTo(tx+50,ty-12); g.lineTo(tx+48,ty); g.lineTo(tx+50,ty+12); g.lineTo(tx+44,ty+6); g.quadraticCurveTo(tx+20,ty+16,tx,ty); g.fill();
+      g.fillStyle='#c8ccd4'; g.beginPath(); g.moveTo(tx+2,ty+1); g.quadraticCurveTo(tx+22,ty+14,tx+43,ty+5); g.quadraticCurveTo(tx+22,ty+6,tx+2,ty+1); g.fill();
+      for(let k=0;k<5;k++) R(g,'#f2c230',tx+33+k*2.2,ty-6+k*.3,1,1.2); ell(g,tx+5,ty-1,1.4,1.4,'#f6eedc'); ell(g,tx+5,ty-1,.7,.7,'#101010');
+      g.strokeStyle='#c8242a'; g.lineWidth=.6; g.setLineDash([1.5,1]); for(const cx of [14,24,34]){ g.beginPath(); g.moveTo(tx+cx,ty-12); g.lineTo(tx+cx,ty+12); g.stroke(); } g.setLineDash([]);
+      text(g,'OTORO',x+4,y+60,'#c8242a',1); text(g,'CHUTORO',x+30,y+60,'#2a2420',1); text(g,'AKAMI',x+4,y+67,'#2a2420',1);
+      for(const [cx,c] of [[x+40,'#f0a0a8'],[x+48,'#d84050'],[x+56,'#9a1020']]){ R(g,c,cx-3,y+67,6,5); R(g,rgba('#ffffff',.5),cx-3,y+67,6,1); }
+      for(let k=0;k<5;k++) suGlyphCol(g,x+6+k*7,y+75,3,5,'#2a2420',1101+k); R(g,'#c8242a',x+48,y+80,11,11); R(g,'#f6eedc',x+50,y+82,7,7); R(g,'#c8242a',x+51.5,y+83.5,4,4); }
+    { const [x,y,w,h]=at('price'); suWood(g,x,y,w,h,'#4a3424','#34241a',1110,false,6); R(g,'#1a120c',x,y,w,1.5); R(g,'#1a120c',x,y+h-1.5,w,1.5); R(g,'#1a120c',x,y,1.5,h); R(g,'#1a120c',x+w-1.5,y,1.5,h);
+      text(g,'PER PLATE',x+(w-textW('PER PLATE'))/2,y+4,'#f2e6c8',1);
+      const cols=['#f4f2ec','#3a6ad8','#d8302a','#f0c040','#1a1a1e','#3a9a4a'], pr=['120','180','260','380','480','580'];
+      for(let i=0;i<6;i++){ const cx=x+11+(i%3)*21,cy=y+17+(i/3|0)*15; ell(g,cx,cy+1,8,3.4,rgba('#000000',.4)); ell(g,cx,cy,8,3.4,cols[i]); ell(g,cx,cy,5.2,2.1,'#f8f6f0'); ell(g,cx,cy-.6,5.2,1.2,rgba('#ffffff',.6)); text(g,pr[i],cx-5,cy+5,'#f2e6c8',1); } }
+    { const [x,y,w,h]=at('tags'); for(let k=0;k<8;k++){ const tx=x+k*8; suWood(g,tx,y,8,h,mix('#f0dcb0','#e2c898',(k*3%5)/5),'#c8a874',1120+k,true,2); vfill(g,tx,y,8,h,[[0,rgba('#ffffff',.15)],[1,rgba('#000000',.12)]]);
+      R(g,'#7a5a3a',tx,y,.6,h); R(g,'#7a5a3a',tx+7.4,y,.6,h); ell(g,tx+4,y+3,1,1,'#2a1c12'); suGlyphCol(g,tx+1.5,y+7,5,5,'#1a1410',1130+k); suGlyphCol(g,tx+2,y+35,2,4,'#b81e24',1140+k); } }
+    { const [x,y,w,h]=at('board'); suWood(g,x,y,w,h,'#6a4a2a','#4a321c',1150,false,4); vfill(g,x+3,y+3,w-6,h-6,[[0,'#24302a'],[1,'#1a241e']]); for(let i=0;i<14;i++) R(g,rgba('#ffffff',.04),x+4+r()*50,y+4+r()*36,6+r()*8,1);
+      text(g,'TODAY',x+6,y+6,'#f2f0e6',1); R(g,'#f2f0e6',x+6,y+12,22,.5);
+      const fish=(cx,cy,c)=>{ g.strokeStyle=c; g.lineWidth=.7; g.beginPath(); g.ellipse(cx,cy,6,2.6,0,0,Math.PI*2); g.moveTo(cx+6,cy); g.lineTo(cx+9,cy-2.5); g.lineTo(cx+9,cy+2.5); g.closePath(); g.stroke(); ell(g,cx-3.5,cy-.5,.5,.5,c); };
+      fish(x+44,y+10,'#f2a0b0'); fish(x+44,y+22,'#a0d8f2'); fish(x+44,y+34,'#f2e080');
+      for(let k=0;k<4;k++){ glyphs(g,x+6,y+16+k*7,5,5,['#f2f0e6','#f2a0b0','#f2e080','#a0d8f2'][k],1160+k,false); } }
+    { const [x,y,w,h]=at('screen'); vfill(g,x,y,w,h,[[0,'#f2f6fa'],[1,'#d8e2ec']]); R(g,'#c8242a',x,y,w,6); text(g,'ORDER',x+2,y+1,'#ffffff',1);
+      for(let i=0;i<6;i++){ const bx=x+2+(i%3)*10,by=y+8+(i/3|0)*10; R(g,'#ffffff',bx,by,9,9); R(g,'#b8c4d0',bx,by+8.4,9,.6); ell(g,bx+4.5,by+4,3.4,1.6,['#e8a070','#d8302a','#f0c040','#f4f2ec','#f07a3a','#2a2a2a'][i]); ell(g,bx+4.5,by+5.2,3,1,'#f8f6f0'); }
+      R(g,'#2a9a4a',x+2,y+28,w-4,3); }
+    { const [x,y,w,h]=at('blade'); vfill(g,x,y,w,h,[[0,'#6a7078'],[.45,'#c8ced4'],[.55,'#e8eef2'],[1,'#f8fcff']]); g.strokeStyle=rgba('#ffffff',.6); g.lineWidth=.5; g.beginPath(); for(let t=0;t<=w;t+=1) g.lineTo(x+t,y+5+Math.sin(t*.9)*.6); g.stroke(); R(g,'#3a3e44',x,y,w,.6); }
+    { const [x,y,w,h]=at('handle'); suWood(g,x,y,w,h,'#e2d4b0','#c8b48a',1170,false,3); R(g,'#141414',x,y,6,h); R(g,rgba('#ffffff',.25),x,y+1,6,.6); R(g,'#2a2420',x+w-1,y,1,h); }
+    { const [x,y,w,h]=at('koban'); R(g,'#c89a2a',x,y,w,h); ell(g,x+8,y+8,6,7.5,'#f2cc50'); ell(g,x+8,y+8,4.6,6.2,'#e0b038'); for(let k=0;k<5;k++) R(g,rgba('#a87a1a',.6),x+4,y+3+k*2.4,8,.5); suGlyphCol(g,x+6.5,y+4,2,3,'#7a5410',1180); }
+    { const [x,y,w,h]=at('catface'); R(g,'#f6f2ea',x,y,w,h); radial(g,x+8,y+9,8,[[0,'#ffffff'],[1,'#e8e2d4']]);
+      g.strokeStyle='#1a1410'; g.lineWidth=.9; g.beginPath(); g.arc(x+4.6,y+7.5,1.6,Math.PI*1.1,Math.PI*1.9); g.stroke(); g.beginPath(); g.arc(x+11.4,y+7.5,1.6,Math.PI*1.1,Math.PI*1.9); g.stroke();
+      poly(g,[[x+7,y+9.5],[x+9,y+9.5],[x+8,y+10.6]],'#e86a7a'); g.lineWidth=.5; g.beginPath(); g.moveTo(x+8,y+10.6); g.quadraticCurveTo(x+7,y+12,x+6,y+11.2); g.moveTo(x+8,y+10.6); g.quadraticCurveTo(x+9,y+12,x+10,y+11.2); g.stroke();
+      g.strokeStyle='#5a4a3a'; g.lineWidth=.35; for(const s of [-1,1]) for(let k=0;k<3;k++){ g.beginPath(); g.moveTo(x+8+s*3,y+10.5+k*.6); g.lineTo(x+8+s*7.5,y+9.5+k*1.2); g.stroke(); }
+      ell(g,x+3.5,y+10.5,1.4,.8,rgba('#f08a9a',.5)); ell(g,x+12.5,y+10.5,1.4,.8,rgba('#f08a9a',.5)); }
+    { const [x,y,w,h]=at('crest'); R(g,'#3a3c42',x,y,w,h); radial(g,x+8,y+8,8,[[0,'#6a6e78'],[.7,'#4a4e58'],[1,'#2a2c32']]); g.strokeStyle='#2a2c32'; g.lineWidth=1; g.beginPath(); g.arc(x+8,y+8,6,0,Math.PI*2); g.stroke();
+      for(let k=0;k<3;k++){ const a=k*Math.PI*2/3; ell(g,x+8+Math.cos(a)*2.6,y+8+Math.sin(a)*2.6,1.5,1.5,'#7a7e88'); ell(g,x+8+Math.cos(a+.6)*3.4,y+8+Math.sin(a+.6)*3.4,.7,.7,'#7a7e88'); } R(g,rgba('#ffffff',.25),x+3,y+3,5,.6); }
+    { const [x,y,w,h]=at('tin'); vfill(g,x,y,w,h,[[0,'#3a7a3a'],[1,'#24542a']]); R(g,'#e8c860',x,y+4,w,8); suGlyphCol(g,x+5.5,y+4.5,2,3.6,'#24542a',1190); R(g,rgba('#ffffff',.3),x+2,y,1,h); }
+    { const [x,y,w,h]=at('sake'); hfill(g,x,y,w,h,[[0,'#0e2a1a'],[.5,'#2a5a3a'],[.6,'#5a8a6a'],[1,'#0e2a1a']]); R(g,'#f4f0e4',x,y+4,w,8); suGlyphCol(g,x+6,y+4.5,2,3.5,'#1a1410',1195); R(g,'#c8242a',x+1,y+9,2,2); R(g,'#c8a040',x,y+4,w,.5); R(g,'#c8a040',x,y+11.5,w,.5); R(g,'#e8d8a0',x,y+1,w,1.5); }
+    { const [x,y,w,h]=at('plain'); vfill(g,x,y,w,h,[[0,'#f4f0e6'],[1,'#e2dccc']]); }
+    { const [x,y,w,h]=at('sign'); suWood(g,x,y,w,h,'#e8cc98','#c8a46c',1200,false,10); R(g,rgba('#ffffff',.25),x,y+1,w,1); R(g,'#5a3e22',x,y,w,.8); R(g,'#5a3e22',x,y+h-.8,w,.8); R(g,'#5a3e22',x,y,.8,h); R(g,'#5a3e22',x+w-.8,y,.8,h);
+      const s='KAITEN', tw=textW(s,3), tx=x+(w-tw)/2; text(g,s,tx+.6,y+6.6,rgba('#ffffff',.5),3); text(g,s,tx,y+6,'#1a120a',3);
+      glyphs(g,x+18,y+24,10,6,'#5a3e22',1205,false); R(g,'#b81e24',x+w-12,y+4,8,8); R(g,'#e8cc98',x+w-10.5,y+5.5,5,5); R(g,'#b81e24',x+w-9.5,y+6.5,3,3); }
+    { const [x,y,w,h]=at('noren'); vfill(g,x,y,w,h,[[0,'#24326a'],[1,'#18224a']]); for(let yy=y;yy<y+h;yy+=1) R(g,rgba('#000000',(yy%2)?.06:0),x,yy,w,.5); for(let k=0;k<5;k++) R(g,rgba('#000000',.25),x+k*w/4-.5,y,1,h);
+      const cx=x+w/2,cy=y+20; ell(g,cx,cy,11,11,'#f2f0e8'); ell(g,cx,cy,9,9,'#24326a'); ell(g,cx,cy,7.5,7.5,'#f2f0e8'); g.fillStyle='#24326a'; g.beginPath(); g.moveTo(cx-7.5,cy+1); g.quadraticCurveTo(cx-3,cy-5,cx,cy+1); g.quadraticCurveTo(cx+3,cy+6,cx+7.5,cy); g.lineTo(cx+7.5,cy+8); g.lineTo(cx-7.5,cy+8); g.fill();
+      for(const gx of [x+8,x+18,x+w-14,x+w-24]) suGlyphCol(g,gx,y+6,5,6,'#f2f0e8',1210+gx|0); R(g,'#10183a',x,y+h-3,w,3); R(g,'#10183a',x,y,w,2); }
+    { for(const [k,base,ink] of [['lanR','#d0202a','#1a0a08'],['lanW','#f4ecd8','#b81e24']]){ const [x,y,w,h]=at(k); hfill(g,x,y,w,h,[[0,mix(base,'#000000',.25)],[.5,mix(base,'#ffffff',.18)],[1,mix(base,'#000000',.25)]]);
+      for(let yy=y+5;yy<y+h-5;yy+=3.2) R(g,rgba('#000000',.18),x,yy,w,.6); for(let yy=y+5;yy<y+h-5;yy+=3.2) R(g,rgba('#ffffff',.14),x,yy+.6,w,.4);
+      suGlyphCol(g,x+w/2-5,y+10,3,10,ink,k.length*7); suGlyphCol(g,x+2,y+14,2,7,rgba(ink==='#1a0a08'?'#1a0a08':'#b81e24',.8),k.length*9); R(g,'#16100c',x,y,w,4.5); R(g,'#16100c',x,y+h-4.5,w,4.5); R(g,'#c8a040',x,y+4.5,w,.5); R(g,'#c8a040',x,y+h-5,w,.5); } }
+    { const [x,y,w,h]=at('wood'); suWood(g,x,y,w,h,'#e2c490','#c8a46c',1230,false,5); }
+    { const [x,y,w,h]=at('water'); vfill(g,x,y,w,h,[[0,'#3ab0d8'],[.6,'#1a6a98'],[1,'#0e3a5a']]);
+      for(let k=0;k<5;k++){ g.fillStyle=rgba('#d8f8ff',.12); g.beginPath(); const sx=x+4+k*10; g.moveTo(sx,y); g.lineTo(sx+6,y); g.lineTo(sx+14,y+h); g.lineTo(sx+6,y+h); g.fill(); }
+      for(let i=0;i<30;i++){ g.strokeStyle=rgba('#e8fcff',.35); g.lineWidth=.4; g.beginPath(); const cx=x+r()*w,cy=y+r()*14; g.ellipse(cx,cy,1.5+r()*2,.6+r()*.6,0,0,Math.PI*2); g.stroke(); }
+      for(let k=0;k<7;k++){ g.strokeStyle=k%2?'#2a7a3a':'#3a9a4a'; g.lineWidth=1.3; g.beginPath(); const sx=x+3+k*7; g.moveTo(sx,y+h); for(let t=0;t<18;t+=2) g.lineTo(sx+Math.sin(t*.5+k)*1.5,y+h-t); g.stroke(); }
+      for(let k=0;k<6;k++) ell(g,x+r()*w,y+h-1-r()*3,3+r()*4,2+r()*2,['#3a4048','#4a5058','#2a3038'][k%3]); for(let i=0;i<12;i++) ell(g,x+r()*w,y+r()*h*.8,.6,.6,rgba('#ffffff',.6)); }
+    { const [x,y,w,h]=at('tuna'); /* u runs round the body: the dark back in the middle, the silver belly at both edges */
+      hfill(g,x,y,w,h,[[0,'#d8dce4'],[.2,'#a8b0bc'],[.36,'#3a5078'],[.5,'#14203a'],[.64,'#3a5078'],[.8,'#a8b0bc'],[1,'#d8dce4']]);
+      R(g,rgba('#e8f0ff',.35),x+w*.3,y,1,h); R(g,rgba('#e8f0ff',.35),x+w*.7,y,1,h); for(let k=0;k<8;k++) ell(g,x+w*.25+r()*w*.5,y+r()*h,1.5,.6,rgba('#5a7aa8',.4)); vfill(g,x,y,w,4,[[0,rgba('#202830',.6)],[1,rgba('#202830',0)]]); }
+    { const [x,y,w,h]=at('yunomi'); vfill(g,x,y,w,h,[[0,'#b8c8b0'],[1,'#8aa088']]); for(let k=0;k<3;k++) suGlyphCol(g,x+3+k*10,y+3,3,6,'#3a2a1e',1240+k); R(g,'#e8ece0',x,y,w,1.4); R(g,'#5a4a3a',x,y+h-1.5,w,1.5); }
+    { const [x,y,w,h]=at('crate'); vfill(g,x,y,w,h,[[0,'#f6f6f2'],[1,'#dcdcd6']]); for(let i=0;i<40;i++) ell(g,x+r()*w,y+r()*h,.6,.6,rgba('#b8b8b0',.4)); R(g,'#2a4aa8',x+4,y+5,24,10); glyphs(g,x+6,y+7,4,6,'#f6f6f2',1250,false); R(g,'#c8242a',x+32,y+5,10,10); text(g,'A1',x+33,y+8,'#f6f6f2',1); R(g,'#2a4aa8',x,y+h-3,w,1); }
+    { const [x,y,w,h]=at('ice'); R(g,'#e6f2f6',x,y,w,h); for(let i=0;i<40;i++){ ell(g,x+r()*w,y+r()*h,1+r()*1.5,.8+r(),rgba(r()>.5?'#ffffff':'#a8c8d8',.6)); } }
+  },0,1100);
+
+  /* ---------- the sushi atlas: 4 x 4 cells of 32 ---------- */
+  T.sushi=P2(SU_S,SU_S,(g)=>{ const r=rng(1300), C=(c)=>[(c%4)*32,(c>>2)*32];
+    { const [x,y]=C(0); radial(g,x+16,y+16,22,[[0,'#ffffff'],[.6,'#f2f0ea'],[1,'#d8d4cc']]); ell(g,x+11,y+10,6,3,rgba('#ffffff',.9)); g.strokeStyle=rgba('#b8b4ac',.6); g.lineWidth=.6; g.beginPath(); g.arc(x+16,y+16,13,0,Math.PI*2); g.stroke(); }
+    { const [x,y]=C(1); vfill(g,x,y,32,32,[[0,'#ffffff'],[1,'#d8d8d8']]); for(let k=0;k<8;k++){ g.strokeStyle=rgba('#ffffff',.7); g.lineWidth=1; g.beginPath(); g.arc(x+k*4+2,y+20,2,Math.PI,0); g.stroke(); } R(g,rgba('#000000',.15),x,y+26,32,6); R(g,rgba('#ffffff',.5),x,y+6,32,1.5); }
+    { const [x,y]=C(2); R(g,'#ece6d6',x,y,32,32); for(let i=0;i<110;i++){ const gx=x+r()*32,gy=y+r()*32; ell(g,gx+.3,gy+.3,1.5,.8,rgba('#b8ae98',.45)); ell(g,gx,gy,1.4,.7,r()>.3?'#fbf8f0':'#f2ecdc'); } }
+    { const [x,y]=C(3); R(g,'#18201a',x,y,32,32); for(let i=0;i<80;i++) R(g,rgba(r()>.5?'#2e4a2a':'#0a100a',.7),x+r()*32,y+r()*32,1.5+r()*2,.5); R(g,rgba('#7a9a8a',.18),x,y+8,32,3); }
+    const neta=(c,a,b,fn)=>{ const [x,y]=C(c); vfill(g,x,y,32,32,[[0,a],[1,b]]); if(fn) fn(x,y); g.fillStyle=rgba('#ffffff',.35); g.beginPath(); g.moveTo(x+2,y+4); g.lineTo(x+30,y+2); g.lineTo(x+30,y+6); g.lineTo(x+2,y+9); g.fill(); };
+    neta(4,'#c8182c','#8a0c1e',(x,y)=>{ for(let k=0;k<6;k++){ g.strokeStyle=rgba('#e8586a',.4); g.lineWidth=.6; g.beginPath(); g.moveTo(x+k*6,y+32); g.quadraticCurveTo(x+k*6+6,y+16,x+k*6+2,y); g.stroke(); } });
+    neta(5,'#f68a44','#e0682a',(x,y)=>{ for(let k=-2;k<7;k++){ g.strokeStyle=rgba('#fff0e0',.85); g.lineWidth=1.3; g.beginPath(); g.moveTo(x+k*6,y+32); g.lineTo(x+k*6+14,y); g.stroke(); } });
+    neta(6,'#f0909a','#d86a78',(x,y)=>{ for(let k=0;k<7;k++){ g.strokeStyle=rgba('#fff4f4',.7); g.lineWidth=.8; g.beginPath(); g.moveTo(x,y+4+k*4.5); for(let t=0;t<=32;t+=4) g.lineTo(x+t,y+4+k*4.5+Math.sin(t*.4+k)*1.5); g.stroke(); } });
+    neta(7,'#f6e2d2','#e8c8b4',(x,y)=>{ vfill(g,x,y+22,32,10,[[0,rgba('#c84a4a',0)],[.5,'#c85a5a'],[1,'#a83a3a']]); });
+    neta(8,'#fbf4ec','#f0e0d0',(x,y)=>{ for(let k=0;k<5;k++){ R(g,'#f05a2a',x,y+3+k*6.5,32,2.6); R(g,rgba('#ffb08a',.6),x,y+5.6+k*6.5,32,1); } });
+    neta(9,'#fadc5a','#ecc038',(x,y)=>{ for(let k=0;k<6;k++) R(g,rgba('#d8a020',.5),x,y+4+k*5,32,.7); R(g,'#c88a2a',x,y,32,2); });
+    neta(10,'#f8f8f4','#e8ecf0',(x,y)=>{ g.strokeStyle=rgba('#c8d0d8',.8); g.lineWidth=.5; for(let k=-4;k<8;k++){ g.beginPath(); g.moveTo(x+k*5,y); g.lineTo(x+k*5+12,y+32); g.stroke(); g.beginPath(); g.moveTo(x+k*5+12,y); g.lineTo(x+k*5,y+32); g.stroke(); } });
+    neta(11,'#7a4220','#4a2410',(x,y)=>{ for(let k=0;k<4;k++){ R(g,rgba('#2a1206',.6),x+3+k*8,y,2.4,32); } for(let i=0;i<18;i++) ell(g,x+r()*32,y+r()*32,.7,.4,'#f2e8c8'); R(g,rgba('#e8a050',.4),x,y+10,32,2); });
+    { const [x,y]=C(12); R(g,'#18201a',x,y,32,32); for(let i=0;i<34;i++){ const bx=x+2+r()*28,by=y+2+r()*28; ell(g,bx,by,2.4,2.4,'#c83a10'); ell(g,bx,by,2,2,'#ff6a1e'); ell(g,bx-.7,by-.7,.6,.6,'#fff0d0'); } }
+    { const [x,y]=C(13); R(g,'#18201a',x,y,32,32); ell(g,x+16,y+16,14,14,'#18201a'); ell(g,x+16,y+16,12.5,12.5,'#f6f2e6'); for(let i=0;i<40;i++){ const a=r()*Math.PI*2,d=5+r()*7; ell(g,x+16+Math.cos(a)*d,y+16+Math.sin(a)*d,1,.6,'#e2dccc'); } ell(g,x+16,y+16,5,5,'#c8182c'); ell(g,x+15,y+15,1.5,1,rgba('#ffffff',.4)); }
+    { const [x,y]=C(14); vfill(g,x,y,32,16,[[0,'#e8e6e0'],[1,'#c8c4bc']]); vfill(g,x,y+16,32,16,[[0,'#5a5852'],[1,'#3a3832']]); }
+    { const [x,y]=C(15); for(const [oy,body,belly,fin] of [[0,'#e0504a','#f8c8b8','#c83a3a'],[16,'#5a7898','#e8eef2','#3a5878']]){
+        g.fillStyle=body; g.beginPath(); g.moveTo(x+2,y+oy+8); g.quadraticCurveTo(x+12,y+oy+1,x+24,y+oy+7); g.lineTo(x+30,y+oy+3); g.lineTo(x+29,y+oy+8); g.lineTo(x+30,y+oy+13); g.lineTo(x+24,y+oy+9); g.quadraticCurveTo(x+12,y+oy+15,x+2,y+oy+8); g.fill();
+        g.fillStyle=belly; g.beginPath(); g.moveTo(x+3,y+oy+9); g.quadraticCurveTo(x+12,y+oy+14,x+23,y+oy+9); g.quadraticCurveTo(x+12,y+oy+11,x+3,y+oy+9); g.fill();
+        poly(g,[[x+10,y+oy+4],[x+16,y+oy+1],[x+18,y+oy+5]],fin); ell(g,x+6,y+oy+7,1.2,1.2,'#ffffff'); ell(g,x+6,y+oy+7,.6,.6,'#101010'); R(g,rgba('#ffffff',.4),x+8,y+oy+5,10,.5); } }
+  },0,1300);
+  return SU_TEX=T; }
+
+/* ---------- geometry with atlas UVs ---------- */
+/* a box (base at y=0) whose faces map into atlas rects: rects is one rect or [+x,-x,+y,-y,+z,-z] */
+function suBox(w,h,d,rects,o){ const g=box(w,h,d,Object.assign({at:[0,h/2,0]},o||{})); const many=Array.isArray(rects[0]);
+  for(let f=0;f<6;f++){ const r=many?(rects[f]||rects[6]||rects[0]):rects; for(let v=f*4;v<f*4+4;v++){ g.T[v*2]=r[0]+g.T[v*2]*(r[2]-r[0]); g.T[v*2+1]=r[1]+g.T[v*2+1]*(r[3]-r[1]); } } return g; }
+function suRemap(g,r){ for(let i=0;i<g.T.length;i+=2){ g.T[i]=r[0]+g.T[i]*(r[2]-r[0]); g.T[i+1]=r[1]+g.T[i+1]*(r[3]-r[1]); } return g; }
+function suPlane(w,h,r){ return suRemap(plane(w,h),r); }
+/* a box with UVs in world units (tu x tv metres per repeat) on every face, so long counters never stretch */
+function suBoxW(w,h,d,tu=1,tv=tu){ const g=box(w,h,d,{at:[0,h/2,0]}),S={w,h,d};
+  FACES.forEach(([n,U,V,ku,kv],f)=>{ for(let v=f*4;v<f*4+4;v++){ g.T[v*2]*=S[ku]/tu; g.T[v*2+1]*=S[kv]/tv; } }); return g; }
+function suBW(par,m,x,y,z,w,h,d,tu,tv,ry=0){ return mk(suBoxW(w,h,d,tu,tv),m,par,x,y,z,0,ry,0); }
+/* flat ring sector (top face) and a curved wall, for the round end of the counter; angles from +x toward +z */
+function suRingTop(r0,r1,y,a0,a1,seg,tile=1,down=false){ const g=new Geo();
+  for(let i=0;i<=seg;i++){ const a=a0+(a1-a0)*i/seg,c=Math.cos(a),s=Math.sin(a); for(const r of [r0,r1]) g.v([r*c,y,r*s],[0,down?-1:1,0],[r*c/tile,r*s/tile]); }
+  for(let i=0;i<seg;i++){ const a=i*2,b=a+1,c=a+3,d=a+2; if(down) g.I.push(a,b,c,a,c,d); else g.I.push(a,c,b,a,d,c); }
+  g.groups.push({start:0,count:g.I.length,mi:0}); return g; }
+function suRingWall(r,y0,y1,a0,a1,seg,out,tu=1,tv=1){ const g=new Geo(),L=Math.abs(a1-a0)*r;
+  for(let i=0;i<=seg;i++){ const a=a0+(a1-a0)*i/seg,c=Math.cos(a),s=Math.sin(a),u=L*i/seg/tu; g.v([r*c,y0,r*s],[c*out,0,s*out],[u,0]); g.v([r*c,y1,r*s],[c*out,0,s*out],[u,(y1-y0)/tv]); }
+  for(let i=0;i<seg;i++){ const a=i*2,b=a+1,c=a+3,d=a+2; if(out>0) g.I.push(a,b,c,a,c,d); else g.I.push(a,c,b,a,d,c); }
+  g.groups.push({start:0,count:g.I.length,mi:0}); return g; }
+
+/* ---------- the moving counter: one dynamic mesh ---------- */
+/* builder with vertex colour; quads fix their own winding from the normal they are given */
+function suMB(){ return {P:[],N:[],T:[],C:[],I:[]}; }
+function suQ(s,ps,n,uv,col){ const b=s.P.length/3; for(let i=0;i<4;i++){ s.P.push(ps[i][0],ps[i][1],ps[i][2]); s.N.push(n[0],n[1],n[2]); s.T.push(uv[i][0],uv[i][1]); s.C.push(col[0],col[1],col[2]); }
+  const e1=v3.sub(ps[1],ps[0]),e2=v3.sub(ps[2],ps[0]),c=v3.cross(e1,e2); if(c[0]*n[0]+c[1]*n[1]+c[2]*n[2]>=0) s.I.push(b,b+1,b+2,b,b+2,b+3); else s.I.push(b,b+2,b+1,b,b+3,b+2); }
+/* a box centred on (cx,cz), base at cy; faces [+x,-x,+y,-y,+z,-z] take a rect each; tw/td taper the top */
+function suMBox(s,cx,cy,cz,w,h,d,rects,col,tw=1,td=1,rz=0){ const many=Array.isArray(rects[0]);
+  FACES.forEach(([n,U,V,ku,kv,ko],f)=>{ if(f===3) return; const r=many?(rects[f]||rects[0]):rects, S={w,h,d}, du=S[ku]/2,dv=S[kv]/2,off=S[ko]/2, ps=[],uv=[];
+    for(const [a,b] of [[-1,-1],[1,-1],[1,1],[-1,1]]){ let p=[0,1,2].map(k=>n[k]*off+U[k]*a*du+V[k]*b*dv); if(p[1]>0){ p[0]*=tw; p[2]*=td; }
+      if(rz){ const c=Math.cos(rz),sn=Math.sin(rz),x=p[0],y=p[1]; p[0]=x*c-y*sn; p[1]=x*sn+y*c; }
+      ps.push([cx+p[0],cy+h/2+p[1],cz+p[2]]); uv.push([r[0]+(a+1)/2*(r[2]-r[0]),r[1]+(b+1)/2*(r[3]-r[1])]); }
+    let nn=n; if(rz){ const c=Math.cos(rz),sn=Math.sin(rz); nn=[n[0]*c-n[1]*sn,n[0]*sn+n[1]*c,n[2]]; } suQ(s,ps,nn,uv,f===2?col:col.map(v=>v*.82)); }); }
+function suMCyl(s,cx,cy,cz,rad,h,seg,side,top,col){ for(let i=0;i<seg;i++){ const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,am=(a0+a1)/2;
+    const p=(a,y)=>[cx+Math.cos(a)*rad,y,cz+Math.sin(a)*rad];
+    suQ(s,[p(a0,cy),p(a1,cy),p(a1,cy+h),p(a0,cy+h)],[Math.cos(am),0,Math.sin(am)],[[side[0]+(side[2]-side[0])*i/seg,side[1]],[side[0]+(side[2]-side[0])*(i+1)/seg,side[1]],[side[0]+(side[2]-side[0])*(i+1)/seg,side[3]],[side[0]+(side[2]-side[0])*i/seg,side[3]]],col.map(v=>v*.85));
+    const tu=(a)=>[top[0]+(top[2]-top[0])*(.5+Math.cos(a)/2),top[1]+(top[3]-top[1])*(.5+Math.sin(a)/2)], tc=[(top[0]+top[2])/2,(top[1]+top[3])/2];
+    const b=s.P.length/3; for(const [pp,uv] of [[[cx,cy+h,cz],tc],[p(a0,cy+h),tu(a0)],[p(a1,cy+h),tu(a1)]]){ s.P.push(...pp); s.N.push(0,1,0); s.T.push(...uv); s.C.push(...col); } s.I.push(b,b+2,b+1); } }
+/* a kaiten plate: foot, coloured underside and lip, patterned inner rim, white glazed well */
+function suMPlate(s,col){ const seg=12, prof=[[.05,0],[.056,.007],[.088,.02],[.085,.025],[.068,.017]], rim=suCell(1), ctr=suCell(0);
+  for(let b=0;b<4;b++){ const [r0,y0]=prof[b],[r1,y1]=prof[b+1], dr=r1-r0,dy=y1-y0, L=Math.hypot(dr,dy), nr=dy/L, ny=-dr/L, tint=b===0?col.map(v=>v*.6):b===3?col.map(v=>.55+v*.45):col;
+    for(let i=0;i<seg;i++){ const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,am=(a0+a1)/2, P=(r,y,a)=>[Math.cos(a)*r,y,Math.sin(a)*r], u0=rim[0]+(rim[2]-rim[0])*i/seg,u1=rim[0]+(rim[2]-rim[0])*(i+1)/seg, vA=rim[1]+(rim[3]-rim[1])*(1-b/4),vB=rim[1]+(rim[3]-rim[1])*(1-(b+1)/4);
+      suQ(s,[P(r0,y0,a0),P(r0,y0,a1),P(r1,y1,a1),P(r1,y1,a0)],[Math.cos(am)*nr,ny,Math.sin(am)*nr],[[u0,vA],[u1,vA],[u1,vB],[u0,vB]],tint); } }
+  const R0=.068,Y=.017; for(let i=0;i<seg;i++){ const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2, uv=a=>[ctr[0]+(ctr[2]-ctr[0])*(.5+Math.cos(a)*.5),ctr[1]+(ctr[3]-ctr[1])*(.5+Math.sin(a)*.5)];
+    const b=s.P.length/3; for(const [pp,t] of [[[0,Y-.002,0],[(ctr[0]+ctr[2])/2,(ctr[1]+ctr[3])/2]],[[Math.cos(a0)*R0,Y,Math.sin(a0)*R0],uv(a0)],[[Math.cos(a1)*R0,Y,Math.sin(a1)*R0],uv(a1)]]){ s.P.push(...pp); s.N.push(0,1,0); s.T.push(...t); s.C.push(1,1,1); } s.I.push(b,b+2,b+1); } }
+/* what can ride on a plate */
+const SU_NETA={akami:4,salmon:5,chutoro:6,hamachi:7,ebi:8,tamago:9,ika:10,unagi:11};
+function suMSushi(s,kind,y0=.017){ const W=[1,1,1], rice=suCell(2), nori=suCell(3);
+  if(SU_NETA[kind]!==undefined){ const nt=suCell(SU_NETA[kind]);
+    for(const z of [-.023,.023]){ suMBox(s,0,y0,z,.07,.024,.033,rice,W,.88,.8); suMBox(s,.002,y0+.022,z,.084,.011,.041,[nt,nt,nt,nt,nt,nt],W,.96,.9);
+      if(kind==='tamago') suMBox(s,0,y0-.001,z,.014,.036,.045,nori,W);
+      if(kind==='ebi') suMBox(s,.046,y0+.026,z,.022,.008,.03,nt,[1,.9,.85],1,.6,.5);
+      if(kind==='unagi') suMBox(s,0,y0+.031,z,.07,.002,.006,nori,W); } }
+  else if(kind==='gunkan'||kind==='uni'){ const top=kind==='uni'?suCell(9):suCell(12); for(const z of [-.024,.024]) suMBox(s,0,y0,z,.05,.034,.038,[nori,nori,top,nori,nori,nori],W,1,1); }
+  else if(kind==='maki'||kind==='kappa'){ const top=suCell(13); for(let k=-1;k<=1;k++) suMCyl(s,k*.04,y0,0,.02,.03,8,nori,top,kind==='kappa'?[.75,1,.8]:W); } }
 
 
 /* =====================================================================================================

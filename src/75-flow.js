@@ -111,7 +111,7 @@ function updateShadows(){ const L_=L; SH_TMP.length=0; SH_TMP.push([PL.x,PL.z,.3
     const sp=Math.hypot(x[h]-x[a],x[h+2]-x[a+2]); SH_TMP.push([lying?(x[a]+x[h])/2:mx,lying?(x[a+2]+x[h+2])/2:mz,lying?.35+sp*.5:.4,(mx-PL.x)**2+(mz-PL.z)**2]); }
   SH_TMP.sort((p,q)=>p[3]-q[3]); const n=Math.min(12,SH_TMP.length);
   for(let i=0;i<n;i++){ const q=SH_TMP[i]; L_.sh[i*4]=q[0]; L_.sh[i*4+1]=0; L_.sh[i*4+2]=q[1]; L_.sh[i*4+3]=q[2]; } L_.shN=n; }
-function flowTick(dt,gdt){ updateShadows(); dlgTick(dt); cardTick(dt); lobbyTick(dt); watchTick();
+function flowTick(dt,gdt){ artTick(dt); updateShadows(); dlgTick(dt); cardTick(dt); lobbyTick(dt); watchTick();
   /* fading between levels */
   if(FLOW.transTo>=0){ FLOW.trans+=dt; GAME.fade=clamp(FLOW.trans/.45,0,1); if(FLOW.trans>=.5){ rememberArms(); const keepR=HANDS.R.item,keepL=HANDS.L.item; enterLeg(FLOW.transTo); equip(HANDS.R,keepR); equip(HANDS.L,keepL); rememberArms(); FLOW.transTo=-1; FLOW.trans=0; } return; }
   GAME.fade=Math.max(0,GAME.fade-dt/.5);

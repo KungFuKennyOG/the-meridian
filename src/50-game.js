@@ -449,7 +449,7 @@ function poolFx(E,dt){
 const PL={x:0,z:3.2,yaw:0,pitch:0,hp:100,hurtT:9,ammo:12,reload:0,stabT:-1,stabDone:false,stabCd:0,kickCd:0,rec:0,flashT:0,dead:false};
 const KEYS={};
 const GAME={started:false,ts:1,slow:false,acc:0,t:0,clear:false,barkGlobal:0};
-function camBasis(){ if(XR.on&&XR.head) return XR.head; const cy=Math.cos(PL.yaw),sy=Math.sin(PL.yaw),cp=Math.cos(PL.pitch),sp=Math.sin(PL.pitch);
+function camBasis(){ if(XR.on&&XR.head) return XR.head; if(ART.on&&!ART.walk) return artCam(); const cy=Math.cos(PL.yaw),sy=Math.sin(PL.yaw),cp=Math.cos(PL.pitch),sp=Math.sin(PL.pitch);
   const f=[-sy*cp,sp,-cy*cp],r=norm3(v3.cross(f,[0,1,0])),u=v3.cross(r,f); return {f,r,u,eye:[PL.x,1.62,PL.z]}; }
 /* rays */
 function raySeg(o,d,a,b,r){
@@ -871,7 +871,7 @@ function renderWith(w,h,noUpd){
   gl.enable(gl.DEPTH_TEST); gl.useProgram(MAIN.p); curCull=null; curMat=null; curTex=null; gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,null); const u=MAIN.loc; /* never leave the post pass's target bound while drawing into it */
   { const v=view; setCull([-(v[0]*v[12]+v[1]*v[13]+v[2]*v[14]),-(v[4]*v[12]+v[5]*v[13]+v[6]*v[14]),-(v[8]*v[12]+v[9]*v[13]+v[10]*v[14])],L.fogFar+1.5); } /* skip what this eye can't see or the fog has swallowed */
   gl.uniformMatrix4fv(u.viewMatrix,false,view); gl.uniformMatrix4fv(u.projectionMatrix,false,proj);
-  const wob=XR.on?0:2; gl.uniform1f(u.uSnap,wob===2?1:wob===1?2.5:0); gl.uniform1f(u.uAffine,wob===2?1:wob===1?.15:0); gl.uniform2f(u.uRes,w,h); /* in a headset there is no vertex wobble and no texture warp, ever: both swim between the eyes. The PS1 look in VR is the low-res textures, the dither and the palette */
+  const wob=XR.on||(ART.on&&!GAME.ps1Wob)?0:2; gl.uniform1f(u.uSnap,wob===2?1:wob===1?2.5:0); gl.uniform1f(u.uAffine,wob===2?1:wob===1?.15:0); gl.uniform2f(u.uRes,w,h); /* in a headset there is no vertex wobble and no texture warp, ever: both swim between the eyes. The PS1 look in VR is the low-res textures, the dither and the palette */
   gl.uniform3fv(u.uAmb,L.amb); gl.uniform3fv(u.uDirDir,L.dirDir); gl.uniform3fv(u.uDirCol,L.dirCol);
   gl.uniform3fv(u.uPLPos,L.plPos); gl.uniform3fv(u.uPLCol,L.plCol); gl.uniform1fv(u.uPLDist,L.plDist);
   gl.uniform3fv(u.uFogCol,L.fog); gl.uniform1f(u.uFogNear,L.fogNear); gl.uniform1f(u.uFogFar,L.fogFar); gl.uniform1i(u.map,0);
@@ -919,7 +919,7 @@ function frame(now){
     placeVM(h.node,v3.add(eye,v3.add(v3.sc(r,side),v3.add(v3.sc(u,up),v3.sc(f,fw)))),f,u,r,pitch); m4.compose(h.M,h.node.p,h.node.r,[1,1,1]); h.node.vis=!PL.dead; updateAmmoLabel(h); }
   updateArms(f,u,eye);
   for(const E of enemies) E.label.vis=false; panelN.vis=false;
-  m4.persp(proj,50*Math.PI/180,cv.width/cv.height,0.05,120); m4.lookAt(view,eye,v3.add(eye,f),[0,1,0]);
+  m4.persp(proj,50*Math.PI/180,cv.width/cv.height,0.05,ART.on?320:120); m4.lookAt(view,eye,v3.add(eye,f),[0,1,0]);
   const h=state.res,w=Math.max(1,Math.round(h*cv.width/cv.height)); ensureFB(w,h); gl.bindFramebuffer(gl.FRAMEBUFFER,fb); renderWith(w,h); post(null,0,0,cv.width,cv.height,w,h);
   for(const E of enemies){ const el=E.barkEl; if(E.barkT>0&&!E.dead){ const hp=X_(E.B,PI_.head),c=clip(v3.add(hp,[0,.32,0])); if(c[2]>.1){ el.hidden=false; el.style.transform=`translate(${(c[0]/c[2]*.5+.5)*innerWidth}px,${(.5-c[1]/c[2]*.5)*innerHeight}px) translate(-50%,-100%)`; el.style.opacity=Math.min(1,E.barkT*2); } else el.hidden=true; } else el.hidden=true; }
   { const it=HANDS.R.item,w=it&&WPN[it.key]; $('ammo').textContent=!w?'FISTS':!w.gun?w.label.toUpperCase():it.reload>0?'RELOADING':`${it.ammo} / ${w.mag}`; } $('hp').style.width=`${PL.hp}%`;

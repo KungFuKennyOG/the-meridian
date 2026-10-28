@@ -11,6 +11,7 @@ function startRun(cont){ if(GAME.started&&!cont) return; const sv=cont?loadProgr
 $('cont').addEventListener('click',()=>{ audio(); startRun(true); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing'); if(!isTouch){ try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(_){} } });
 enterLeg(0); GAME.fade=0;
 window.__game={GAME,PL,XR,FLOW,LEVEL,ROUTE,enemies:()=>enemies,goLeg,enterLeg,restartLevel,HANDS,equip,newItem,WPN,WPN_KEYS,spawnCrew,spawnNear,openMenu,closeMenu,menuAct,MENU,OPTS,PAGES,fireHand,shoot,stab,kick,camBasis,BOXES,FLOOR,LOOSE,hitEnemy,SEGS,X_,PI_,die,clearEnemies,state,L,CREWS,CREW_OF,explode,launchGrenade,toggleSlow,useRight,updateOut};
+if(ART.on) artUI();
 window.__eval=s=>eval(s); /* test hook: headless smoke tests reach the game's internals */
 requestAnimationFrame(frame);
 })();

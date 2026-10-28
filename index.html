@@ -1807,7 +1807,7 @@ const WAGONS=[
     sub:'Crew only · the front of the train',note:'A flight deck more than a cab: a horseshoe of consoles, two captain\'s chairs, a wall of route screens and a windscreen full of oncoming track. Reach it and the trip ends where you say.',sw:['#e8e4dc','#14203a','#d4ad5a','#5ab8e8','#c8302a']},
   {key:'capsule',num:'02',name:'Capsule Hotel',label:'CAPSULES',crew:'ren',wins:[[.42,.5],[.56,.64]],glow:0xe8f4ff,color:'#29e0e6',
     sub:'Boards in Tokyo, last stop · the Kagami-gumi',note:'Two storeys of glowing white sleep pods down both walls, a strip of lockers, vending machines and a neon-lit lounge in the middle. Clean, bright and very narrow to fight in.',sw:['#eeeee8','#29e0e6','#2a2a34','#ff4fae','#f5c542']},
-  {key:'sushi',num:'03',name:'Sushi Bar Kaiten',label:'KAITEN',crew:'chef',wins:[[.06,.94]],glow:0xbfe8ff,color:'#e8e4d8',
+  {key:'sushi',num:'03',name:'Sushi Bar Kaiten',label:'KAITEN',crew:'chef',wins:[[.075,.196],[.227,.348],[.379,.5],[.53,.652],[.682,.804]],glow:0xbfe8ff,color:'#e8e4d8',
     sub:'The Pacific tunnel · the chefs are Kagami-gumi',note:'A long hinoki counter with a conveyor belt of plates running round it, glass to the sea floor on both sides. The chefs have been aboard since Tokyo, waiting for the tunnel.',sw:['#e8e4d8','#a87a4a','#1e3a6a','#c8202a','#0e3a52']},
   {key:'casino',num:'04',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
     sub:'Boards in Las Vegas · the Kings',note:'Red carpet with gold diamonds, a mirrored ceiling, rows of slot machines, a roulette wheel, blackjack tables and a stage with a gold curtain. The King holds court on the stage.',sw:['#8a1424','#f5c542','#12101a','#ff3fa4','#2a8a4a']},
@@ -2328,7 +2328,7 @@ CAR_BUILD.capsule=function capsule(){
   nc(card(g,'exit',WL/2-.04,2.45,0,.6,.22,-Math.PI/2));
   /* lockers at the back, numbered, with keypads */
   for(let k=0;k<6;k++) bx(g,{px:'locker',side:'white',top:'white'},-13.4,0,-1.5+k*.62,.6,1.9,.6).keep=1;
-  WG.capsule.spots={ren:{x:-.4,z:-.5,ry:-Math.PI/2},ren_c:{x:-6,z:.2,ry:-Math.PI/2},ren_c2:{x:7,z:-.2,ry:Math.PI/2}};
+  WG.capsule.spots={ren_c7:{x:-.4,z:-.5,ry:-Math.PI/2},ren_c:{x:-6,z:.2,ry:-Math.PI/2},ren_c2:{x:7,z:-.2,ry:Math.PI/2}};
 };
 
 /* ---------- 09 · aquarium lounge ---------- */
@@ -2475,7 +2475,7 @@ function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k
   add('banya',{volkov_c2:{x:-9,z:1.65,ry:P,pose:'sit'},volkov_c3:{x:-4,z:-1.65,ry:0,pose:'sit'},volkov_c4:{x:-5.2,z:.3,ry:B_},volkov_c5:{x:5.2,z:-.85,ry:P},volkov_c6:{x:11.4,z:.6,ry:B_},volkov_c7:{x:2.2,z:1.5,ry:B_}});
   add('dimsum',{lau_c3:{x:-9.4,z:0,ry:B_},lau_c4:{x:-12.09,z:1.77,ry:1.9,pose:'sit'},lau_c5:{x:2.1,z:-1.06,ry:-1.87,pose:'sit'},lau_c6:{x:10.5,z:.6,ry:B_},lau_c7:{x:-4.2,z:-.3,ry:B_}});
   add('capsule',{ren_c3:{x:-10,z:-.8,ry:B_},ren_c4:{x:10,z:.8,ry:B_},ren_c5:{x:-1.6,z:1.5,ry:P,pose:'sit',y:-.08},ren_c6:{x:2.6,z:-1.4,ry:B_}});
-  add('cab',{ren_c:{x:3.6,z:-1.2,ry:B_},ren_c2:{x:-7.5,z:1.2,ry:B_},ren_c3:{x:9.9,z:0,ry:B_}});
+  add('cab',{ren:{x:8.6,z:0,ry:B_},ren_c:{x:3.6,z:-1.2,ry:B_},ren_c2:{x:-7.5,z:1.2,ry:B_},ren_c3:{x:9.9,z:.9,ry:B_}}); /* the finale: Ren on the flight deck */
   add('aquarium',{nonna_c3:{x:-2.5,z:2.1,ry:Math.PI,pose:'sit'},nonna_c4:{x:4.4,z:-1.3,ry:B_},nonna_c5:{x:9.4,z:.7,ry:B_},nonna_c6:{x:11,z:-2.1,ry:0,pose:'sit'},nonna_c7:{x:-3.6,z:-.9,ry:B_}});
 }
 
@@ -6773,8 +6773,8 @@ const ROUTE=[
   {kind:'car',key:'casino',scene:'vegas',title:'The King\'s Casino',sub:'"The King"'},
   {kind:'car',key:'sushi',scene:'pacific',title:'Sushi Bar Kaiten',sub:'Under the Pacific · the chefs are Kagami-gumi'},
   {kind:'station',key:'tokyo',amb:'tokyonight',night:true,title:'Tokyo by night',sub:'Back where it started'},
-  {kind:'car',key:'capsule',scene:'tokyonight',title:'Capsule Hotel',sub:'Ren Kagami'},
-  {kind:'car',key:'cab',scene:'tokyonight',title:'The Locomotive',sub:'The end of the line',last:true}];
+  {kind:'car',key:'capsule',scene:'tokyonight',title:'Capsule Hotel',sub:'The Kagami-gumi'},
+  {kind:'car',key:'cab',scene:'tokyonight',title:'The Locomotive',sub:'Ren Kagami · the end of the line',last:true}];
 const FLOW={leg:0,exitOpen:false,gift:null,giftKey:null,marker:null,lamp:null,cleared:false,trans:0,transTo:-1,boardX:3,speed:42,enemyK:1,startT:0,done:false};
 GAME.fade=1;
 /* what the crews hold on each platform: the boss stays on the train, his people wait for you */

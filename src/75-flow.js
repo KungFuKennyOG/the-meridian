@@ -28,8 +28,8 @@ const ROUTE=[
   {kind:'car',key:'casino',scene:'vegas',title:'The King\'s Casino',sub:'"The King"'},
   {kind:'car',key:'sushi',scene:'pacific',title:'Sushi Bar Kaiten',sub:'Under the Pacific · the chefs are Kagami-gumi'},
   {kind:'station',key:'tokyo',amb:'tokyonight',night:true,title:'Tokyo by night',sub:'Back where it started'},
-  {kind:'car',key:'capsule',scene:'tokyonight',title:'Capsule Hotel',sub:'Ren Kagami'},
-  {kind:'car',key:'cab',scene:'tokyonight',title:'The Locomotive',sub:'The end of the line',last:true}];
+  {kind:'car',key:'capsule',scene:'tokyonight',title:'Capsule Hotel',sub:'The Kagami-gumi'},
+  {kind:'car',key:'cab',scene:'tokyonight',title:'The Locomotive',sub:'Ren Kagami · the end of the line',last:true}];
 const FLOW={leg:0,exitOpen:false,gift:null,giftKey:null,marker:null,lamp:null,cleared:false,trans:0,transTo:-1,boardX:3,speed:42,enemyK:1,startT:0,done:false};
 GAME.fade=1;
 /* what the crews hold on each platform: the boss stays on the train, his people wait for you */

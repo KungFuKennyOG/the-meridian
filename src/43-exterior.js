@@ -9,7 +9,7 @@ const WAGONS=[
     sub:'Crew only · the front of the train',note:'A flight deck more than a cab: a horseshoe of consoles, two captain\'s chairs, a wall of route screens and a windscreen full of oncoming track. Reach it and the trip ends where you say.',sw:['#e8e4dc','#14203a','#d4ad5a','#5ab8e8','#c8302a']},
   {key:'capsule',num:'02',name:'Capsule Hotel',label:'CAPSULES',crew:'ren',wins:[[.42,.5],[.56,.64]],glow:0xe8f4ff,color:'#29e0e6',
     sub:'Boards in Tokyo, last stop · the Kagami-gumi',note:'Two storeys of glowing white sleep pods down both walls, a strip of lockers, vending machines and a neon-lit lounge in the middle. Clean, bright and very narrow to fight in.',sw:['#eeeee8','#29e0e6','#2a2a34','#ff4fae','#f5c542']},
-  {key:'sushi',num:'03',name:'Sushi Bar Kaiten',label:'KAITEN',crew:'chef',wins:[[.06,.94]],glow:0xbfe8ff,color:'#e8e4d8',
+  {key:'sushi',num:'03',name:'Sushi Bar Kaiten',label:'KAITEN',crew:'chef',wins:[[.075,.196],[.227,.348],[.379,.5],[.53,.652],[.682,.804]],glow:0xbfe8ff,color:'#e8e4d8',
     sub:'The Pacific tunnel · the chefs are Kagami-gumi',note:'A long hinoki counter with a conveyor belt of plates running round it, glass to the sea floor on both sides. The chefs have been aboard since Tokyo, waiting for the tunnel.',sw:['#e8e4d8','#a87a4a','#1e3a6a','#c8202a','#0e3a52']},
   {key:'casino',num:'04',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
     sub:'Boards in Las Vegas · the Kings',note:'Red carpet with gold diamonds, a mirrored ceiling, rows of slot machines, a roulette wheel, blackjack tables and a stage with a gold curtain. The King holds court on the stage.',sw:['#8a1424','#f5c542','#12101a','#ff3fa4','#2a8a4a']},

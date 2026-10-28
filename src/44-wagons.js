@@ -390,7 +390,7 @@ CAR_BUILD.capsule=function capsule(){
   nc(card(g,'exit',WL/2-.04,2.45,0,.6,.22,-Math.PI/2));
   /* lockers at the back, numbered, with keypads */
   for(let k=0;k<6;k++) bx(g,{px:'locker',side:'white',top:'white'},-13.4,0,-1.5+k*.62,.6,1.9,.6).keep=1;
-  WG.capsule.spots={ren:{x:-.4,z:-.5,ry:-Math.PI/2},ren_c:{x:-6,z:.2,ry:-Math.PI/2},ren_c2:{x:7,z:-.2,ry:Math.PI/2}};
+  WG.capsule.spots={ren_c7:{x:-.4,z:-.5,ry:-Math.PI/2},ren_c:{x:-6,z:.2,ry:-Math.PI/2},ren_c2:{x:7,z:-.2,ry:Math.PI/2}};
 };
 
 /* ---------- 09 · aquarium lounge ---------- */

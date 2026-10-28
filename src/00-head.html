@@ -1,0 +1,131 @@
+<title>The Meridian 24</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: full-screen low-res first-person view; minimal HUD in the corners; a start card over the view; touch controls on phones */
+:root{
+  --bg:#0e1628; --ink:#f2ece0; --ink2:#cdd6ee; --muted:#8a96b8; --line:#2e4a90; --panel:rgba(12,20,42,.9); --hot:#ff6a3a;
+  --sodium:#d4ad5a; --blood:#8e0c0c;
+  --display:'Bungee','Arial Black',Impact,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#view{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;image-rendering:pixelated;outline:none;cursor:crosshair}
+.hud{position:fixed;inset:0;pointer-events:none}
+#xhair{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;background:var(--ink);box-shadow:0 0 0 1px #000;opacity:.85}
+#xhair.hit{animation:hit .25s steps(2)}
+@keyframes hit{0%{background:#ff3b30;transform:scale(3)}100%{transform:scale(1)}}
+.corner{position:fixed;display:grid;gap:6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 6px #000}
+#tl{left:max(16px,env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px))}
+#tl b{font-family:var(--display);font-weight:400;font-size:21px;letter-spacing:.04em;line-height:.9}
+#tl b span{color:var(--sodium)}
+#tl small{color:var(--muted);font-size:10.5px}
+#br{right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));text-align:right;justify-items:end}
+#ammo{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.hpbar{width:150px;height:6px;background:rgba(0,0,0,.6);border:1px solid var(--line)}
+#hp{height:100%;background:var(--ink);width:100%}
+#slowTag{color:var(--sodium)}
+.topbtns{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));display:flex;gap:6px;pointer-events:auto}
+.btn{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--panel);border:1px solid var(--line);padding:9px 12px;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--sodium);color:#0a0a0a;border-color:var(--sodium)}
+.btn:focus-visible,#start:focus-visible{outline:2px solid var(--sodium);outline-offset:2px}
+#labels .bark{position:fixed;left:0;top:0;max-width:220px;padding:5px 8px;background:rgba(0,0,0,.72);color:#f2ede2;font-size:12.5px;line-height:1.35;text-align:center;border-left:2px solid var(--blood);white-space:normal}
+#flash{position:fixed;inset:0;background:#7a0000;opacity:0}
+#flash.on{animation:fl .35s ease-out}
+@keyframes fl{0%{opacity:.38}100%{opacity:0}}
+#sblood b{position:fixed;animation:sb 5s cubic-bezier(.5,0,.9,.6) forwards}
+#sblood i{position:absolute;border-radius:50% 40% 55% 45%;background:#5e0707;box-shadow:inset -2px -2px 0 #3a0303}
+@keyframes sb{0%{opacity:.95;transform:translateY(0)}15%{opacity:.9}100%{opacity:0;transform:translateY(46px)}}
+#lockHint{position:fixed;left:50%;top:58%;transform:translateX(-50%);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-shadow:0 0 6px #000}
+/* start card */
+#intro{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,8,10,.62);pointer-events:auto;overflow:auto;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.card{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);padding:22px 22px 18px;display:grid;gap:14px}
+.card .kick{margin:0;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--hot)}
+.card h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,50px);line-height:.85;text-transform:uppercase;letter-spacing:.02em}
+.card h1 span{color:var(--sodium)}
+.card p{margin:0;font-size:13px;line-height:1.55;color:var(--ink2);max-width:62ch}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12.5px;margin:0}
+.keys dt{color:var(--ink);font-weight:600;white-space:nowrap}
+.keys dd{margin:0;color:var(--muted)}
+#vrBtn{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--sodium);padding:14px;cursor:pointer}
+.startrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.vrnote{font-size:11.5px!important;color:var(--muted)!important}
+#start{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#0a0a0a;background:var(--sodium);border:0;padding:14px;cursor:pointer}
+.touchonly{display:none}
+body.touch .touchonly{display:grid}
+body.touch .deskonly{display:none}
+/* message */
+#msg{position:fixed;inset:0;display:grid;place-items:center;pointer-events:auto;background:rgba(8,8,10,.5)}
+#msg .card{width:min(420px,calc(100% - 32px));text-align:left}
+#msgH{margin:0;font-family:var(--display);font-weight:400;font-size:34px;line-height:.9;text-transform:uppercase}
+/* touch controls */
+#touch{display:none}
+body.touch.playing #touch{display:block}
+#stick{position:fixed;width:110px;height:110px;border-radius:50%;border:1px solid rgba(232,228,218,.35);background:rgba(0,0,0,.25)}
+#nub{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(232,228,218,.55)}
+.tbtns{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(2,72px);gap:8px;pointer-events:auto}
+.tbtn{height:62px;border-radius:50%;font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:rgba(9,9,10,.6);border:1px solid rgba(232,228,218,.35);touch-action:none}
+#bShoot{grid-column:2;grid-row:1/3;height:132px;border-radius:36px;background:rgba(142,12,12,.5)}
+body.touch #br{bottom:calc(240px + env(safe-area-inset-bottom,0px))}
+body.touch #tl small{display:none}
+/* test floor panel (flat screen) */
+#testPanel{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(78px + env(safe-area-inset-top,0px));width:220px;display:grid;gap:8px;padding:12px;background:var(--panel);border:1px solid var(--line);font-size:11px;letter-spacing:.06em;pointer-events:auto}
+#testPanel h2{margin:0;font:900 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--sodium)}
+#testPanel .tp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#testPanel .btn{padding:8px 6px;font-size:10px;letter-spacing:.08em}
+#testPanel .tp-row{display:flex;gap:12px;color:var(--ink2)}
+#testPanel .tp-keys,#testPanel #tpWpn{margin:0;color:var(--muted);line-height:1.45}
+body:not(.playing) #testPanel{display:none}
+body.touch #testPanel{top:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:190px}
+body.touch #testPanel .tp-keys{display:none}
+#menu{position:fixed;inset:0;margin:auto;width:min(860px,calc(100% - 32px));height:fit-content;max-height:calc(100% - 32px);overflow:auto;display:grid;gap:12px;padding:16px;background:rgba(10,18,38,.96);border:1px solid #2e4a90;pointer-events:auto;z-index:5}
+#menu .mtabs{display:flex;flex-wrap:wrap;gap:6px}
+#menu .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+#menu .btn{text-align:left;padding:10px 12px}
+#menu .mclose{justify-self:end}
+.cont{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--sodium);padding:14px;cursor:pointer}
+#err{position:fixed;inset:auto 16px 16px;padding:14px 16px;background:var(--panel);border:1px solid var(--blood);font-size:13px;line-height:1.5}
+@media (prefers-reduced-motion: reduce){ #sblood i,#flash.on,#xhair.hit{animation-duration:.01s} }
+</style>
+
+<canvas id="view" tabindex="0" aria-label="First-person view of the Stairwell physics prototype"></canvas>
+<div class="hud">
+  <div class="corner" id="tl"><b>THE MERIDIAN <span>24</span></b><span id="floorTag">Tokyo · B5</span><small>Hold-to-look if the mouse isn't captured</small></div>
+  <div class="topbtns"><button class="btn vr" id="vrBtnT" type="button" hidden>Enter VR</button><button class="btn" id="bSlowT" type="button" aria-pressed="false">Slow-mo</button><button class="btn" id="bResetT" type="button">Reset</button></div>
+  <div class="corner" id="br"><span id="slowTag" hidden>Bullet time</span><span id="ammo">12 / 12</span><div class="hpbar" aria-label="Health"><div id="hp"></div></div></div>
+  <div id="xhair"></div>
+  <div id="labels"></div>
+  <div id="sblood"></div>
+  <div id="flash"></div>
+  <p id="lockHint" hidden>Click to capture the mouse</p>
+</div>
+<div id="touch">
+  <div id="stick" hidden><div id="nub"></div></div>
+  <div class="tbtns">
+    <button class="tbtn" id="bStab" type="button">Stab</button>
+    <button class="tbtn" id="bShoot" type="button">Shoot</button>
+    <button class="tbtn" id="bKick" type="button">Kick</button>
+    <button class="tbtn" id="bReload" type="button" style="grid-column:1">Reload</button>
+    <button class="tbtn" id="bSlow" type="button" aria-pressed="false" style="grid-column:2">Slow</button>
+  </div>
+</div>
+<section id="intro" aria-label="Start">
+  <div class="card">
+    <p class="kick">See the world in 24 hours · a hitman on holiday</p>
+    <h1>The Meridian <span>24</span></h1>
+    <p>The biggest bullet train ever built, on a special run around the world in one day. You are Nico Varga, a hitman on his first holiday in eleven years, and somebody has put a price on your head. At every stop a new crew gets on to collect it, and each one takes over a car. Every station leaves you a better weapon. Shoot a leg and he goes down and drags himself away; cut an artery and it pumps with his heartbeat; take a car back and its far door opens.</p>
+    <dl class="keys deskonly"><dt>WASD · mouse</dt><dd>Move · look (click to capture)</dd><dt>Click</dt><dd>Fire or swing (hold for automatics)</dd><dt>1-9 · 0</dt><dd>Weapons (all of them are in the menu too)</dd><dt>F · E · Q · G</dt><dd>Knife · kick · throw · grab</dd><dt>R · T</dt><dd>Reload · bullet time</dd><dt>Esc · M</dt><dd>The menu: any level, any weapon, any crew, cheats</dd></dl>
+    <dl class="keys touchonly"><dt>Left thumb</dt><dd>Move</dd><dt>Right side drag</dt><dd>Look</dd><dt>Buttons</dt><dd>Shoot, stab, kick, reload, slow-mo</dd></dl>
+    <div class="startrow"><button id="start" type="button">New run</button><button id="cont" type="button" class="cont" hidden>Continue</button><button id="vrBtn" type="button" hidden>Play in VR</button></div>
+    <p class="vrnote">In VR: grip grabs (weapons, bodies) and grip again drops or throws; trigger fires; A/X reloads that hand; B/Y kicks. Left stick moves, a quick click is bullet time, <b>hold it down for the menu</b> (or poke MENU on your left wrist). Right stick turns, click it for sharpness. Your frame rate is on your left wrist.</p>
+  </div>
+</section>
+<section id="msg" hidden aria-live="polite"><div class="card"><h2 id="msgH"></h2><p id="msgP"></p><button class="btn" id="msgReset" type="button">Reset the floor</button></div></section>
+<p id="err" hidden></p>
+
+<script>

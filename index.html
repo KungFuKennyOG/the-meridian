@@ -2,13 +2,14 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: full-screen low-res first-person view; minimal HUD in the corners; a start card over the view; touch controls on phones */
 :root{
   --bg:#0e1628; --ink:#f2ece0; --ink2:#cdd6ee; --muted:#8a96b8; --line:#2e4a90; --panel:rgba(12,20,42,.9); --hot:#ff6a3a;
   --sodium:#d4ad5a; --blood:#8e0c0c;
-  --display:'Bungee','Arial Black',Impact,sans-serif;
+  --display:'Zen Kaku Gothic New','Hiragino Sans','Arial Black',sans-serif;
+  --word:'Limelight',Georgia,'Times New Roman',serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
   color-scheme:dark;
 }
@@ -22,7 +23,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidd
 @keyframes hit{0%{background:#ff3b30;transform:scale(3)}100%{transform:scale(1)}}
 .corner{position:fixed;display:grid;gap:6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 6px #000}
 #tl{left:max(16px,env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px))}
-#tl b{font-family:var(--display);font-weight:400;font-size:21px;letter-spacing:.04em;line-height:.9}
+#tl b{font-family:var(--word);font-weight:400;font-size:22px;letter-spacing:.06em;line-height:.9;color:var(--sodium)}
+#tl b span{color:var(--ink)}
 #tl b span{color:var(--sodium)}
 #tl small{color:var(--muted);font-size:10.5px}
 #br{right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));text-align:right;justify-items:end}
@@ -46,16 +48,23 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidd
 #intro{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,8,10,.62);pointer-events:auto;overflow:auto;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .card{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);padding:22px 22px 18px;display:grid;gap:14px}
 .card .kick{margin:0;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--hot)}
-.card h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,50px);line-height:.85;text-transform:uppercase;letter-spacing:.02em}
-.card h1 span{color:var(--sodium)}
+.card h1{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;font-weight:400}
+.card h1 svg{grid-row:span 3;width:clamp(70px,16vw,96px);height:auto}
+.card h1 .the{font:900 12px/1 var(--display);letter-spacing:.6em;color:var(--sodium)}
+.card h1 .name{font:400 clamp(36px,8.4vw,58px)/.9 var(--word);letter-spacing:.04em;background:linear-gradient(#f2d27a,#d4ad5a 70%,#a8823a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card h1 .kana{font:700 12px/1.2 var(--display);letter-spacing:.18em;color:var(--ink2)}
+.card{border-color:var(--sodium)!important;box-shadow:0 0 0 4px var(--bg),0 0 0 5px rgba(212,173,90,.35)}
+#subs{position:fixed;left:50%;bottom:calc(64px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(760px,calc(100% - 32px));padding:10px 16px 12px;background:rgba(8,12,26,.88);border-bottom:3px solid var(--sodium);display:grid;gap:4px;pointer-events:none;z-index:5}
+#subs b{font:700 12px/1 var(--display);letter-spacing:.2em}
+#subs span{font:600 15px/1.45 var(--mono);color:#f6f0e2}
 .card p{margin:0;font-size:13px;line-height:1.55;color:var(--ink2);max-width:62ch}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12.5px;margin:0}
 .keys dt{color:var(--ink);font-weight:600;white-space:nowrap}
 .keys dd{margin:0;color:var(--muted)}
-#vrBtn{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--sodium);padding:14px;cursor:pointer}
+#vrBtn{font:700 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--sodium);padding:14px;cursor:pointer}
 .startrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .vrnote{font-size:11.5px!important;color:var(--muted)!important}
-#start{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#0a0a0a;background:var(--sodium);border:0;padding:14px;cursor:pointer}
+#start{font:700 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#0a0a0a;background:var(--sodium);border:0;padding:14px;cursor:pointer}
 .touchonly{display:none}
 body.touch .touchonly{display:grid}
 body.touch .deskonly{display:none}
@@ -116,12 +125,12 @@ body.touch #testPanel .tp-keys{display:none}
 </div>
 <section id="intro" aria-label="Start">
   <div class="card">
-    <p class="kick">See the world in 24 hours · a hitman on holiday</p>
-    <h1>The Meridian <span>24</span></h1>
+    <p class="kick">Platform 0 · Tokyo Meridian Terminal · departing</p>
+    <h1 aria-label="The Meridian 24"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d27a"/><stop offset=".55" stop-color="#d4ad5a"/><stop offset="1" stop-color="#8a6a2a"/></linearGradient></defs><circle cx="50" cy="50" r="46" fill="#0e1628"/><circle cx="50" cy="50" r="43" fill="none" stroke="url(#lg)" stroke-width="5"/><ellipse cx="50" cy="50" rx="33" ry="12" fill="none" stroke="url(#lg)" stroke-width="1.8" transform="rotate(-18 50 50)"/><line x1="50" y1="10" x2="50" y2="90" stroke="url(#lg)" stroke-width="1.8"/><circle cx="31" cy="61" r="3.6" fill="#ff6a3a"/><text x="51" y="61" text-anchor="middle" font-family="Limelight,Georgia,serif" font-size="30" fill="#f2ece0">24</text></svg><span class="the">THE</span><span class="name">MERIDIAN</span><span class="kana">メリディアン24 · SEE THE WORLD IN 24 HOURS</span></h1>
     <p>The biggest bullet train ever built, on a special run around the world in one day. You are Nico Varga, a hitman on his first holiday in eleven years, and somebody has put a price on your head. At every stop a new crew gets on to collect it, and each one takes over a car. Every station leaves you a better weapon. Shoot a leg and he goes down and drags himself away; cut an artery and it pumps with his heartbeat; take a car back and its far door opens.</p>
     <dl class="keys deskonly"><dt>WASD · mouse</dt><dd>Move · look (click to capture)</dd><dt>Click</dt><dd>Fire or swing (hold for automatics)</dd><dt>1-9 · 0</dt><dd>Weapons (all of them are in the menu too)</dd><dt>F · E · Q · G</dt><dd>Knife · kick · throw · grab</dd><dt>R · T</dt><dd>Reload · bullet time</dd><dt>Esc · M</dt><dd>The menu: any level, any weapon, any crew, cheats</dd></dl>
     <dl class="keys touchonly"><dt>Left thumb</dt><dd>Move</dd><dt>Right side drag</dt><dd>Look</dd><dt>Buttons</dt><dd>Shoot, stab, kick, reload, slow-mo</dd></dl>
-    <div class="startrow"><button id="start" type="button">New run</button><button id="cont" type="button" class="cont" hidden>Continue</button><button id="vrBtn" type="button" hidden>Play in VR</button></div>
+    <div class="startrow"><button id="start" type="button">Enter the station</button><button id="cont" type="button" class="cont" hidden>Continue</button><button id="vrBtn" type="button" hidden>Play in VR</button></div>
     <p class="vrnote">In VR: grip grabs (weapons, bodies) and grip again drops or throws; trigger fires; A/X reloads that hand; B/Y kicks. Left stick moves, a quick click is bullet time, <b>hold it down for the menu</b> (or poke MENU on your left wrist). Right stick turns, click it for sharpness. Your frame rate is on your left wrist.</p>
   </div>
 </section>
@@ -3480,7 +3489,7 @@ function goreBlast(at,dir,k=1){
     for(let i=0;i<3;i++){ const j=v3.add(c,up?[w.n[2]*rnd(-.3,.3),rnd(-.35,.25),-w.n[0]*rnd(-.3,.3)]:[rnd(-.3,.3),0,rnd(-.3,.3)]); addDecal(DEC.splat,j,w.n,rnd(.22,.45)*k,260,up?rnd(.4,.8)*k:undefined); } }
   addDecal(DEC.splat,[at[0]+dir[0]*.7,.003,at[2]+dir[2]*.7],[0,1,0],.45*k,260);
   sfx('gore'); if(XR.on){ buzz('right',1,160); buzz('left',.7,120); } }
-function die(E){ if(E.dead) return; if(!E.headshot&&!E.cut.head) vox(E,'rattle'); E.dead=true; E.st='dead'; E.deadT=0; dropWeapon(E); E.face='sleep'; E.J.headMesh.mesh.mats[0]=E.C.faceM.sleep; E.J.headMesh.mesh.runs=null; E.barkT=0;
+function die(E){ if(E.dead) return; storyKill(E); if(!E.headshot&&!E.cut.head) vox(E,'rattle'); E.dead=true; E.st='dead'; E.deadT=0; dropWeapon(E); E.face='sleep'; E.J.headMesh.mesh.mats[0]=E.C.faceM.sleep; E.J.headMesh.mesh.runs=null; E.barkT=0;
   for(const O of enemies) if(O!==E&&!O.dead&&!E.silent&&O.barkCd<=0&&Math.random()<.8){ bark(O,pick(O.lines.friend(E.name))); break; } }
 
 /* weapons that fall out of hands */
@@ -3679,7 +3688,8 @@ document.body.classList.toggle('touch',isTouch);
 addEventListener('keydown',e=>{ KEYS[e.code]=true; if(!GAME.started) return;
   if(e.code==='KeyF') stab(); else if(e.code==='KeyE') kick(); else if(e.code==='KeyR') reload(); else if(e.code==='KeyT') toggleSlow();
   else if(/^Digit[1-8]$/.test(e.code)){ const k=WPN_KEYS[+e.code.slice(5)-1]; equip(HANDS.R,k==='fists'?null:newItem(k)); }
-  else if(e.code==='KeyG'){ if(!flatPickup()) flatGrab(); }
+  else if(e.code==='KeyG'){ if(!flatUse()&&!flatPickup()) flatGrab(); }
+  else if(e.code==='KeyC'){ flatDrink(); }
   else if(e.code==='KeyQ'&&HANDS.L.grab){ endGrab(HANDS.L.grab,v3.add(v3.sc(camBasis().f,6),[0,1,0])); }
   else if(e.code==='KeyQ'&&HANDS.R.item){ HANDS.R.vel=v3.sc(camBasis().f,4); grabOrDrop(HANDS.R); } });
 addEventListener('mousedown',e=>{ if(e.button===0) KEYS.Mouse0=true; }); addEventListener('mouseup',e=>{ if(e.button===0) KEYS.Mouse0=false; });
@@ -3822,7 +3832,7 @@ function attachLabels(){ for(const E of enemies) if(!E.label){ E.labelTex=labelT
 async function enterVR(){
   if(!navigator.xr){ return; }
   try{
-    audio(); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing');
+    audio(); const was=GAME.started; GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing'); if(!was){ levelAudio(); if(LOBBY.on) lobbyStart(); }
     const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']});
     await gl.makeXRCompatible();
     session.updateRenderState({baseLayer:new XRWebGLLayer(session,gl,{antialias:false,depth:false}),depthNear:.04,depthFar:300});
@@ -3863,7 +3873,7 @@ function xrFrame(t,xf){
     else { const sx=ax[2]||0; if(XR.smoothTurn){ if(Math.abs(sx)>.2) turnBy(-sx*2.4*dt,eye); } else if(Math.abs(sx)>.7&&!XR.snapHeld){ XR.snapHeld=true; const a=-Math.sign(sx)*(XR.snapA||Math.PI/6),c=Math.cos(a),s=Math.sin(a),dx=XR.origin[0]-eye[0],dz=XR.origin[2]-eye[2];
         XR.origin[0]=eye[0]+dx*c+dz*s; XR.origin[2]=eye[2]-dx*s+dz*c; XR.yaw+=a; } else if(Math.abs(sx)<.3) XR.snapHeld=false;
       if(stickC){ const L=[1080,1440,1680,2064],i=(L.indexOf(XR.res)+1)%L.length; XR.res=L[i]; vrToast(['Sharpness: low','Sharpness: medium','Sharpness: high','Sharpness: native'][i],1.6); } }
-    meleeTick(h,dt); if(!h.supportOf) vrMelee(h,dt); else h.prevPts=null; pokeWrist(fp,h,dt); updateAmmoLabel(h); }
+    meleeTick(h,dt); if(!h.supportOf) vrMelee(h,dt); else h.prevPts=null; pokeWrist(fp,h,dt); pokeUse(fp,h); tryDrink(h); updateAmmoLabel(h); }
   applySupport(HANDS.R); applySupport(HANDS.L); updateArms(f,u,eye); updateSights(eye);
   /* keep the head out of walls and furniture by sliding the play space */
   { const bx=PL.x,bz=PL.z; collidePlayer(); XR.origin[0]+=PL.x-bx; XR.origin[2]+=PL.z-bz; }
@@ -4143,6 +4153,7 @@ function fireHand(h,aim){ /* aim: optional {o,d} (flat screen fires from the eye
   return true; }
 function bullet(o,d,w,h){
   const wall=rayRoom(o,d),hit=rayEnemiesExact(o,d,wall.t);
+  if(shotTargets(o,d,hit?hit.t:wall.t)) return null; /* the practice bottles on platform 0 */
   if(hit){ const p=hit.p; hitEnemy(hit.E,hit.seg,p,d,'gun',{bleed:w.bleed||1,sever:w.sever||1,push:w.push||1,pellet:!!w.pellets,dist:hit.t});
     const back=rayRoom(v3.add(p,v3.sc(d,.25)),d); if(back.t<2.6){ const wp=v3.add(v3.add(p,v3.sc(d,.25+back.t)),v3.sc(back.n,.004)); addDecal(DEC.splat,wp,back.n,rnd(.16,.3),260,back.n[1]===0?rnd(.25,.45):undefined); }
     if(hit.t<1.3) screenBlood(w.pellets?1:3); hitMarker(); if(XR.on) buzz(h.hand,.4,40); return {E:hit.E,t:hit.t}; }
@@ -4671,6 +4682,54 @@ Object.assign(CREW_OF,{
 });
 
 /* =====================================================================
+   THE BRAND. The Meridian 24 has its own face: a gold roundel (the world loop, cut by the meridian, the
+   train a bead running round it, 24 at the heart), a deco wordmark, and the katakana underneath, navy and
+   gold like the livery. Painted with the page's own fonts (Limelight for the name, Zen Kaku Gothic New for
+   the Japanese and small caps, IBM Plex Mono for the timetable), repainted once the fonts arrive.
+   ===================================================================== */
+const BRAND={navy:'#0e1628',navy2:'#14203a',gold:'#d4ad5a',gold2:'#f2d27a',cream:'#f2ece0',hot:'#ff6a3a',teal:'#29e0e6',
+  word:'"Limelight","Bungee",Georgia,serif', jp:'"Zen Kaku Gothic New","Hiragino Sans",sans-serif', mono:'"IBM Plex Mono",monospace', kana:'メリディアン24'};
+const BRAND_TEX=[];
+/* a texture painted with real fonts; it repaints itself when the web fonts finish loading */
+function brandTex(w,h,fn){ const t=tex(w,h,null); t.paint=()=>{ const g=t.c.getContext('2d'); g.clearRect(0,0,w,h); g.save(); fn(g,w,h); g.restore();
+    if(t.glt){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,t.c); if(gl.generateMipmap&&!t.dyn) try{ gl.generateMipmap(gl.TEXTURE_2D); }catch(_){} } };
+  t.paint(); BRAND_TEX.push(t); return t; }
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const t of BRAND_TEX) t.paint(); });
+['400 40px Limelight','700 40px "Zen Kaku Gothic New"','600 40px "IBM Plex Mono"'].forEach(f=>{ try{ document.fonts&&document.fonts.load(f).then(()=>{ for(const t of BRAND_TEX) t.paint(); }); }catch(_){} });
+
+/* the roundel: centre cx,cy, radius r */
+function roundel(g,cx,cy,r,o={}){ const gold=o.gold||BRAND.gold;
+  const q=g.createRadialGradient(cx-r*.3,cy-r*.3,r*.1,cx,cy,r*1.05); q.addColorStop(0,BRAND.navy2); q.addColorStop(1,'#070b16'); g.fillStyle=q; g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+  g.lineWidth=r*.1; const gg=g.createLinearGradient(cx,cy-r,cx,cy+r); gg.addColorStop(0,BRAND.gold2); gg.addColorStop(.5,gold); gg.addColorStop(1,'#8a6a2a'); g.strokeStyle=gg;
+  g.beginPath(); g.arc(cx,cy,r*.93,0,7); g.stroke();
+  g.lineWidth=r*.035; g.beginPath(); g.ellipse(cx,cy,r*.72,r*.26,-.32,0,7); g.stroke();       /* the loop round the world */
+  g.beginPath(); g.moveTo(cx,cy-r*.86); g.lineTo(cx,cy+r*.86); g.stroke();                    /* the meridian */
+  const a=-.32, bx=cx+Math.cos(2.2)*r*.72*Math.cos(a)-Math.sin(2.2)*r*.26*Math.sin(a), by=cy+Math.cos(2.2)*r*.72*Math.sin(a)+Math.sin(2.2)*r*.26*Math.cos(a);
+  g.fillStyle=BRAND.hot; g.beginPath(); g.arc(bx,by,r*.075,0,7); g.fill();                     /* the train, a bead on the loop */
+  g.fillStyle=BRAND.cream; g.textAlign='center'; g.textBaseline='middle'; g.font=`400 ${r*.62|0}px ${BRAND.word}`; g.fillText('24',cx+r*.02,cy+r*.05); }
+/* the full lockup: roundel left, THE / MERIDIAN / katakana right. o.dark=false for a light background */
+function logoLockup(g,x,y,w,h,o={}){ const r=h*.46, cx=x+r+h*.04, cy=y+h/2; roundel(g,cx,cy,r,o);
+  const tx=cx+r+h*.12, tw=x+w-tx; g.textAlign='left'; g.textBaseline='alphabetic';
+  g.fillStyle=o.ink||BRAND.gold; g.font=`700 ${h*.15|0}px ${BRAND.jp}`; g.fillText('T H E',tx+2,cy-h*.2);
+  let fs=h*.38; g.font=`400 ${fs|0}px ${BRAND.word}`; const mw=g.measureText('MERIDIAN').width; if(mw>tw){ fs*=tw/mw; g.font=`400 ${fs|0}px ${BRAND.word}`; }
+  const gr=g.createLinearGradient(0,cy-fs*.8,0,cy+fs*.2); gr.addColorStop(0,o.ink2||BRAND.gold2); gr.addColorStop(1,o.ink||BRAND.gold); g.fillStyle=gr; g.fillText('MERIDIAN',tx,cy+fs*.32);
+  g.fillStyle=o.sub||BRAND.cream; g.font=`700 ${h*.13|0}px ${BRAND.jp}`; g.fillText(BRAND.kana+'  ·  SEE THE WORLD IN 24 HOURS',tx+2,cy+h*.34); }
+/* a destination card: the city in the wordmark face, its line underneath, a gold rule */
+function cityCard(g,w,h,title,sub,col){ g.fillStyle='rgba(8,12,26,.94)'; rr(g,6,6,w-12,h-12,22); g.fill(); g.strokeStyle=BRAND.gold; g.lineWidth=4; rr(g,14,14,w-28,h-28,16); g.stroke();
+  roundel(g,h*.5,h*.5,h*.3); g.textAlign='left'; g.textBaseline='alphabetic'; let fs=h*.34; g.font=`400 ${fs|0}px ${BRAND.word}`; const tw=w-h*.95; const mw=g.measureText(title).width; if(mw>tw){ fs*=tw/mw; g.font=`400 ${fs|0}px ${BRAND.word}`; }
+  g.fillStyle=col||BRAND.gold2; g.fillText(title,h*.9,h*.55); g.fillStyle=BRAND.cream; g.font=`600 ${h*.12|0}px ${BRAND.mono}`; g.fillText(sub||'',h*.9+3,h*.78); }
+
+/* ---------- the arrival card: floats ahead of you for a few seconds when you reach a new place ---------- */
+const CARD={t:0,on:false};
+const cardTex=brandTex(1024,256,(g,w,h)=>cityCard(g,w,h,CARD.title||'THE MERIDIAN 24',CARD.sub||'',CARD.col)); cardTex.dyn=true;
+const cardN=N(world); cardN.vis=false; mk(plane(1.1,.275),M(cardTex,{unlit:true,cut:true,double:true}),cardN,0,0,0);
+function showCard(title,sub,col){ CARD.title=title; CARD.sub=sub; CARD.col=col; CARD.t=0; CARD.on=true; cardTex.paint(); CARD.place=true; }
+function cardTick(dt){ if(!CARD.on){ cardN.vis=false; return; } CARD.t+=dt; if(CARD.t>4.2){ CARD.on=false; cardN.vis=false; return; }
+  if(!XR.on||!XR.head){ cardN.vis=false; return; } cardN.vis=true;
+  if(CARD.place){ CARD.place=false; const {eye,f}=XR.head,fl=norm3([f[0],0,f[2]]); cardN.p=[eye[0]+fl[0]*2.2,eye[1]+.18,eye[2]+fl[2]*2.2]; cardN.r=[0,Math.atan2(-fl[0],-fl[2]),0]; }
+  const k=CARD.t<.35?CARD.t/.35:CARD.t>3.7?(4.2-CARD.t)/.5:1; cardN.s=[k,k,k]; }
+
+/* =====================================================================
    THE ROUTE: the whole game, one level after another.
    You walk onto platform 0 in Tokyo, take the pistol from the locker and board into the izakaya car, where Tanaka's salarymen are already drinking.
    Then it alternates: a car, taken over by the crew that boarded at the last stop, and the next underground
@@ -4713,7 +4772,7 @@ function loadProgress(){ try{ return JSON.parse(localStorage.getItem('meridian.s
 
 /* go to a leg of the route: fade out, build it, put you at its start, fade in */
 function goLeg(i,instant){ i=clamp(i,0,ROUTE.length-1); if(instant){ enterLeg(i); GAME.fade=0; return; } if(FLOW.transTo>=0) return; FLOW.transTo=i; FLOW.trans=0; sfx('door',.6); }
-function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
+function enterLeg(i){ FLOW.leg=i; const R_=legOf(i); LOBBY.on=false; LOBBY.useI.length=0; FIN.on=false; endN.vis=false;
   clearEnemies(); for(const P of LOOSE.slice()) removePickup(P); for(const G of NADES.slice()) removeNade(G);
   BP.length=0; for(const k in DEC){ DEC[k].length=0; DEC[k].ver=(DEC[k].ver||0)+1; }
   buildLevel(R_.kind,R_.key);
@@ -4732,8 +4791,9 @@ function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
   spawnLevelCrew(R_);
   /* the weapon left for you */
   if(!isCar){ const key=R_.night?'katana':ARSENAL_KEYS[R_.key]; const dropN=R_.night?ST.tokyo.drop2:ST[R_.key].drop; if(key&&dropN&&LEVEL.drops) placeGift(key,LEVEL.drops[R_.night?1:0]); }
+  if(R_.first&&!R_.night) buildLobby();
   respawnPlayer();
-  if(GAME.started) levelAudio();
+  if(GAME.started){ levelAudio(); storyEnter(i,R_); if(LOBBY.on) lobbyStart(); }
   if(!isCar) saveProgress();
   $('floorTag').textContent=R_.title+' · '+R_.sub;
   if(XR.on){ vrRecenter(); vrToast(R_.title,2.4); }
@@ -4742,7 +4802,7 @@ function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
 function levelAudio(){ if(typeof MUSIC==='undefined') return; const R_=legOf(FLOW.leg); try{ if(R_.kind==='car'){ MUSIC.ambience(null); MUSIC.play(R_.key); MUSIC.rumble(true); } else { MUSIC.play(null); MUSIC.rumble(false); MUSIC.ambience(R_.amb); } MUSIC.setVolumes(GAME.vol); }catch(_){} }
 function respawnPlayer(){ Object.assign(PL,{x:FLOOR.start.x,z:FLOOR.start.z,yaw:FLOOR.start.yaw,pitch:0,hp:100,hurtT:9,kickCd:0,dead:false}); GAME.clear=false; $('msg').hidden=true; $('sblood').innerHTML=''; if(XR.on) vrRecenter(); }
 /* restart the level you are in (after dying, or from the menu): same level, same arsenal you came in with */
-function restartLevel(){ const keep=FLOW.armed||{}; enterLeg(FLOW.leg); if(keep.R) equip(HANDS.R,newItem(keep.R)); if(keep.L) equip(HANDS.L,newItem(keep.L)); }
+function restartLevel(){ const keep=FLOW.armed||{}, wasDead=PL.dead; enterLeg(FLOW.leg); if(wasDead) storyDeath(); if(keep.R) equip(HANDS.R,newItem(keep.R)); if(keep.L) equip(HANDS.L,newItem(keep.L)); }
 function rememberArms(){ FLOW.armed={R:HANDS.R.item&&HANDS.R.item.key,L:HANDS.L.item&&HANDS.L.item.key}; }
 
 function applyLevelLight(R_){
@@ -4782,7 +4842,7 @@ function updateShadows(){ const L_=L; SH_TMP.length=0; SH_TMP.push([PL.x,PL.z,.3
     const sp=Math.hypot(x[h]-x[a],x[h+2]-x[a+2]); SH_TMP.push([lying?(x[a]+x[h])/2:mx,lying?(x[a+2]+x[h+2])/2:mz,lying?.35+sp*.5:.4,(mx-PL.x)**2+(mz-PL.z)**2]); }
   SH_TMP.sort((p,q)=>p[3]-q[3]); const n=Math.min(12,SH_TMP.length);
   for(let i=0;i<n;i++){ const q=SH_TMP[i]; L_.sh[i*4]=q[0]; L_.sh[i*4+1]=0; L_.sh[i*4+2]=q[1]; L_.sh[i*4+3]=q[2]; } L_.shN=n; }
-function flowTick(dt,gdt){ updateShadows();
+function flowTick(dt,gdt){ updateShadows(); dlgTick(dt); cardTick(dt); lobbyTick(dt); watchTick();
   /* fading between levels */
   if(FLOW.transTo>=0){ FLOW.trans+=dt; GAME.fade=clamp(FLOW.trans/.45,0,1); if(FLOW.trans>=.5){ rememberArms(); const keepR=HANDS.R.item,keepL=HANDS.L.item; enterLeg(FLOW.transTo); equip(HANDS.R,keepR); equip(HANDS.L,keepL); rememberArms(); FLOW.transTo=-1; FLOW.trans=0; } return; }
   GAME.fade=Math.max(0,GAME.fade-dt/.5);
@@ -4791,13 +4851,13 @@ function flowTick(dt,gdt){ updateShadows();
   /* the crews' extra life: idle talk, bosses taunting, people sitting down stand up to fight */
   crewChatter(dt); for(const E of enemies) if(E.seated&&E.aware&&E.kind!=='seated'){ E.seated=false; }
   /* the gift spins until taken */
-  if(FLOW.gift){ if(!LOOSE.includes(FLOW.gift)){ FLOW.gift=null; vrToast(WPN[FLOW.giftKey].label,1.8); } else FLOW.gift.node.r[1]+=dt*1.2; }
+  if(FLOW.gift){ if(!LOOSE.includes(FLOW.gift)){ FLOW.gift=null; vrToast(WPN[FLOW.giftKey].label,1.8); storyPickup(FLOW.giftKey); } else FLOW.gift.node.r[1]+=dt*1.2; }
   /* safe to move on? nobody left who can still fight */
   const threat=enemies.some(E=>!E.dead&&(E.st==='alert'||E.st==='idle')&&E.kind!=='seated');
-  if(!threat&&!FLOW.cleared){ FLOW.cleared=true; if(R_.kind==='car'&&enemies.length){ vrToast(R_.last?'Take the controls':'The door is open',2.2); sfx('click',.8); } }
+  if(!threat&&!FLOW.cleared){ FLOW.cleared=true; if(R_.kind==='car'&&enemies.length){ if(R_.last) finaleArm(); else { vrToast('The door is open',2.2); storyCleared(FLOW.leg,R_); } sfx('click',.8); } }
   FLOW.exitOpen=FLOW.cleared||GAME.unlockAll;
   if(FLOW.lamp) FLOW.lamp.mesh.mats[0]=FLOW.exitOpen?mExitGreen:mExitRed;
-  if(R_.kind==='car'){ if(FLOW.exitOpen&&(R_.last?PL.x>9.2&&Math.abs(PL.z)<1.8:PL.x>RX-1.1&&Math.abs(PL.z)<1.3)){ if(R_.last) endOfLine(); else goLeg(FLOW.leg+1); } }
+  if(R_.kind==='car'){ if(FLOW.exitOpen&&(R_.last?PL.x>9.2&&Math.abs(PL.z)<1.8:PL.x>RX-1.1&&Math.abs(PL.z)<1.3)){ if(!R_.last) goLeg(FLOW.leg+1); } }
   else if(FLOW.marker){ FLOW.marker.r[1]+=dt*.4; if(Math.abs(PL.x-FLOW.boardX)<.9&&PL.z<-RZ+1.6&&GAME.t-FLOW.startT>1.5) goLeg(FLOW.leg+1); }
   /* the train runs: scenery scrolls past the windows */
   if(R_.kind==='car'&&OUT.vis){ const {eye}=camBasis(); updateOut(dt,FLOW.speed*(GAME.trainK??1)*GAME.ts,eye||[PL.x,1.6,PL.z],PL.x); }
@@ -4811,6 +4871,217 @@ function openSpotNear(st){ const c0=navCell(st.x,st.z); if(c0>=0&&!FLOOR.nav[c0]
 /* flat screen: G takes the nearest weapon lying within reach into your right hand */
 function flatPickup(){ let best=null,bd=1.7; for(const P of LOOSE){ const q=P.node.p,d=Math.hypot(q[0]-PL.x,q[2]-PL.z); if(d<bd){ bd=d; best=P; } }
   if(!best) return false; equip(HANDS.R,best.item); removePickup(best); sfx('click',.6); return true; }
+
+/* =====================================================================
+   DIALOGUE. Lines are spoken in the old way: a subtitle with the speaker's name, and a voice made of
+   babble, a stream of formant syllables at the speaker's own pitch (think a 90s console RPG). The handler
+   comes through an earpiece (band-limited, a little crackle), the station PA through a tannoy with a chime.
+   In the headset the subtitle sits on a small panel that drifts in front of you, low, and never locks to
+   your head; on a flat screen it's a caption at the bottom.
+   say([[who,text],...],{at,key,prio}) queues lines; key makes a set play only once per run.
+   ===================================================================== */
+const DLG={q:[],cur:null,t:0,said:new Set(),gap:0,panelP:null};
+function speakerOf(who){ const S=typeof STORY!=='undefined'?STORY:null;
+  if(who==='nico') return {name:'NICO',col:'#3fae9a',v:(S&&S.nicoVoice)||{f0:100,rasp:.3,breath:.35}};
+  if(who==='handler') return {name:((S&&S.handler&&(S.handler.short||S.handler.name))||'HANDLER').toUpperCase(),col:'#ffb020',v:(S&&S.handler&&S.handler.voice)||{f0:178,rasp:.15,breath:.4},radio:true};
+  if(who==='pa') return {name:'STATION',col:'#29e0e6',v:{f0:196,rasp:.05,breath:.3},pa:true};
+  if(who==='phone') return {name:'PAYPHONE',col:'#b8d0ff',v:{f0:150,rasp:0,breath:.2},radio:true};
+  const R_=typeof ROSTER!=='undefined'&&ROSTER[who], C_=typeof CREW_OF!=='undefined'&&CREW_OF[who], K=C_&&CREWS[C_.crew];
+  return {name:((R_&&R_.name)||who).toUpperCase(),col:(R_&&R_.color)||'#ff6a3a',v:Object.assign({f0:120,rasp:.25,breath:.4},K&&K.voice,C_&&C_.voice)}; }
+function say(lines,o={}){ if(!lines||!lines.length) return false; if(o.key){ if(DLG.said.has(o.key)) return false; DLG.said.add(o.key); }
+  if(o.cut){ DLG.q.length=0; if(DLG.cur){ DLG.cur=null; dlgShow(null); } }
+  for(const l of lines){ const [who,text]=Array.isArray(l)?l:['nico',l]; if(text) DLG.q.push({who,text,at:o.at||null,dur:o.dur||clamp(1.1+text.length*.058,1.8,7)}); } return true; }
+function sayOne(list,who,o){ if(!list||!list.length) return; const l=pick(list); say([Array.isArray(l)?l:[who||'nico',l]],o); }
+function dlgTick(dt){ if(DLG.gap>0){ DLG.gap-=dt; return; }
+  if(DLG.cur){ DLG.t+=dt; if(DLG.t>=DLG.cur.dur){ DLG.cur=null; dlgShow(null); DLG.gap=.25; } }
+  if(!DLG.cur&&DLG.q.length){ DLG.cur=DLG.q.shift(); DLG.t=0; dlgShow(DLG.cur); babble(DLG.cur); }
+  dlgPlace(dt); }
+function dlgClear(){ DLG.q.length=0; DLG.cur=null; dlgShow(null); }
+
+/* ---------- the caption ---------- */
+(function(){ const d=document.createElement('div'); d.id='subs'; d.hidden=true; d.innerHTML='<b></b><span></span>'; document.body.append(d); })();
+const SUBW=1024,SUBH=150, subTex=tex(SUBW,SUBH,null); subTex.dyn=true;
+const subN=N(world); subN.vis=false; mk(plane(.86,.126),M(subTex,{unlit:true,cut:true,double:true}),subN,0,0,0);
+function dlgShow(L){ const el=$('subs'); if(!L){ el.hidden=true; subN.vis=false; return; }
+  const S=speakerOf(L.who); el.hidden=false; el.firstChild.textContent=S.name; el.firstChild.style.color=S.col; el.lastChild.textContent=L.text;
+  const g=subTex.c.getContext('2d'); g.clearRect(0,0,SUBW,SUBH);
+  g.fillStyle='rgba(8,12,26,.92)'; rr(g,4,4,SUBW-8,SUBH-8,18); g.fill(); g.fillStyle=S.col; g.fillRect(4,SUBH-10,SUBW-8,6);
+  g.textBaseline='top'; g.textAlign='left'; g.fillStyle=S.col; g.font='700 30px "Zen Kaku Gothic New","IBM Plex Mono",sans-serif'; g.fillText(S.name,26,14);
+  g.fillStyle='#f6f0e2'; g.font='600 38px "IBM Plex Mono",monospace'; const words=L.text.split(' '); let line='',y=54,lines=[];
+  for(const w of words){ const t=line?line+' '+w:w; if(g.measureText(t).width>SUBW-52&&line){ lines.push(line); line=w; } else line=t; } lines.push(line);
+  if(lines.length>2){ g.font='600 30px "IBM Plex Mono",monospace'; } for(const l of lines.slice(0,3)){ g.fillText(l,26,y); y+=lines.length>2?30:42; }
+  if(subTex.glt){ gl.bindTexture(gl.TEXTURE_2D,subTex.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,subTex.c); }
+  subN.vis=XR.on; DLG.snap=true; }
+function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+/* the panel drifts to a spot a metre ahead and a little low, so you can read it without it riding your head */
+function dlgPlace(dt){ if(!subN.vis||!XR.on||!XR.head) return; const {eye,f}=XR.head, fl=norm3([f[0],0,f[2]]);
+  let tgt=[eye[0]+fl[0]*1.05,eye[1]-.34,eye[2]+fl[2]*1.05];
+  const at=DLG.cur&&DLG.cur.at; if(at&&Math.hypot(at[0]-eye[0],at[2]-eye[2])<4.5) tgt=[at[0],at[1]+.42,at[2]];
+  const k=DLG.snap?1:1-Math.exp(-dt*2.2); DLG.snap=false; subN.p=subN.p.map((v,i)=>v+(tgt[i]-v)*k);
+  const dx=eye[0]-subN.p[0],dz=eye[2]-subN.p[2]; subN.r=[0,Math.atan2(dx,dz),0]; }
+
+/* ---------- babble: syllables of buzz through two formants ---------- */
+const BAB_V=['a','e','i','o','u','ae','eh','uh'];
+function babble(L){ if(GAME.voices===false) return; const ac=audio(); if(!ac||ac.state!=='running') return; const S=speakerOf(L.who),v=S.v;
+  const t0=ac.currentTime+.04, n=Math.max(2,Math.min(26,Math.round(L.text.replace(/[^a-zA-Z0-9]/g,'').length/2.6))), span=Math.min(L.dur-.35,n*.13);
+  const bus=ac.createGain(); bus.gain.value=.5*(GAME.vol&&typeof GAME.vol.voice==='number'?GAME.vol.voice:1);
+  let out=bus;
+  if(S.radio||S.pa){ const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=S.pa?320:520; const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=S.pa?3600:2800; bus.connect(hp); hp.connect(lp); out=lp; }
+  if(S.pa){ const dl=ac.createDelay(.5); dl.delayTime.value=.17; const fb=ac.createGain(); fb.gain.value=.32; out.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(ac.destination); chime(ac,t0-.02); }
+  out.connect(ac.destination);
+  const r=rng((L.text.length*131+L.text.charCodeAt(0))|0); let t=t0+(S.pa?.7:0); const ques=/\?\s*$/.test(L.text), excl=/!\s*$/.test(L.text);
+  for(let i=0;i<n;i++){ const d=span/n*(.75+r()*.5), last=i===n-1; if(r()<.12&&!last){ t+=d*.6; continue; }
+    const vo=VOWEL[BAB_V[(r()*BAB_V.length)|0]], f=v.f0*(1+.08*Math.sin(i*1.7))*(last?(ques?1.25:excl?1.12:.86):1)*(1+(r()-.5)*.1);
+    const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(f,t); o.frequency.linearRampToValueAtTime(f*(last&&!ques?.9:1.03),t+d);
+    const g=ac.createGain(), pk=.11*(excl?1.25:1); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(pk,t+.018); g.gain.setTargetAtTime(pk*.55,t+.03,d*.35); g.gain.linearRampToValueAtTime(0,t+d*.95);
+    const b1=ac.createBiquadFilter(); b1.type='bandpass'; b1.frequency.value=vo[0]*(v.f0>150?1.12:1); b1.Q.value=5; const b2=ac.createBiquadFilter(); b2.type='bandpass'; b2.frequency.value=vo[1]*(v.f0>150?1.1:1); b2.Q.value=7;
+    o.connect(b1); o.connect(b2); b1.connect(g); b2.connect(g); g.connect(bus); o.start(t); o.stop(t+d+.02); t+=d; }
+  setTimeout(()=>{ try{ bus.disconnect(); }catch(_){} },(t-ac.currentTime+1.5)*1000); }
+/* the station chime: three soft bells, falling */
+function chime(ac,t){ [988,784,659].forEach((f,i)=>{ const o=ac.createOscillator(),g=ac.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0,t+i*.2); g.gain.linearRampToValueAtTime(.09,t+i*.2+.01); g.gain.exponentialRampToValueAtTime(.0005,t+i*.2+.9); o.connect(g); g.connect(ac.destination); o.start(t+i*.2); o.stop(t+i*.2+1); }); }
+
+/* =====================================================================
+   THE LOBBY: platform 0 of the Tokyo Meridian Terminal is where the game begins. No title screen: you
+   stand on the platform with the train waiting. The ticket machine starts a new run, continues an old one
+   or opens the settings; the payphone rings with your briefing; the tannoy announces; a vending machine
+   takes a punch for a can of coffee; bottles on a bench take a bullet. Board the train when you're ready.
+   Also here: the gold watch on your left wrist (it shows the next stop), drinking, the story beats on the
+   route, and the finale's horn cord.
+   ===================================================================== */
+const LOBBY={on:false,ring:0,ringT:0,answered:false,paT:14,nagT:50,vendCd:0,targets:[],hits:0,useI:[],ticket:null,root:null};
+/* where things stand on platform 0 (station coordinates after centring; the start is at x=-8, z=RZ-1.6, facing the train at -z) */
+const LOBBY_AT={kiosk:[-6.4,3.4],phone:[-11.2,0],vend:[-13.0,0],bench:[1.6,0],sign:[-3,0]}; /* [x, distance in from the back wall] (kiosk free-standing, facing the start) */
+const mKioskBody=()=>M(P2(32,64,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#24345e'],[.5,'#14203a'],[1,'#0c1426']]); R(g,BRAND.gold,0,0,w,1); R(g,BRAND.gold,0,h-1,w,1); R(g,'rgba(255,255,255,.12)',1,1,1,h-2); },3,77));
+
+/* interactables: a box in the world that a fist can poke (VR) or the crosshair + G can use (flat screen) */
+function addUse(node,half,act,label){ const u={node,half,act,label,held:{}}; LOBBY.useI.push(u); return u; }
+function useBox(u){ const w=u.node.world; return {c:[w[12],w[13],w[14]],h:u.half}; }
+function pokeUse(p,h){ if(!LOBBY.useI.length) return; for(const u of LOBBY.useI){ const b=useBox(u),inside=Math.abs(p[0]-b.c[0])<b.h[0]+.03&&Math.abs(p[1]-b.c[1])<b.h[1]+.03&&Math.abs(p[2]-b.c[2])<b.h[2]+.03;
+    if(inside&&!u.held[h.side]){ u.held[h.side]=true; u.act(h); buzz(h.hand,.6,35); } else if(!inside) u.held[h.side]=false; } }
+function flatUse(){ const {eye,f}=camBasis(); let best=null,bt=2.2; for(const u of LOBBY.useI){ const b=useBox(u); const t=rayAABB(eye,f,v3.sub(b.c,b.h.map(v=>v+.05)),v3.add(b.c,b.h.map(v=>v+.05))); if(t!==null&&t<bt){ bt=t; best=u; } }
+  if(best){ best.act(null); return true; } return false; }
+function rayAABB(o,d,mn,mx){ let t0=0,t1=1e9; for(let i=0;i<3;i++){ const inv=1/(d[i]||1e-9); let a=(mn[i]-o[i])*inv,b=(mx[i]-o[i])*inv; if(a>b){ const s=a; a=b; b=s; } t0=Math.max(t0,a); t1=Math.min(t1,b); if(t1<t0) return null; } return t0; }
+
+/* ---------- build the lobby into Tokyo station by day ---------- */
+function buildLobby(){ LOBBY.useI.length=0; LOBBY.targets.length=0; const root=N(LEVEL.root); LOBBY.root=root; LOBBY.on=true; LOBBY.answered=DLG.said.has('briefing'); LOBBY.ring=0; LOBBY.hits=0;
+  const zB=RZ-.05, gold=M(null,{color:0xd4ad5a}), dark=M(null,{color:0x0a0f1c}), steel=M(null,{color:0xb8bcc4}), cream=M(null,{color:0xf2ece0});
+  /* the ticket machine: a navy-and-gold kiosk with a lit screen and three big buttons */
+  { const [x,dz]=LOBBY_AT.kiosk, z=zB-dz, k=N(root,x,0,z); LOBBY.kiosk=k;
+    mk(box(1.1,1.95,.7,{at:[0,.975,0]}),mKioskBody(),k); mk(box(1.16,.08,.76),gold,k,0,1.99,0); mk(box(1.16,.12,.76),dark,k,0,.06,0);
+    const scr=brandTex(512,384,(g,w,h)=>{ g.fillStyle='#070b16'; g.fillRect(0,0,w,h); logoLockup(g,18,16,w-36,150);
+      const sv=loadProgress(), K=(typeof STORY!=='undefined'&&STORY.lobby&&STORY.lobby.kiosk)||{};
+      g.fillStyle=BRAND.gold; g.fillRect(18,186,w-36,3); g.textAlign='left'; g.textBaseline='top';
+      g.fillStyle=BRAND.cream; g.font=`700 30px ${BRAND.jp}`; g.fillText(K.title||'WORLD LOOP · ONE DAY · ONE SEAT',22,204);
+      g.font=`600 24px ${BRAND.mono}`; g.fillStyle='#b8d0ff'; g.fillText(sv&&sv.leg>0?'Saved at: '+ROUTE[sv.leg].title.replace(' · B5',''):'No journey saved.',22,250);
+      const labs=[K.newRun||'NEW RUN',K.cont||'CONTINUE',K.settings||'SETTINGS'], cols=['#7cf06a',sv&&sv.leg>0?BRAND.gold2:'#4a5468','#29e0e6'];
+      labs.forEach((s,i)=>{ const bx=22+i*((w-44)/3); g.fillStyle=cols[i]; g.font=`700 24px ${BRAND.jp}`; g.fillText(s,bx+6,312); g.fillRect(bx+6,344,(w-44)/3-24,6); }); });
+    LOBBY.kioskTex=scr; mk(box(.9,.68,.02),M(scr,{unlit:true}),k,0,1.48,.351); mk(box(.98,.76,.03),gold,k,0,1.48,.34);
+    mk(box(1.02,.1,.3),dark,k,0,1.05,.42,-.5); /* the button shelf */
+    const bm=[G('#7cf06a'),G('#f2d27a'),G('#29e0e6')], acts=[()=>kioskNew(),()=>kioskCont(),()=>{ sfx('click'); openMenu(); }];
+    for(let i=0;i<3;i++){ const b=mk(cyl(.07,.07,.05,14),bm[i],k,-.3+i*.3,1.11,.46,Math.PI/2-.5); addUse(b,[.075,.06,.07],h=>{ b.p[2]=.44; setTimeout(()=>b.p[2]=.46,160); acts[i](); }); }
+    const slot=mk(box(.3,.03,.05),dark,k,.25,.62,.36); LOBBY.slot=slot; }
+  /* the payphone: wall-hung, receiver on the hook, rings until you pick up */
+  { const [x]=LOBBY_AT.phone, z=zB-.12, p=N(root,x,0,z,0,Math.PI,0);
+    mk(box(.5,.8,.22,{at:[0,.4,0]}),M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#3a9a6a'],[1,'#1e6a44']]); R(g,'#0e3a24',2,4,w-4,10); for(let k=0;k<12;k++) R(g,'#d8e0d8',3+(k%3)*4,17+(k/3|0)*3.4,3,2); R(g,'rgba(255,255,255,.15)',1,1,1,h-2); },2,78)),p,0,1.05,0);
+    mk(box(.62,.06,.3),cream,p,0,1.98,0); mk(box(.6,.5,.03),M(brandTex(128,96,(g,w,h)=>{ g.fillStyle='#0a1226'; g.fillRect(0,0,w,h); roundel(g,22,48,18); g.fillStyle=BRAND.cream; g.font=`700 22px ${BRAND.jp}`; g.textAlign='left'; g.textBaseline='middle'; g.fillText('PHONE',46,36); g.font=`700 16px ${BRAND.jp}`; g.fillStyle=BRAND.gold; g.fillText('電話 · TELEFONO',46,62); }),{unlit:true}),p,0,2.3,-.05);
+    const rec=N(p,-.19,1.32,.14); mk(box(.07,.3,.07),M(null,{color:0x1a1a1e}),rec); mk(box(.09,.08,.1),M(null,{color:0x1a1a1e}),rec,0,.15,.01); mk(box(.09,.08,.1),M(null,{color:0x1a1a1e}),rec,0,-.15,.01);
+    LOBBY.receiver=rec; LOBBY.phoneAt=[p.p[0],1.5,z-.15]; addUse(rec,[.08,.2,.08],()=>answerPhone()); }
+  /* the vending machine: punch it */
+  { const [x]=LOBBY_AT.vend, z=zB-.4, v=N(root,x,0,z,0,Math.PI,0); LOBBY.vend=v;
+    mk(box(1.0,1.9,.7,{at:[0,.95,0]}),F(M(null,{color:0xd63a2c}),M(P2(32,64,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#e84a3a'],[1,'#b82a1e']]); vfill(g,3,4,w-6,28,[[0,'#f2f8ff'],[1,'#c8d8e8']]); const r=rng(31);
+      for(let y=0;y<3;y++) for(let k=0;k<5;k++){ const c=['#d63a2c','#2a6ad8','#f2c230','#2a9a5a','#8a5a2a'][(k+y*2)%5]; vfill(g,5+k*5,6+y*9,3,7,[[0,mix(c,'#ffffff',.3)],[1,c]]); R(g,'#3a3a40',5+k*5,13+y*9,3,1); }
+      R(g,'#1a1a20',4,36,w-8,3); R(g,'#2a2a30',4,42,w-8,8); R(g,'#0e0e12',8,53,16,7); R(g,'#f2c230',w-8,44,3,4); },2,79),{emissive:0x2a2a2a})),v);
+    addUse(v,[.5,.95,.36],h=>vendPunch(h)); LOBBY.vendTray=[v.p[0],.45,z-.5]; }
+  /* the practice bench: five bottles to shoot */
+  { const [x]=LOBBY_AT.bench, z=zB-.5, b=N(root,x,0,z,0,Math.PI,0); const wood=M(P2(16,16,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#b88a5a'],[1,'#8a5e36']]); for(let y=0;y<h;y+=4) R(g,'#6a4428',0,y,w,1); },4,7));
+    mk(box(2.2,.06,.5),wood,b,0,.46,0); for(const dx of [-1,1]) mk(box(.06,.46,.45),steel,b,dx,.23,0);
+    for(let i=0;i<5;i++){ const n=N(b,-.8+i*.4,.49,0); pBottleWhole(n,i); LOBBY.targets.push({n,alive:true,r:.06}); } LOBBY.bench=b; }
+  /* the house sign, hung over the platform: the lockup, both faces */
+  { const [x]=LOBBY_AT.sign, s=N(root,x,3.35,0); const t=brandTex(1024,256,(g,w,h)=>{ g.fillStyle=BRAND.navy; g.fillRect(0,0,w,h); g.strokeStyle=BRAND.gold; g.lineWidth=6; g.strokeRect(10,10,w-20,h-20); logoLockup(g,40,28,w-80,h-56); });
+    mk(box(4.4,1.1,.08),F(dark,M(t,{unlit:true}),M(t,{unlit:true})),s); mk(box(4.5,.06,.12),gold,s,0,.58,0); mk(box(4.5,.06,.12),gold,s,0,-.58,0); for(const dx of [-2,2]) mk(box(.03,1.6,.03),gold,s,dx,1.4,0); }
+  updateWorld(world,null); }
+function pBottleWhole(n,i){ const c=['#2a6a3a','#6a3a1a','#2a4a8a','#3a6a2a','#8a6a1a'][i%5], m=M(null,{color:hexInt(c),emissive:hexInt(mix(c,'#000000',.6))});
+  mk(cyl(.035,.035,.16,8),m,n,0,.08,0); mk(cyl(.014,.033,.06,8,{open:true}),m,n,0,.19,0); mk(cyl(.014,.014,.05,6),m,n,0,.245,0); mk(box(.05,.05,.002),M(null,{color:0xf2ece0}),n,0,.08,.036); }
+
+/* ---------- what the lobby does ---------- */
+function lobbyStart(){ if(!LOBBY.on) return; LOBBY.ring=LOBBY.answered?0:1; LOBBY.ringT=2.5; LOBBY.paT=6; LOBBY.nagT=55; if(typeof STORY!=='undefined'&&!LOBBY.answered) say([['phone',STORY.lobby.phoneRing||'The payphone is ringing.']],{at:LOBBY.phoneAt}); }
+function lobbyTick(dt){ if(!LOBBY.on||!GAME.started) return; LOBBY.vendCd-=dt;
+  if(LOBBY.ring){ LOBBY.ringT-=dt; if(LOBBY.ringT<=0){ LOBBY.ringT=3; ringTone(); } LOBBY.receiver.p[0]=-.19+Math.sin(GAME.t*60)*.004; }
+  LOBBY.paT-=dt; if(LOBBY.paT<=0){ LOBBY.paT=rnd(28,42); if(!DLG.cur&&typeof STORY!=='undefined') say([['pa',pick(STORY.lobby.pa)]]); }
+  if(LOBBY.answered){ LOBBY.nagT-=dt; if(LOBBY.nagT<=0){ LOBBY.nagT=rnd(45,70); if(!DLG.cur&&typeof STORY!=='undefined') sayOne(STORY.lobby.idle,'handler'); } }
+  if(LOBBY.ticket){ const T=LOBBY.ticket; T.t+=dt; T.n.p[2]=Math.min(.12,T.t*.3)+.37; if(T.t>6){ const i=T.n.par.kids.indexOf(T.n); if(i>=0) T.n.par.kids.splice(i,1); LOBBY.ticket=null; } } }
+function answerPhone(){ if(!LOBBY.on) return; LOBBY.ring=0; LOBBY.receiver.p=[-.19,1.62,.22]; sfx('click',.8);
+  if(typeof STORY==='undefined') return; if(!say(STORY.lobby.briefing,{key:'briefing',cut:true,at:LOBBY.phoneAt})) say([['handler',pick(STORY.lobby.idle)[1]||'Get on the train, Nico.']],{at:LOBBY.phoneAt}); LOBBY.answered=true;
+  setTimeout(()=>{ if(LOBBY.receiver) LOBBY.receiver.p=[-.19,1.32,.14]; },60000); }
+function ringTone(){ const ac=audio(); if(!ac||ac.state!=='running') return; const t=ac.currentTime, P=LOBBY.phoneAt, d=Math.hypot(P[0]-PL.x,P[2]-PL.z), v=.16/Math.max(1,d*.35);
+  for(let k=0;k<2;k++){ const o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain(); o.type=o2.type='square'; o.frequency.value=440; o2.frequency.value=480; g.gain.setValueAtTime(0,t+k*.5); g.gain.linearRampToValueAtTime(v,t+k*.5+.01); g.gain.setValueAtTime(v,t+k*.5+.38); g.gain.linearRampToValueAtTime(0,t+k*.5+.4);
+    const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2200; o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(ac.destination); o.start(t+k*.5); o2.start(t+k*.5); o.stop(t+k*.5+.42); o2.stop(t+k*.5+.42); } }
+function kioskNew(){ sfx('click'); try{ localStorage.removeItem('meridian.save'); }catch(_){} LOBBY.kioskTex.paint(); GAME.stats={kills:0,deaths:0,start:GAME.t};
+  const K=(typeof STORY!=='undefined'&&STORY.lobby&&STORY.lobby.kiosk)||{}; vrToast(K.thanks||'TICKET PRINTED · PLATFORM 0',2.2); printTicket(); }
+function kioskCont(){ const sv=loadProgress(); if(!sv||!(sv.leg>0)){ sfx('bump',.5); return; } sfx('click'); startRun(true); }
+function printTicket(){ if(LOBBY.ticket||!LOBBY.kiosk) return; const tt=brandTex(128,48,(g,w,h)=>{ g.fillStyle='#f6efe0'; g.fillRect(0,0,w,h); g.fillStyle=BRAND.navy; g.fillRect(0,0,w,10); roundel(g,16,28,12); g.fillStyle=BRAND.navy; g.font=`700 12px ${BRAND.jp}`; g.textAlign='left'; g.textBaseline='middle'; g.fillText('TOKYO ⟶ TOKYO',32,22); g.font=`600 10px ${BRAND.mono}`; g.fillText('1 ADULT · WORLD LOOP · CAR ANY',32,36); for(let x=0;x<w;x+=6) g.fillRect(x,h-3,3,3); });
+  const n=mk(box(.2,.004,.075),F(M(null,{color:0xf6efe0}),M(null,{color:0xf6efe0}),M(tt),M(tt)),LOBBY.kiosk,.25,.62,.37); LOBBY.ticket={n,t:0}; sfx('click',.5); }
+function vendPunch(h){ if(LOBBY.vendCd>0) return; LOBBY.vendCd=1.2; sfx('punch',.9); sfx('bump',.7);
+  if(h&&XR.on){ const s=h.vel?Math.hypot(...h.vel):3; if(s<1.2) return; }
+  setTimeout(()=>{ sfx('bash',.5); const T=LOBBY.vendTray, Mw=m4.make(); m4.compose(Mw,[T[0]+rnd(-.15,.15),T[1]+.1,T[2]],[0,rnd(0,3),0],[1,1,1]); const P=addPickup(newItem('can'),Mw,[rnd(-.3,.3),.6,-1.1],[rnd(-3,3),rnd(-3,3),0]);
+    if(typeof STORY!=='undefined'&&Math.random()<.5) sayOne(STORY.lobby.vending,'nico'); },350); }
+/* the practice bottles: bullets test them before the walls */
+function shotTargets(o,d,tmax){ if(!LOBBY.on) return false; for(const T of LOBBY.targets){ if(!T.alive) continue; const w=T.n.world, c=[w[12],w[13]+.12,w[14]], oc=v3.sub(c,o), t=v3.dot(oc,d); if(t<0||t>tmax) continue; const q=v3.sub(oc,v3.sc(d,t));
+    if(v3.dot(q,q)<T.r*T.r){ T.alive=false; T.n.vis=false; sfx('glass',.9); for(let i=0;i<12;i++) emit(c,[rnd(-1.5,1.5),rnd(.5,2.5),rnd(-1.5,1.5)],rnd(.008,.018),'dust',1.2); LOBBY.hits++;
+      if(LOBBY.targets.every(T=>!T.alive)){ if(typeof STORY!=='undefined') sayOne(STORY.lobby.practice,'nico'); setTimeout(()=>{ for(const T of LOBBY.targets){ T.alive=true; T.n.vis=true; } },4000); } return true; } } return false; }
+
+/* ---------- the canned coffee, and drinking anything you hold up to your mouth ---------- */
+function pCan(g){ const body=M(P2(32,16,(c,w,h)=>{ vfill(c,0,0,w,h,[[0,'#3a2418'],[1,'#1e120c']]); R(c,'#f2c230',0,3,w,2); R(c,'#f2ece0',0,h-5,w,2); c.fillStyle='#f2ece0'; c.font='bold 6px monospace'; c.fillText('BLACK',3,10); },2,91)), top=M(null,{color:0xc8ccd2});
+  mk(cyl(.033,.033,.115,12),[body,top,top],g,0,0,.02,Math.PI/2); return g; }
+WPN.can={label:'Canned coffee',build:pCan,grip:[0,0,0],melee:'blunt',reach:1.0,pts:[[0,0,.06]],speed:1.4,drink:true};
+function tryDrink(h){ const it=h.item; if(!it||it.drunk) return; const w=WPN[it.key]; if(!(w.drink||it.key==='bottle')) return; if(!XR.on||!XR.head) return;
+  const {eye,u,f}=XR.head, mouth=v3.add(v3.add(eye,v3.sc(u,-.085)),v3.sc(f,.06)), Mi=h.node.world, p=[Mi[12],Mi[13],Mi[14]];
+  if(Math.hypot(p[0]-mouth[0],p[1]-mouth[1],p[2]-mouth[2])<.13) drink(it,h); }
+function drink(it,h){ it.drunk=true; glug(); PL.hp=Math.min(100,PL.hp+(it.key==='can'?35:20)); if(h) buzz(h.hand,.3,200); if(typeof STORY!=='undefined'&&Math.random()<.6) setTimeout(()=>sayOne(STORY.lobby.vending,'nico'),900); }
+function flatDrink(){ const it=HANDS.R.item; if(!it||it.drunk) return false; const w=WPN[it.key]; if(!(w.drink||it.key==='bottle')) return false; drink(it,null); return true; }
+function glug(){ const ac=audio(); if(!ac) return; const t=ac.currentTime; for(let k=0;k<4;k++){ const o=ac.createOscillator(),g=ac.createGain(); o.type='sine'; o.frequency.setValueAtTime(180+k*12,t+k*.22); o.frequency.exponentialRampToValueAtTime(90,t+k*.22+.15); g.gain.setValueAtTime(0,t+k*.22); g.gain.linearRampToValueAtTime(.18,t+k*.22+.02); g.gain.exponentialRampToValueAtTime(.001,t+k*.22+.18); o.connect(g); g.connect(ac.destination); o.start(t+k*.22); o.stop(t+k*.22+.2); } }
+
+/* ---------- the gold watch on your left wrist: where the train goes next ---------- */
+const watchTex=brandTex(128,128,(g,w,h)=>{ const R_=legOf(FLOW.leg); let nxt=null; for(let i=FLOW.leg+1;i<ROUTE.length;i++) if(ROUTE[i].kind==='station'){ nxt=ROUTE[i]; break; }
+  const W_=(typeof STORY!=='undefined'&&STORY.watch)||{}; g.fillStyle='#0a1226'; g.beginPath(); g.arc(64,64,62,0,7); g.fill(); g.strokeStyle=BRAND.gold; g.lineWidth=6; g.beginPath(); g.arc(64,64,59,0,7); g.stroke();
+  for(let k=0;k<12;k++){ const a=k/12*Math.PI*2; g.fillStyle=BRAND.gold; g.fillRect(64+Math.sin(a)*50-2,64-Math.cos(a)*50-2,4,4); }
+  g.textAlign='center'; g.textBaseline='middle'; g.fillStyle=BRAND.gold; g.font=`700 15px ${BRAND.jp}`; g.fillText(nxt?(W_.label||'NEXT'):(W_.end||'END OF THE LINE'),64,40);
+  const name=nxt?nxt.title.replace(' · B5','').toUpperCase():''; let fs=22; g.font=`400 ${fs}px ${BRAND.word}`; while(g.measureText(name).width>100&&fs>10){ fs--; g.font=`400 ${fs}px ${BRAND.word}`; } g.fillStyle=BRAND.cream; g.fillText(name,64,68);
+  g.fillStyle=BRAND.hot; g.font=`700 12px ${BRAND.mono}`; g.fillText(String(FLOW.leg+1).padStart(2,'0')+' / '+ROUTE.length,64,94); }); watchTex.dyn=true;
+const watchN=N(HANDS.L.armN,-.052,0,-.03,0,-Math.PI/2,0); mk(cyl(.021,.021,.008,16),M(null,{color:0xd4ad5a}),watchN,0,0,0,Math.PI/2); mk(plane(.036,.036),M(watchTex,{unlit:true}),watchN,0,0,.0045);
+let watchLeg=-1; function watchTick(){ watchN.vis=XR.on; if(watchLeg!==FLOW.leg){ watchLeg=FLOW.leg; watchTex.paint(); } }
+
+/* ---------- the story along the route ---------- */
+function storyEnter(i,R_){ if(typeof STORY==='undefined') return; const S=STORY;
+  const city=R_.kind==='station'?(R_.night?'tokyonight':R_.key):null;
+  if(R_.first&&!R_.night){ showCard('TOKYO','Platform 0 · Tokyo Meridian Terminal'); return; }
+  showCard(R_.title.replace(' · B5','').toUpperCase(),R_.sub);
+  if(city&&S.stations[city]) setTimeout(()=>{ if(FLOW.leg===i) say(S.stations[city],{key:'st'+i}); },2200);
+  if(R_.kind==='car'&&S.cars[R_.key]) setTimeout(()=>{ if(FLOW.leg===i) say(S.cars[R_.key].enter,{key:'car'+i}); },1600); }
+function storyCleared(i,R_){ if(typeof STORY==='undefined'||R_.kind!=='car') return; const c=STORY.cars[R_.key]; if(c&&!R_.last) setTimeout(()=>say(c.clear,{key:'clr'+i}),900); }
+function storyKill(E){ if(typeof STORY==='undefined') return; GAME.stats=GAME.stats||{kills:0,deaths:0}; GAME.stats.kills++;
+  if(E.boss&&STORY.bossDown[E.id]) setTimeout(()=>say(STORY.bossDown[E.id],{key:'boss'+E.id}),1200);
+  else if(Math.random()<.07&&!DLG.cur&&!DLG.q.length) setTimeout(()=>sayOne(STORY.kills,'nico'),700); }
+function storyPickup(key){ if(typeof STORY==='undefined') return; const l=STORY.pickup[key]; if(l) say([['nico',l]],{key:'pk'+key}); }
+function storyDeath(){ if(typeof STORY==='undefined') return; GAME.stats=GAME.stats||{kills:0,deaths:0}; GAME.stats.deaths++; dlgClear(); setTimeout(()=>sayOne(STORY.death,'handler'),1400); }
+
+/* ---------- the finale: Ren is down, take the controls, pull the horn ---------- */
+const FIN={on:false,t:0,cord:null,pulled:false};
+function finaleArm(){ if(FIN.on) return; FIN.on=true; FIN.t=0; FIN.pulled=false; const root=LEVEL.root, red=M(null,{color:0xc8202a,emissive:0x400808});
+  const c=N(root,10.6,2.0,0); mk(cyl(.006,.006,.9,5),M(null,{color:0xd8d0b8}),c,0,.45,0); const hdl=mk(cyl(.03,.03,.16,10),red,c,0,-.02,0); FIN.cord=c; FIN.handle=hdl;
+  LOBBY.useI.length=0; addUse(hdl,[.06,.1,.06],()=>pullHorn());
+  if(typeof STORY!=='undefined') say(STORY.ending.lines.slice(0,Math.max(1,STORY.ending.lines.length-3)),{key:'ending1',cut:true}); vrToast('Pull the horn',3); }
+function pullHorn(){ if(FIN.pulled) return; FIN.pulled=true; FIN.cord.p[1]=1.8; horn(); if(typeof STORY!=='undefined') say(STORY.ending.lines.slice(Math.max(1,STORY.ending.lines.length-3)),{key:'ending2',cut:true});
+  setTimeout(()=>showEndCard(),3500); }
+function horn(){ const ac=audio(); if(!ac) return; const t=ac.currentTime; for(const f of [277,349,415]){ const o=ac.createOscillator(),g=ac.createGain(),lp=ac.createBiquadFilter(); o.type='sawtooth'; o.frequency.value=f; lp.type='lowpass'; lp.frequency.value=1400; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.09,t+.08); g.gain.setValueAtTime(.09,t+2.4); g.gain.linearRampToValueAtTime(0,t+3.2); o.connect(lp); lp.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+3.3); } }
+const endTex=brandTex(1024,640,(g,w,h)=>{ g.fillStyle='#070b16'; g.fillRect(0,0,w,h); g.strokeStyle=BRAND.gold; g.lineWidth=6; g.strokeRect(14,14,w-28,h-28); logoLockup(g,60,40,w-120,190);
+  const card=(typeof STORY!=='undefined'&&STORY.ending&&STORY.ending.card)||['END OF THE LINE']; const st=GAME.stats||{kills:0,deaths:0};
+  g.textAlign='center'; g.textBaseline='top'; let y=270; card.forEach((l,i)=>{ g.fillStyle=i?BRAND.cream:BRAND.gold2; g.font=i?`600 26px ${BRAND.mono}`:`400 46px ${BRAND.word}`; g.fillText(l,w/2,y,w-120); y+=i?40:62; });
+  g.fillStyle=BRAND.teal; g.font=`700 26px ${BRAND.jp}`; g.fillText(`${st.kills} DOWN  ·  ${st.deaths} RESTARTS  ·  ONE DAY  ·  ONE TRAIN`,w/2,h-90); }); endTex.dyn=true;
+const endN=N(world); endN.vis=false; mk(plane(2.4,1.5),M(endTex,{unlit:true}),endN,0,0,0);
+function showEndCard(){ endTex.paint(); const {eye,f}=camBasis(), fl=norm3([f[0],0,f[2]]); endN.p=[eye[0]+fl[0]*2.6,eye[1]+.1,eye[2]+fl[2]*2.6]; endN.r=[0,Math.atan2(-fl[0],-fl[2]),0]; endN.vis=true;
+  showMsg('END OF THE LINE',((typeof STORY!=='undefined'&&STORY.ending.card)||[]).slice(1).join(' '));
+  setTimeout(()=>{ endN.vis=false; $('msg').hidden=true; FIN.on=false; DLG.said.clear(); equip(HANDS.R,null); equip(HANDS.L,null); goLeg(0); },16000); }
 
 /* =====================================================================
    THE MENU: everything you might want to play with, on a panel that floats in front of you.
@@ -4896,7 +5167,7 @@ function btnRect(i){ const c=i%COLS,r=Math.floor(i/COLS); return [12+c*336,86+r*
 function tabRect(i){ return [8+i*126,8,120,62]; }
 function drawMenu(){ const g=menuTex.c.getContext('2d'); g.fillStyle='#0a1226'; g.fillRect(0,0,MW,MH); g.fillStyle='#d4ad5a'; g.fillRect(0,MH-4,MW,4);
   g.textAlign='center'; g.textBaseline='middle';
-  PAGES.forEach((p,i)=>{ const [x,y,w,h]=tabRect(i),on=i===MENU.page; g.fillStyle=on?'#d4ad5a':'#16224a'; g.fillRect(x,y,w,h); g.fillStyle=on?'#0a1226':'#b8d0ff'; g.font='400 19px Bungee,"Arial Black",sans-serif'; g.fillText(p,x+w/2,y+h/2,w-8); });
+  PAGES.forEach((p,i)=>{ const [x,y,w,h]=tabRect(i),on=i===MENU.page; g.fillStyle=on?'#d4ad5a':'#16224a'; g.fillRect(x,y,w,h); g.fillStyle=on?'#0a1226':'#b8d0ff'; g.font='700 19px "Zen Kaku Gothic New","Arial Black",sans-serif'; g.fillText(p,x+w/2,y+h/2,w-8); });
   pageOpts().forEach((o,i)=>{ if(i>=COLS*ROWS) return; const [x,y,w,h]=btnRect(i),lit=MENU.lit[i]>0; g.fillStyle=lit?'#ff6a3a':'#1c2c5e'; g.fillRect(x,y,w,h); g.fillStyle='#2e4a90'; g.fillRect(x,y,w,3);
     g.fillStyle=lit?'#0a1226':'#f2ede2'; g.font='700 23px "IBM Plex Mono",monospace'; g.fillText(typeof o.label==='function'?o.label():o.label,x+w/2,y+h/2,w-14); });
   if(menuTex.glt){ gl.bindTexture(gl.TEXTURE_2D,menuTex.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,menuTex.c); } MENU.dirty=false; }
@@ -5601,7 +5872,7 @@ if(SAVE&&SAVE.leg>0){ $('cont').hidden=false; $('cont').textContent='Continue ·
 function startRun(cont){ if(GAME.started&&!cont) return; const sv=cont?loadProgress():null;
   if(sv&&sv.leg>0){ enterLeg(sv.leg); if(sv.R) equip(HANDS.R,newItem(sv.R)); if(sv.L) equip(HANDS.L,newItem(sv.L)); }
   else { if(!cont) try{ localStorage.removeItem('meridian.save'); }catch(_){} if(FLOW.leg!==0||!LEVEL.root) enterLeg(0); equip(HANDS.R,null); equip(HANDS.L,null); }
-  rememberArms(); GAME.fade=1; GAME.started=true; levelAudio(); }
+  rememberArms(); GAME.fade=1; GAME.started=true; levelAudio(); if(LOBBY.on) lobbyStart(); }
 $('cont').addEventListener('click',()=>{ audio(); startRun(true); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing'); if(!isTouch){ try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(_){} } });
 enterLeg(0); GAME.fade=0;
 window.__game={GAME,PL,XR,FLOW,LEVEL,ROUTE,enemies:()=>enemies,goLeg,enterLeg,restartLevel,HANDS,equip,newItem,WPN,WPN_KEYS,spawnCrew,spawnNear,openMenu,closeMenu,menuAct,MENU,OPTS,PAGES,fireHand,shoot,stab,kick,camBasis,BOXES,FLOOR,LOOSE,hitEnemy,SEGS,X_,PI_,die,clearEnemies,state,L,CREWS,CREW_OF,explode,launchGrenade,toggleSlow,useRight,updateOut};

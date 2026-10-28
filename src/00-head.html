@@ -2,13 +2,14 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: full-screen low-res first-person view; minimal HUD in the corners; a start card over the view; touch controls on phones */
 :root{
   --bg:#0e1628; --ink:#f2ece0; --ink2:#cdd6ee; --muted:#8a96b8; --line:#2e4a90; --panel:rgba(12,20,42,.9); --hot:#ff6a3a;
   --sodium:#d4ad5a; --blood:#8e0c0c;
-  --display:'Bungee','Arial Black',Impact,sans-serif;
+  --display:'Zen Kaku Gothic New','Hiragino Sans','Arial Black',sans-serif;
+  --word:'Limelight',Georgia,'Times New Roman',serif;
   --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
   color-scheme:dark;
 }
@@ -22,7 +23,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidd
 @keyframes hit{0%{background:#ff3b30;transform:scale(3)}100%{transform:scale(1)}}
 .corner{position:fixed;display:grid;gap:6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 6px #000}
 #tl{left:max(16px,env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px))}
-#tl b{font-family:var(--display);font-weight:400;font-size:21px;letter-spacing:.04em;line-height:.9}
+#tl b{font-family:var(--word);font-weight:400;font-size:22px;letter-spacing:.06em;line-height:.9;color:var(--sodium)}
+#tl b span{color:var(--ink)}
 #tl b span{color:var(--sodium)}
 #tl small{color:var(--muted);font-size:10.5px}
 #br{right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));text-align:right;justify-items:end}
@@ -46,16 +48,23 @@ body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidd
 #intro{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,8,10,.62);pointer-events:auto;overflow:auto;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .card{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);padding:22px 22px 18px;display:grid;gap:14px}
 .card .kick{margin:0;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--hot)}
-.card h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,50px);line-height:.85;text-transform:uppercase;letter-spacing:.02em}
-.card h1 span{color:var(--sodium)}
+.card h1{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;font-weight:400}
+.card h1 svg{grid-row:span 3;width:clamp(70px,16vw,96px);height:auto}
+.card h1 .the{font:900 12px/1 var(--display);letter-spacing:.6em;color:var(--sodium)}
+.card h1 .name{font:400 clamp(36px,8.4vw,58px)/.9 var(--word);letter-spacing:.04em;background:linear-gradient(#f2d27a,#d4ad5a 70%,#a8823a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card h1 .kana{font:700 12px/1.2 var(--display);letter-spacing:.18em;color:var(--ink2)}
+.card{border-color:var(--sodium)!important;box-shadow:0 0 0 4px var(--bg),0 0 0 5px rgba(212,173,90,.35)}
+#subs{position:fixed;left:50%;bottom:calc(64px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(760px,calc(100% - 32px));padding:10px 16px 12px;background:rgba(8,12,26,.88);border-bottom:3px solid var(--sodium);display:grid;gap:4px;pointer-events:none;z-index:5}
+#subs b{font:700 12px/1 var(--display);letter-spacing:.2em}
+#subs span{font:600 15px/1.45 var(--mono);color:#f6f0e2}
 .card p{margin:0;font-size:13px;line-height:1.55;color:var(--ink2);max-width:62ch}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12.5px;margin:0}
 .keys dt{color:var(--ink);font-weight:600;white-space:nowrap}
 .keys dd{margin:0;color:var(--muted)}
-#vrBtn{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--sodium);padding:14px;cursor:pointer}
+#vrBtn{font:700 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:none;border:1px solid var(--sodium);padding:14px;cursor:pointer}
 .startrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .vrnote{font-size:11.5px!important;color:var(--muted)!important}
-#start{font:400 19px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#0a0a0a;background:var(--sodium);border:0;padding:14px;cursor:pointer}
+#start{font:700 17px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#0a0a0a;background:var(--sodium);border:0;padding:14px;cursor:pointer}
 .touchonly{display:none}
 body.touch .touchonly{display:grid}
 body.touch .deskonly{display:none}
@@ -116,12 +125,12 @@ body.touch #testPanel .tp-keys{display:none}
 </div>
 <section id="intro" aria-label="Start">
   <div class="card">
-    <p class="kick">See the world in 24 hours · a hitman on holiday</p>
-    <h1>The Meridian <span>24</span></h1>
+    <p class="kick">Platform 0 · Tokyo Meridian Terminal · departing</p>
+    <h1 aria-label="The Meridian 24"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d27a"/><stop offset=".55" stop-color="#d4ad5a"/><stop offset="1" stop-color="#8a6a2a"/></linearGradient></defs><circle cx="50" cy="50" r="46" fill="#0e1628"/><circle cx="50" cy="50" r="43" fill="none" stroke="url(#lg)" stroke-width="5"/><ellipse cx="50" cy="50" rx="33" ry="12" fill="none" stroke="url(#lg)" stroke-width="1.8" transform="rotate(-18 50 50)"/><line x1="50" y1="10" x2="50" y2="90" stroke="url(#lg)" stroke-width="1.8"/><circle cx="31" cy="61" r="3.6" fill="#ff6a3a"/><text x="51" y="61" text-anchor="middle" font-family="Limelight,Georgia,serif" font-size="30" fill="#f2ece0">24</text></svg><span class="the">THE</span><span class="name">MERIDIAN</span><span class="kana">メリディアン24 · SEE THE WORLD IN 24 HOURS</span></h1>
     <p>The biggest bullet train ever built, on a special run around the world in one day. You are Nico Varga, a hitman on his first holiday in eleven years, and somebody has put a price on your head. At every stop a new crew gets on to collect it, and each one takes over a car. Every station leaves you a better weapon. Shoot a leg and he goes down and drags himself away; cut an artery and it pumps with his heartbeat; take a car back and its far door opens.</p>
     <dl class="keys deskonly"><dt>WASD · mouse</dt><dd>Move · look (click to capture)</dd><dt>Click</dt><dd>Fire or swing (hold for automatics)</dd><dt>1-9 · 0</dt><dd>Weapons (all of them are in the menu too)</dd><dt>F · E · Q · G</dt><dd>Knife · kick · throw · grab</dd><dt>R · T</dt><dd>Reload · bullet time</dd><dt>Esc · M</dt><dd>The menu: any level, any weapon, any crew, cheats</dd></dl>
     <dl class="keys touchonly"><dt>Left thumb</dt><dd>Move</dd><dt>Right side drag</dt><dd>Look</dd><dt>Buttons</dt><dd>Shoot, stab, kick, reload, slow-mo</dd></dl>
-    <div class="startrow"><button id="start" type="button">New run</button><button id="cont" type="button" class="cont" hidden>Continue</button><button id="vrBtn" type="button" hidden>Play in VR</button></div>
+    <div class="startrow"><button id="start" type="button">Enter the station</button><button id="cont" type="button" class="cont" hidden>Continue</button><button id="vrBtn" type="button" hidden>Play in VR</button></div>
     <p class="vrnote">In VR: grip grabs (weapons, bodies) and grip again drops or throws; trigger fires; A/X reloads that hand; B/Y kicks. Left stick moves, a quick click is bullet time, <b>hold it down for the menu</b> (or poke MENU on your left wrist). Right stick turns, click it for sharpness. Your frame rate is on your left wrist.</p>
   </div>
 </section>

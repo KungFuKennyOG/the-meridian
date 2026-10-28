@@ -41,7 +41,7 @@ function loadProgress(){ try{ return JSON.parse(localStorage.getItem('meridian.s
 
 /* go to a leg of the route: fade out, build it, put you at its start, fade in */
 function goLeg(i,instant){ i=clamp(i,0,ROUTE.length-1); if(instant){ enterLeg(i); GAME.fade=0; return; } if(FLOW.transTo>=0) return; FLOW.transTo=i; FLOW.trans=0; sfx('door',.6); }
-function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
+function enterLeg(i){ FLOW.leg=i; const R_=legOf(i); LOBBY.on=false; LOBBY.useI.length=0; FIN.on=false; endN.vis=false;
   clearEnemies(); for(const P of LOOSE.slice()) removePickup(P); for(const G of NADES.slice()) removeNade(G);
   BP.length=0; for(const k in DEC){ DEC[k].length=0; DEC[k].ver=(DEC[k].ver||0)+1; }
   buildLevel(R_.kind,R_.key);
@@ -60,8 +60,9 @@ function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
   spawnLevelCrew(R_);
   /* the weapon left for you */
   if(!isCar){ const key=R_.night?'katana':ARSENAL_KEYS[R_.key]; const dropN=R_.night?ST.tokyo.drop2:ST[R_.key].drop; if(key&&dropN&&LEVEL.drops) placeGift(key,LEVEL.drops[R_.night?1:0]); }
+  if(R_.first&&!R_.night) buildLobby();
   respawnPlayer();
-  if(GAME.started) levelAudio();
+  if(GAME.started){ levelAudio(); storyEnter(i,R_); if(LOBBY.on) lobbyStart(); }
   if(!isCar) saveProgress();
   $('floorTag').textContent=R_.title+' · '+R_.sub;
   if(XR.on){ vrRecenter(); vrToast(R_.title,2.4); }
@@ -70,7 +71,7 @@ function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
 function levelAudio(){ if(typeof MUSIC==='undefined') return; const R_=legOf(FLOW.leg); try{ if(R_.kind==='car'){ MUSIC.ambience(null); MUSIC.play(R_.key); MUSIC.rumble(true); } else { MUSIC.play(null); MUSIC.rumble(false); MUSIC.ambience(R_.amb); } MUSIC.setVolumes(GAME.vol); }catch(_){} }
 function respawnPlayer(){ Object.assign(PL,{x:FLOOR.start.x,z:FLOOR.start.z,yaw:FLOOR.start.yaw,pitch:0,hp:100,hurtT:9,kickCd:0,dead:false}); GAME.clear=false; $('msg').hidden=true; $('sblood').innerHTML=''; if(XR.on) vrRecenter(); }
 /* restart the level you are in (after dying, or from the menu): same level, same arsenal you came in with */
-function restartLevel(){ const keep=FLOW.armed||{}; enterLeg(FLOW.leg); if(keep.R) equip(HANDS.R,newItem(keep.R)); if(keep.L) equip(HANDS.L,newItem(keep.L)); }
+function restartLevel(){ const keep=FLOW.armed||{}, wasDead=PL.dead; enterLeg(FLOW.leg); if(wasDead) storyDeath(); if(keep.R) equip(HANDS.R,newItem(keep.R)); if(keep.L) equip(HANDS.L,newItem(keep.L)); }
 function rememberArms(){ FLOW.armed={R:HANDS.R.item&&HANDS.R.item.key,L:HANDS.L.item&&HANDS.L.item.key}; }
 
 function applyLevelLight(R_){
@@ -110,7 +111,7 @@ function updateShadows(){ const L_=L; SH_TMP.length=0; SH_TMP.push([PL.x,PL.z,.3
     const sp=Math.hypot(x[h]-x[a],x[h+2]-x[a+2]); SH_TMP.push([lying?(x[a]+x[h])/2:mx,lying?(x[a+2]+x[h+2])/2:mz,lying?.35+sp*.5:.4,(mx-PL.x)**2+(mz-PL.z)**2]); }
   SH_TMP.sort((p,q)=>p[3]-q[3]); const n=Math.min(12,SH_TMP.length);
   for(let i=0;i<n;i++){ const q=SH_TMP[i]; L_.sh[i*4]=q[0]; L_.sh[i*4+1]=0; L_.sh[i*4+2]=q[1]; L_.sh[i*4+3]=q[2]; } L_.shN=n; }
-function flowTick(dt,gdt){ updateShadows();
+function flowTick(dt,gdt){ updateShadows(); dlgTick(dt); cardTick(dt); lobbyTick(dt); watchTick();
   /* fading between levels */
   if(FLOW.transTo>=0){ FLOW.trans+=dt; GAME.fade=clamp(FLOW.trans/.45,0,1); if(FLOW.trans>=.5){ rememberArms(); const keepR=HANDS.R.item,keepL=HANDS.L.item; enterLeg(FLOW.transTo); equip(HANDS.R,keepR); equip(HANDS.L,keepL); rememberArms(); FLOW.transTo=-1; FLOW.trans=0; } return; }
   GAME.fade=Math.max(0,GAME.fade-dt/.5);
@@ -119,13 +120,13 @@ function flowTick(dt,gdt){ updateShadows();
   /* the crews' extra life: idle talk, bosses taunting, people sitting down stand up to fight */
   crewChatter(dt); for(const E of enemies) if(E.seated&&E.aware&&E.kind!=='seated'){ E.seated=false; }
   /* the gift spins until taken */
-  if(FLOW.gift){ if(!LOOSE.includes(FLOW.gift)){ FLOW.gift=null; vrToast(WPN[FLOW.giftKey].label,1.8); } else FLOW.gift.node.r[1]+=dt*1.2; }
+  if(FLOW.gift){ if(!LOOSE.includes(FLOW.gift)){ FLOW.gift=null; vrToast(WPN[FLOW.giftKey].label,1.8); storyPickup(FLOW.giftKey); } else FLOW.gift.node.r[1]+=dt*1.2; }
   /* safe to move on? nobody left who can still fight */
   const threat=enemies.some(E=>!E.dead&&(E.st==='alert'||E.st==='idle')&&E.kind!=='seated');
-  if(!threat&&!FLOW.cleared){ FLOW.cleared=true; if(R_.kind==='car'&&enemies.length){ vrToast(R_.last?'Take the controls':'The door is open',2.2); sfx('click',.8); } }
+  if(!threat&&!FLOW.cleared){ FLOW.cleared=true; if(R_.kind==='car'&&enemies.length){ if(R_.last) finaleArm(); else { vrToast('The door is open',2.2); storyCleared(FLOW.leg,R_); } sfx('click',.8); } }
   FLOW.exitOpen=FLOW.cleared||GAME.unlockAll;
   if(FLOW.lamp) FLOW.lamp.mesh.mats[0]=FLOW.exitOpen?mExitGreen:mExitRed;
-  if(R_.kind==='car'){ if(FLOW.exitOpen&&(R_.last?PL.x>9.2&&Math.abs(PL.z)<1.8:PL.x>RX-1.1&&Math.abs(PL.z)<1.3)){ if(R_.last) endOfLine(); else goLeg(FLOW.leg+1); } }
+  if(R_.kind==='car'){ if(FLOW.exitOpen&&(R_.last?PL.x>9.2&&Math.abs(PL.z)<1.8:PL.x>RX-1.1&&Math.abs(PL.z)<1.3)){ if(!R_.last) goLeg(FLOW.leg+1); } }
   else if(FLOW.marker){ FLOW.marker.r[1]+=dt*.4; if(Math.abs(PL.x-FLOW.boardX)<.9&&PL.z<-RZ+1.6&&GAME.t-FLOW.startT>1.5) goLeg(FLOW.leg+1); }
   /* the train runs: scenery scrolls past the windows */
   if(R_.kind==='car'&&OUT.vis){ const {eye}=camBasis(); updateOut(dt,FLOW.speed*(GAME.trainK??1)*GAME.ts,eye||[PL.x,1.6,PL.z],PL.x); }

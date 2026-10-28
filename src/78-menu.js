@@ -82,7 +82,7 @@ function btnRect(i){ const c=i%COLS,r=Math.floor(i/COLS); return [12+c*336,86+r*
 function tabRect(i){ return [8+i*126,8,120,62]; }
 function drawMenu(){ const g=menuTex.c.getContext('2d'); g.fillStyle='#0a1226'; g.fillRect(0,0,MW,MH); g.fillStyle='#d4ad5a'; g.fillRect(0,MH-4,MW,4);
   g.textAlign='center'; g.textBaseline='middle';
-  PAGES.forEach((p,i)=>{ const [x,y,w,h]=tabRect(i),on=i===MENU.page; g.fillStyle=on?'#d4ad5a':'#16224a'; g.fillRect(x,y,w,h); g.fillStyle=on?'#0a1226':'#b8d0ff'; g.font='400 19px Bungee,"Arial Black",sans-serif'; g.fillText(p,x+w/2,y+h/2,w-8); });
+  PAGES.forEach((p,i)=>{ const [x,y,w,h]=tabRect(i),on=i===MENU.page; g.fillStyle=on?'#d4ad5a':'#16224a'; g.fillRect(x,y,w,h); g.fillStyle=on?'#0a1226':'#b8d0ff'; g.font='700 19px "Zen Kaku Gothic New","Arial Black",sans-serif'; g.fillText(p,x+w/2,y+h/2,w-8); });
   pageOpts().forEach((o,i)=>{ if(i>=COLS*ROWS) return; const [x,y,w,h]=btnRect(i),lit=MENU.lit[i]>0; g.fillStyle=lit?'#ff6a3a':'#1c2c5e'; g.fillRect(x,y,w,h); g.fillStyle='#2e4a90'; g.fillRect(x,y,w,3);
     g.fillStyle=lit?'#0a1226':'#f2ede2'; g.font='700 23px "IBM Plex Mono",monospace'; g.fillText(typeof o.label==='function'?o.label():o.label,x+w/2,y+h/2,w-14); });
   if(menuTex.glt){ gl.bindTexture(gl.TEXTURE_2D,menuTex.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,menuTex.c); } MENU.dirty=false; }

@@ -7,7 +7,7 @@ if(SAVE&&SAVE.leg>0){ $('cont').hidden=false; $('cont').textContent='Continue ·
 function startRun(cont){ if(GAME.started&&!cont) return; const sv=cont?loadProgress():null;
   if(sv&&sv.leg>0){ enterLeg(sv.leg); if(sv.R) equip(HANDS.R,newItem(sv.R)); if(sv.L) equip(HANDS.L,newItem(sv.L)); }
   else { if(!cont) try{ localStorage.removeItem('meridian.save'); }catch(_){} if(FLOW.leg!==0||!LEVEL.root) enterLeg(0); equip(HANDS.R,null); equip(HANDS.L,null); }
-  rememberArms(); GAME.fade=1; GAME.started=true; levelAudio(); }
+  rememberArms(); GAME.fade=1; GAME.started=true; levelAudio(); if(LOBBY.on) lobbyStart(); }
 $('cont').addEventListener('click',()=>{ audio(); startRun(true); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing'); if(!isTouch){ try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(_){} } });
 enterLeg(0); GAME.fade=0;
 window.__game={GAME,PL,XR,FLOW,LEVEL,ROUTE,enemies:()=>enemies,goLeg,enterLeg,restartLevel,HANDS,equip,newItem,WPN,WPN_KEYS,spawnCrew,spawnNear,openMenu,closeMenu,menuAct,MENU,OPTS,PAGES,fireHand,shoot,stab,kick,camBasis,BOXES,FLOOR,LOOSE,hitEnemy,SEGS,X_,PI_,die,clearEnemies,state,L,CREWS,CREW_OF,explode,launchGrenade,toggleSlow,useRight,updateOut};

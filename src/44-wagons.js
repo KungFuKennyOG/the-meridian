@@ -43,87 +43,182 @@ const stripes=(a,b,wd=4)=>P2(16,16,(g,w,h)=>{ for(let x=0;x<w;x+=wd*2){ R(g,a,x,
 
 /* ---------- 01 · the locomotive ---------- */
 CAR_BUILD.cab=function cab(){
-  const panel=M(lineT('#e8e4dc','#cac6be',3)), navy=C('#14203a'), gold=C('#d4ad5a'), leather=M(fabT('#1e2e52',4,(g,w,h)=>{ for(let y=0;y<h;y+=4) R(g,'#16223e',0,y,w,1); }));
-  const floor=M(P2(16,16,(g,w,h)=>{ R(g,'#2a2e36',0,0,w,h); for(let y=2;y<h;y+=4) for(let x=(y>>2)%2?0:2;x<w;x+=4) R(g,'#3a3e48',x,y,1,1); },6,4));
-  const g=shell('cab',{floor,floorTile:.6,ceil:C('#ece8e0'),dado:M(lineT('#14203a','#22305a',5)),upper:panel,pier:panel,trim:gold,end:panel,door:C('#b8bcc0'),
+  const kit=paKit('cab',paCabKit), A=kit.A, S=kit.S, mA=M(A.tex), mS=M(S.tex,{unlit:true});
+  const panel=M(kit.walls.upper), gold=C('#d4ad5a');
+  const g=shell('cab',{floor:M(kit.walls.floor),floorTile:.6,ceil:M(kit.walls.ceil),dado:M(kit.walls.dado),upper:panel,pier:panel,trim:gold,end:panel,door:M(paDoor('#c8ccd2','#d4ad5a','#bfe0ff')),
     wins:[[4,6.4],[7.2,9.6]],front:'windscreen',lamps:[lamp(11.5,1.6,0,[.3,.6,1.0],4),lamp(6,3,0,[.95,.95,1.05],7),lamp(-2,3,0,[.95,.95,1.05],7),lamp(-10,3,0,[.9,.9,1.0],7),lamp(12.5,3,0,[.9,.9,1.0],5)]});
+  const bx=(n,r,x,y,z,w,h,d,ry=0,rx=0,rz=0)=>paBox(n,mA,A,r,x,y,z,w,h,d,ry,rx,rz), lit=(n,r,x,y,z,w,h,d,ry=0)=>paBox(n,mS,S,r,x,y,z,w,h,d,ry);
+  const card=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mS,S,r,x,y,z,w,h,ry), pcard=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mA,A,r,x,y,z,w,h,ry);
+  const rod=(n,r,rad,len,x,y,z,rx=0,ry=0,rz=0,seg=8)=>paGeo(n,mA,A,r,cyl(rad,rad,len,seg),x,y,z,rx,ry,rz), nc=paNC, hide=paHide;
+  WG.cab.paint={bx,lit,card,pcard,rod};
   /* the flight deck: a horseshoe of consoles and two captain's chairs */
-  const scr=(fn)=>M(P2(48,32,(g,w,h)=>{ R(g,'#06121e',0,0,w,h); fn(g,w,h); }),{unlit:true});
-  const route=scr((g,w,h)=>{ ell(g,24,16,20,11,'#0e2a3e'); for(let k=0;k<8;k++){ const a=k/8*Math.PI*2; ell(g,24+Math.cos(a)*16,16+Math.sin(a)*8,1.3,1.3,'#f5c542'); } g.strokeStyle='#29e0e6'; g.beginPath(); g.ellipse(24,16,16,8,0,0,Math.PI*2); g.stroke(); text(g,'LOOP',2,2,'#29e0e6',1); });
-  const speed=scr((g,w,h)=>{ text(g,'1920',8,8,'#5ab8e8',2); text(g,'KM/H',14,24,'#3a7ab0',1); });
-  const track=scr((g,w,h)=>{ for(let k=0;k<6;k++) R(g,'#7cf06a',4+k*7,24-k*3,5,2); R(g,'#f5c542',4,26,40,1); text(g,'ATC OK',4,3,'#7cf06a',1); });
-  B(g,navy,12.4,0,0,1.6,1.0,WZ*2-1.6); mk(box(1.4,.1,WZ*2-1.8),navy,g,12.0,1.05,0,0,0,.3);
-  for(const s of [-1,1]){ B(g,navy,10.8,0,s*2.0,2.6,1.0,1.2,s*.35); }
-  [[11.6,-1.4,route],[11.8,0,speed],[11.6,1.4,track]].forEach(([x,z,m])=>{ mk(wplane(1.1,.7),m,g,x,1.62,z,0,-Math.PI/2+(z>0?-.35:z<0?.35:0),0); B(g,navy,x+.08,1.18,z,.1,.86,1.2,z>0?-.35:z<0?.35:0); });
-  for(let i=0;i<14;i++) B(g,i%4?G('#f5c542'):G('#c8302a'),11.5+(i%2)*.1,1.07,-1.2+i*.18,.06,.03,.06);
-  for(const z of [-.9,.9]){ B(g,C('#2a2c30'),10.2,0,z,.14,.45,.14); B(g,leather,10.2,.45,z,.7,.14,.7); B(g,leather,9.85,.55,z,.14,1.0,.7,0,0,-.12); B(g,leather,9.78,1.55,z,.12,.24,.42,0,0,-.12); for(const s of [-1,1]) B(g,leather,10.2,.6,z+s*.37,.6,.2,.08); }
-  /* a wall of route screens on the bulkhead behind the deck */
-  for(let k=0;k<4;k++) K(mk(wplane(1.1,.7),[route,speed,track,route][k],g,8.4,1.6,(k-1.5)*WZ*.41,0,Math.PI/2,0));
-  K(B(g,panel,8.3,0,0,.1,1.1,WZ*2-1.8));
-  /* crew mess: galley, table, bunks, lockers */
-  const locker=M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8ccd2'],[1,'#a8aeb6']]); R(g,'#7e848c',0,0,1,h); for(let y=4;y<10;y+=2) R(g,'#7e848c',4,y,8,1); R(g,'#3a3c40',12,16,2,4); },4,6));
-  for(let x=-13.4;x<-4;x+=.7) B(g,F(C('#a8aeb6'),locker),x,0,-2.55,.68,2.2,.62);
-  B(g,C('#d8dcde'),2,0,-2.5,3.6,.95,.7); B(g,C('#2a2e36'),2,.95,-2.5,3.6,.05,.72); B(g,C('#2a2c30'),.8,.95,-2.6,.4,.5,.4); B(g,G('#5ab8e8'),.8,1.2,-2.38,.2,.1,.02);
-  B(g,C('#f4f2ec'),2,.0,1.2,.08,.75,.08); B(g,C('#f4f2ec'),2,.75,1.2,2.4,.06,1.1); for(const s of [-1,1]) K(B(g,leather,2,0,1.2+s*.85,2.4,.45,.45));
-  for(const x of [-2.5,-8]){ B(g,C('#a8aeb6'),x,.4,2.3,2.2,.12,1.0); B(g,M(fabT('#1e2e52',8)),x,.52,2.3,2.0,.14,.9); B(g,C('#a8aeb6'),x,1.6,2.3,2.2,.12,1.0); B(g,M(fabT('#1e2e52',9)),x,1.72,2.3,2.0,.14,.9); }
-  for(const x of [-10,-4,2]) B(g,U('#f4f8ff'),x,WH-.04,0,3,.03,.2);
+  bx(g,{nx:'cfront',top:paRot(A,'ctop',1),side:'navyP'},12.4,0,0,1.6,1.0,WZ*2-1.6); const desk=N(g,12.0,1.0,0,0,0,.3); bx(desk,{top:paRot(A,'ctop',1),side:'navyP'},0,0,0,1.4,.1,WZ*2-1.8);
+  /* raised keys over the painted key bank, a padded edge for the driver's wrists */
+  for(let k=0;k<10;k++) for(let j=0;j<3;j++) nc(bx(desk,'creamP',.7-(14.55+j*2.8)/24*1.4,.1,-2+(23.3+k*2.05)/64*4,.12,.022,.1)); nc(bx(desk,'cushion',-.68,.1,0,.1,.05,WZ*2-1.9));
+  for(const s of [-1,1]){ bx(g,{top:paRot(A,'cside',s<0?0:2),side:'cfront'},10.8,0,s*2.0,2.6,1.0,1.2,s*.35); bx(g,{all:'gold'},10.8,1.0,s*2.0,2.64,.03,1.24,s*.35); }
+  [[11.6,-1.4,'route'],[11.8,0,'speed'],[11.6,1.4,'track']].forEach(([x,z,r])=>{ const a=z>0?-.35:z<0?.35:0; card(g,r,x,1.62,z,1.1,.7,-Math.PI/2+a); bx(g,{all:'bezel'},x+.08,1.18,z,.1,.86,1.2,a); });
+  for(let i=0;i<14;i++) nc(lit(g,i%4?(i%3?'ledG':'ledA'):'ledR',11.45+(i%2)*.1,1.1,-1.2+i*.18,.05,.025,.05));
+  /* throttle levers, the captain's cap, a mug gone cold */
+  for(const z of [-.3,.3]){ nc(rod(g,'chrome',.012,.3,11.55,1.25,z,0,0,.5)); nc(paGeo(g,mA,A,'gold',cyl(.035,.035,.05,8),11.48,1.38,z,0,0,.5)); }
+  nc(paGeo(g,mA,A,'cap',cyl(.13,.12,.07,12),10.85,1.1,-1.95)); nc(bx(g,'rubber',10.72,1.065,-1.95,.12,.012,.2));
+  nc(paGeo(g,mA,A,'mug',cyl(.04,.04,.09,10),10.9,1.06,2.05)); nc(paGeo(g,mA,A,'mug',cyl(.04,.04,.09,10),10.7,1.06,1.7));
+  for(const z of [-.9,.9]){ rod(g,'chrome',.05,.42,10.2,.21,z); for(let k=0;k<5;k++){ const a=k/5*Math.PI*2; nc(bx(g,'chrome',10.2+Math.cos(a)*.17,.02,z+Math.sin(a)*.17,.34,.04,.05,-a)); }
+    bx(g,{top:'leather',side:'cushion'},10.2,.45,z,.7,.14,.7); bx(g,{px:'leather',side:'cushion'},9.85,.55,z,.14,1.0,.7,0,0,-.12); bx(g,{px:'leather',side:'cushion'},9.78,1.55,z,.12,.24,.42,0,0,-.12);
+    for(const s of [-1,1]){ bx(g,'cushion',10.2,.6,z+s*.37,.6,.2,.08); nc(bx(g,'gold',10.2,.8,z+s*.37,.62,.02,.09)); } }
+  /* the windscreen: a centre pillar, wipers, sun visors, the overhead switch panel */
+  nc(bx(g,'navyP',13.92,1.2,0,.1,1.7,.14)); for(const z of [-1.4,1.4]) nc(bx(g,'rubber',13.9,1.22,z,.02,.9,.025,0,z>0?.55:-.55));
+  for(const z of [-1.3,1.3]) nc(bx(g,'visor',13.55,2.7,z,.5,.03,1.5,0,0,.35)); bx(g,{bottom:'cside',side:'navyP'},13.4,2.95,0,1.2,.45,3.8);
+  for(const s of [-1,1]) for(const x of [10.6,12.4]){ nc(rod(g,'chrome',.018,1.6,x,1.25,s*(WZ0-.08),0,0,Math.PI/2)); for(const dx of [-.75,.75]) nc(bx(g,'chrome',x+dx,1.23,s*(WZ0-.05),.03,.04,.07)); }
+  /* the bulkhead behind the deck: a wall of route screens over it, a sign for the crew coming forward */
+  K(bx(g,{side:'navyP',px:'cfront',nx:'cfront',top:'gold'},8.3,0,0,.1,1.1,WZ*2-1.8));
+  ['route','cctv','cars','track'].forEach((r,k)=>{ const z=(k-1.5)*WZ*.41; K(card(g,r,8.4,1.6,z,1.1,.7,Math.PI/2)); K(nc(bx(g,{all:'bezel'},8.33,1.1,z,.06,.92,1.18))); });
+  K(nc(card(g,'sign',8.27,2.25,0,1.8,.34,-Math.PI/2))); K(nc(bx(g,'navyP',8.3,2.06,0,.05,.4,1.9))); for(const z of [-.8,.8]) K(nc(bx(g,'chrome',8.3,2.46,z,.02,WH-2.46,.02)));
+  nc(bx(g,'gold',8.0,0,0,.08,.006,WZ*2-.4));
+  /* crew mess: lockers with caps and kit bags on top */
+  for(let x=-13.4;x<-4;x+=.7){ bx(g,{front:'locker',side:'creamP',top:'creamP'},x,0,-2.55,.68,2.2,.62); nc(bx(g,'chrome',x+.2,.98,-2.225,.025,.14,.03)); nc(bx(g,'navyP',x,2.1,-2.235,.66,.05,.02)); }
+  /* mouldings: a navy skirting, a gold chair rail on the dado, a cream cornice with a gold bead */
+  for(const s of [-1,1]){ const sg=WG.cab.side[s], z=s*(WZ0-.03); nc(bx(sg,'navyP',0,0,z,WL,.12,.06)); nc(bx(sg,'gold',0,.975,z,WL,.05,.06)); nc(bx(sg,'creamP',0,WH-.14,z,WL,.14,.12)); nc(bx(sg,'gold',0,WH-.155,z,WL,.016,.13)); }
+  for(const x of [-12.7,-10.6,-7.8,-5.7]) nc(bx(g,{side:'blanket',top:'blanket'},x,2.2,-2.6,.55,.28,.4,.2)); for(const x of [-11.9,-6.4]) nc(paGeo(g,mA,A,'cap',cyl(.13,.12,.07,12),x,2.24,-2.55));
+  /* galley: cupboards, steel worktop, microwave, coffee machine, kettle, a sink, mugs; wall cupboards above */
+  hide(bx(g,'creamP',2,0,-2.5,3.6,.95,.7)); for(let k=0;k<3;k++){ nc(bx(g,{front:'cupb',side:'creamP',top:'steel'},.8+k*1.2,0,-2.5,1.2,.95,.7)); nc(bx(g,{all:'steel'},.8+k*1.2,.95,-2.5,1.21,.04,.74)); }
+  bx(g,{front:'micro',side:'navyP'},.65,.99,-2.62,.52,.32,.38); bx(g,{front:'coffee',side:'navyP'},1.35,.99,-2.64,.32,.44,.32);
+  nc(paGeo(g,mA,A,'thermos',cyl(.07,.08,.2,10),1.9,1.09,-2.6)); nc(bx(g,'rubber',3.15,.995,-2.5,.56,.006,.4)); nc(rod(g,'chrome',.015,.28,3.15,1.13,-2.76)); nc(rod(g,'chrome',.012,.16,3.15,1.26,-2.69,Math.PI/2));
+  for(let k=0;k<3;k++) nc(paGeo(g,mA,A,'mug',cyl(.04,.04,.09,10),2.3+k*.14,1.04,-2.3+(k%2)*.06));
+  for(let k=0;k<3;k++) nc(bx(g,{front:'cupb',side:'creamP',bottom:'creamP',top:'creamP'},.8+k*1.2,1.65,-2.7,1.19,.6,.34)); nc(bx(g,'gold',2,1.64,-2.53,3.6,.015,.02));
+  /* the mess table: plates, mugs, a thermos, the paper, a deck of cards */
+  bx(g,'chrome',2,0,1.2,.1,.75,.1); nc(bx(g,'chrome',2,0,1.2,.5,.03,.5)); bx(g,{top:'tabletop',side:'gold'},2,.75,1.2,2.4,.05,1.1);
+  for(const s of [-1,1]) K(bx(g,{top:'cushion',side:'navyP'},2,0,1.2+s*.85,2.4,.45,.45)); K(bx(g,{side:'cushion',top:'navyP'},2,.45,2.4,2.4,.55,.12));
+  for(const [x,z] of [[1.3,.9],[2.6,1.5]]){ nc(paGeo(g,mA,A,'plate',cyl(.13,.1,.02,14),x,.81,z)); nc(paGeo(g,mA,A,'mug',cyl(.04,.04,.09,10),x+.25,.845,z-.08)); }
+  nc(paGeo(g,mA,A,'thermos',cyl(.06,.06,.26,10),2.1,.93,1.25)); nc(bx(g,{top:paRot(A,'paper',1),side:'creamP'},1.7,.8,1.45,.32,.01,.44,.2)); nc(bx(g,{top:'mug',side:'creamP'},2.9,.8,.95,.09,.03,.06,.5));
+  /* bunks: frames, posts, a ladder, made-up blankets and pillows, a curtain half drawn on the top bunk */
+  for(const x of [-2.5,-8]){ for(const y of [.4,1.6]){ bx(g,{side:'creamP',top:'creamP'},x,y,2.3,2.2,.12,1.0); bx(g,{top:'blanket',side:'blanket'},x,y+.12,2.3,2.0,.14,.9); nc(bx(g,'pillow',x-.78,y+.26,2.3,.36,.1,.6)); }
+    for(const dx of [-1.08,1.08]) nc(bx(g,'chrome',x+dx,0,1.83,.04,2.2,.04)); for(let k=0;k<5;k++) nc(bx(g,'chrome',x+1.12,.35+k*.35,1.82,.03,.025,.04)); nc(bx(g,'chrome',x+1.2,0,1.82,.03,2.0,.03));
+    nc(bx(g,'curtain',x-.55,1.88,1.82,1.0,.62,.02)); nc(bx(g,'chrome',x,2.52,1.82,2.2,.02,.02)); nc(card(g,'night',x-.9,2.35,2.86,.16,.06,Math.PI)); }
+  /* the walls: a route poster, a first-aid box, the clock, an intercom, extinguishers */
+  const sN=WG.cab.side[-1], sP=WG.cab.side[1], zN=-(WZ0-.02), zP=WZ0-.02;
+  pcard(sN,'poster',-2.1,1.7,zN,.9,.68); nc(bx(sN,{front:'aid',side:'creamP'},-.55,1.5,zN+.06,.34,.34,.12));
+  pcard(sP,'poster',-11.6,1.7,zP,.9,.68,Math.PI); pcard(sP,'clock',-5.2,2.25,zP,.36,.36,Math.PI); pcard(sP,'intercom',-4.6,1.35,zP,.22,.22,Math.PI); pcard(sN,'intercom',9.9,1.35,zN,.22,.22);
+  for(const [sg,x,z] of [[sN,-3.6,zN+.12],[sP,-12.9,zP-.12]]){ nc(paGeo(sg,mA,A,'ext',cyl(.08,.08,.5,10),x,.33,z)); nc(bx(sg,'rubber',x,.58,z,.06,.06,.06)); nc(bx(sg,'rubber',x,.55,z+(z>0?.04:-.04),.03,.03,.14)); }
+  /* ceiling: light fittings in chrome frames */
+  for(const x of [-10,-4,2]){ nc(bx(g,'chrome',x,WH-.05,0,3.1,.05,.3)); nc(lit(g,'lamp',x,WH-.07,0,3,.025,.22)); }
 };
 
 /* ---------- 02 · the King's casino ---------- */
 CAR_BUILD.casino=function casino(){
-  const carpet=M(P2(32,32,(g,w,h)=>{ R(g,'#8a1424',0,0,w,h); for(const [x,y] of [[8,8],[24,24]]){ poly(g,[[x,y-5],[x+5,y],[x,y+5],[x-5,y]],'#d4a83a'); poly(g,[[x,y-2],[x+2,y],[x,y+2],[x-2,y]],'#6a0e1a'); } for(const [x,y] of [[24,8],[8,24]]) ell(g,x,y,1.5,1.5,'#d4a83a'); },8,11));
-  const mirror=M(P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#3a2a3a'],[1,'#20161e']]); R(g,'#d4ad5a',0,0,w,1); R(g,'#d4ad5a',0,0,1,h); ell(g,16,16,2,2,'#fff0c0'); },4,12),{emissive:0x14100c});
-  const damask=M(P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#6a0e1a'],[1,'#4a0a12']]); for(const [x,y] of [[8,8],[24,24]]){ poly(g,[[x,y-7],[x+4,y],[x,y+7],[x-4,y]],'#8a1828'); ell(g,x,y,1.4,1.4,'#d4ad5a'); } },6,13));
-  const wood=M(woodT('#3a1e14','#24120c',14,true)), gold=C('#d4ad5a'), felt=M(fabT('#1f6a3a',15)), black=C('#121014');
-  const g=shell('casino',{floor:carpet,floorTile:1.2,ceil:mirror,ceilTile:1.2,dado:wood,upper:damask,pier:damask,trim:gold,end:wood,door:wood,rail:gold,
+  const kit=paKit('casino',paCasinoKit), A=kit.A, S=kit.S, mA=M(A.tex), mS=M(S.tex,{unlit:true}), gold=C('#d4ad5a'), wood=M(kit.walls.dado), damask=M(kit.walls.damask);
+  const g=shell('casino',{floor:M(kit.walls.carpet),floorTile:1.2,ceil:M(kit.walls.ceil,{emissive:0x14100c}),ceilTile:1.2,dado:wood,upper:damask,pier:damask,trim:gold,end:wood,door:M(paDoor('#4a2416','#d4ad5a','#ffd890')),rail:gold,
     wins:winsEvery(5,1.6),lamps:[lamp(-9,2.8,0,[1.3,.95,.6],7),lamp(-2,2.8,0,[1.3,.95,.6],7),lamp(5,2.8,0,[1.3,.95,.6],7),lamp(11.5,2.6,0,[1.6,.6,1.0],5),lamp(12.5,1.4,-1.5,[1.4,1.1,.5],3.5),lamp(-12.5,1.8,0,[1.0,.7,.4],4)],minLamp:.7,ambK:.7});
-  /* slot machines along both walls, screens lit */
-  const slotScr=(seed)=>M(P2(16,24,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#2a1a4a'],[1,'#120a22']]); const r=rng(seed); for(let k=0;k<3;k++){ const c=['#f5c542','#d63a2c','#2a9a5a','#29e0e6'][r()*4|0]; R(g,'#f2ece0',1+k*5,6,4,8); if(r()<.5) text(g,'7',2+k*5,7,c,1); else ell(g,3+k*5,10,1.5,1.5,c); } R(g,'#ff3fa4',0,0,w,3); R(g,'#f5c542',2,18,12,2); }),{unlit:true});
-  for(const s of [-1,1]) for(let i=0;i<9;i++){ const x=-10.5+i*2.4,z=s*2.4,n=N(WG.casino.side[s],x,0,z,0,s<0?0:Math.PI,0);
-    B(n,C(['#2a2a5a','#5a1a3a','#1a4a5a'][i%3]),0,0,0,.8,1.2,.62); mk(wplane(.6,.7),slotScr(i*7+s),n,0,1.55,.32); B(n,C('#2a2a30'),0,1.2,0,.8,.72,.58); B(n,G('#f5c542'),0,1.92,.05,.82,.12,.66); B(n,gold,.42,1.05,.1,.04,.4,.04,0,0,-.3); }
-  /* the roulette table */
-  const wheel=M(P2(32,32,(g,w,h)=>{ for(let k=0;k<37;k++){ const a=k/37*Math.PI*2,a2=(k+1)/37*Math.PI*2; poly(g,[[16,16],[16+Math.cos(a)*15,16+Math.sin(a)*15],[16+Math.cos(a2)*15,16+Math.sin(a2)*15]],k===0?'#2a9a5a':k%2?'#c8202a':'#121014'); } ell(g,16,16,8,8,'#6a3a1e'); ell(g,16,16,3,3,'#d4ad5a'); }),{unlit:false});
+  const bx=(n,r,x,y,z,w,h,d,ry=0,rx=0,rz=0)=>paBox(n,mA,A,r,x,y,z,w,h,d,ry,rx,rz), lit=(n,r,x,y,z,w,h,d,ry=0)=>paBox(n,mS,S,r,x,y,z,w,h,d,ry);
+  const card=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mS,S,r,x,y,z,w,h,ry), pcard=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mA,A,r,x,y,z,w,h,ry), nc=paNC;
+  const geoA=(n,r,geo,x,y,z,rx=0,ry=0,rz=0)=>paGeo(n,mA,A,r,geo,x,y,z,rx,ry,rz), cylA=(n,o,rt,rb,h,seg,x,y,z,rx=0,ry=0,rz=0)=>paCyl(n,mA,A,o,rt,rb,h,seg,x,y,z,rx,ry,rz);
+  WG.casino.paint={bx,lit,card,pcard,geoA,cylA,A,S,mA,mS};
+  /* slot machines along both walls: lacquered cabinets, a button deck, chrome-framed reels, a lit belly and a topper */
+  const lacs=['lacR','lacP','lacB'];
+  for(const s of [-1,1]) for(let i=0;i<9;i++){ const x=-10.5+i*2.4,z=s*2.4,n=N(WG.casino.side[s],x,0,z,0,s<0?0:Math.PI,0), L=lacs[i%3], v=(i+(s>0?1:0))%3;
+    bx(n,{side:L,front:'door',top:'dark'},0,0,0,.8,.92,.62); nc(card(n,'belly',0,.62,.312,.42,.42)); nc(bx(n,'chrome',0,.36,.33,.5,.05,.05));
+    nc(bx(n,{top:'deck',side:L,front:'dark'},0,.92,.1,.84,.07,.5)); bx(n,{side:L,front:'dark',top:'dark'},0,.99,-.02,.8,.78,.58);
+    nc(card(n,'reel'+v,0,1.4,.276,.58,.44)); for(const [dy,hh] of [[1.17,.04],[1.62,.04]]) nc(bx(n,'chrome',0,dy,.285,.66,hh,.03)); for(const dx of [-.31,.31]) nc(bx(n,'chrome',dx,1.17,.285,.04,.49,.03));
+    nc(bx(n,{side:L,front:'dark',top:'chrome'},0,1.77,0,.8,.34,.56)); nc(card(n,'top'+v,0,1.94,.282,.76,.3)); nc(bx(n,'chrome',0,2.11,0,.84,.03,.6));
+    nc(geoA(n,'chrome',cyl(.018,.018,.42,6),.45,1.2,.05,0,0,-.25)); nc(cylA(n,{side:'lacR'},.05,.05,.07,10,.5,1.42,.05)); nc(bx(n,'chrome',.41,.95,.05,.04,.12,.12)); }
+  /* the wall: a gold-framed frieze of panels above the windows, sconces between the windows, a dark skirting */
+  for(const s of [-1,1]){ const sg=WG.casino.side[s], z=s*(WZ0-.03), ry=s<0?0:Math.PI;
+    for(let k=0;k<8;k++){ const x0=-WL/2+k*WL/8+.12, x1=-WL/2+(k+1)*WL/8-.12; for(const y of [2.72,3.16]) nc(bx(sg,'gold',(x0+x1)/2,y,z,x1-x0,.035,.04)); for(const xx of [x0,x1]) nc(bx(sg,'gold',xx,2.72,z,.035,.475,.04)); }
+    nc(bx(sg,'gold',0,WH-.16,z,WL,.05,.08)); nc(bx(sg,'dark',0,WH-.11,z,WL,.11,.12)); nc(bx(sg,'dark',0,0,z,WL,.1,.05));
+    for(const x of [-9.3,-3.1,3.1,9.3]){ nc(bx(sg,'gold',x,2.15,z,.12,.28,.04)); nc(bx(sg,'gold',x,2.22,z-s*.08,.03,.03,.16)); nc(paGeo(sg,mS,S,'shade',cyl(.07,.12,.18,10,{open:true}),x,2.33,z-s*.16)); nc(lit(sg,'bulb',x,2.22,z-s*.16,.05,.06,.05)); } }
+  /* coffered ceiling: gold beams across, chandeliers of gold rings and crystal drops between them */
+  for(const x of [-12.6,-9.8,-7,-4.2,-1.4,1.4,4.2,7,9.8,12.6]) nc(bx(g,'gold',x,WH-.1,0,.1,.1,WZ*2));
+  for(const z of [-1.5,1.5]) K(nc(bx(g,'gold',0,WH-.08,z,WL,.08,.08)));
+  for(const x of [-9,-2,5]){ nc(cylA(g,{side:'gold'},.18,.22,.06,14,x,WH-.03,0)); nc(geoA(g,'gold',cyl(.015,.015,.4,6),x,WH-.25,0));
+    for(const [r,y,n] of [[.5,2.95,16],[.32,2.75,11]]){ nc(geoA(g,'gold',torus(r,.025,4,18),x,y,0,Math.PI/2)); for(let k=0;k<n;k++){ const a=k/n*Math.PI*2; nc(lit(g,'crystal',x+Math.cos(a)*r,y-.2,Math.sin(a)*r,.045,.18,.045,a)); } }
+    for(let k=0;k<6;k++){ const a=k/6*Math.PI*2; nc(bx(g,'gold',x+Math.cos(a)*.25,2.94,Math.sin(a)*.25,.5,.02,.02,-a)); nc(paGeo(g,mS,S,'bulb',cyl(.03,.02,.07,6),x+Math.cos(a)*.5,3.0,Math.sin(a)*.5)); }
+    nc(lit(g,'crystal',x,2.42,0,.1,.3,.1,.78)); }
+  /* the roulette wheel: numbered pockets, gold frets, a turret */
+  const wheel=M(P2(64,64,(g,w,h)=>{ ell(g,32,32,32,32,'#4a2410'); const reds=[32,19,21,25,34,27,36,30,23,5,16,1,14,9,18,7,12,3];
+    for(let k=0;k<37;k++){ const a=k/37*Math.PI*2,a2=(k+1)/37*Math.PI*2; poly(g,[[32+Math.cos(a)*18,32+Math.sin(a)*18],[32+Math.cos(a)*29,32+Math.sin(a)*29],[32+Math.cos(a2)*29,32+Math.sin(a2)*29],[32+Math.cos(a2)*18,32+Math.sin(a2)*18]],k===0?'#2a9a5a':k%2?'#c8202a':'#121014');
+      g.strokeStyle='#d4ad5a'; g.lineWidth=.5; g.beginPath(); g.moveTo(32+Math.cos(a)*18,32+Math.sin(a)*18); g.lineTo(32+Math.cos(a)*29,32+Math.sin(a)*29); g.stroke(); }
+    g.strokeStyle='#d4ad5a'; g.lineWidth=1; g.beginPath(); g.arc(32,32,29.5,0,7); g.stroke(); g.beginPath(); g.arc(32,32,24,0,7); g.lineWidth=.4; g.stroke();
+    radial(g,30,30,18,[[0,'#a8603a'],[1,'#5a2a14']]); for(let k=0;k<8;k++){ const a=k/8*Math.PI*2; R(g,'#d4ad5a',32+Math.cos(a)*12-.6,32+Math.sin(a)*12-.6,1.2,1.2); } ell(g,32,32,5,5,'#d4ad5a'); ell(g,31,31,2,2,'#fff0b8');
+    for(let k=0;k<4;k++){ const a=k/4*Math.PI*2+.4; g.strokeStyle='#e8c870'; g.lineWidth=1.2; g.beginPath(); g.moveTo(32,32); g.lineTo(32+Math.cos(a)*10,32+Math.sin(a)*10); g.stroke(); } ell(g,32+Math.cos(1)*26,32+Math.sin(1)*26,1.2,1.2,'#ffffff'); },0,11));
   WG.casino.wheel=wheel;
-  /* stage with a gold curtain */
-  B(g,C('#24120c'),12.3,0,0,3.2,.45,WZ*2); B(g,G('#f5c542'),10.7,.42,0,.05,.05,WZ*2);
-  const curtain=M(P2(16,32,(g,w,h)=>{ for(let x=0;x<w;x++){ const v=.75+.25*Math.sin(x*1.2); R(g,mix('#a87a20','#ffd860',v*.6),x,0,1,h); } },4,16),{double:true});
-  for(const s of [-1,1]) B(g,curtain,13.6,.45,s*1.8,.1,2.9,2.0); B(g,curtain,13.6,2.9,0,.12,.5,WZ*2-.2); mk(wplane(1.8,2.4),C('#120a0a'),g,13.94,1.65,0,0,-Math.PI/2,0);
-  mk(cyl(.015,.015,1.5,6),C('#c8ccd2'),g,11.9,1.2,0); B(g,black,11.9,1.95,0,.05,.12,.05);
-  /* bar at the back */
-  B(g,wood,-12.5,0,0,.7,1.1,WZ*2-1.6); B(g,gold,-12.15,1.1,0,.14,.04,WZ*2-1.6); for(let k=0;k<12;k++) K(mk(cyl(.04,.05,.28,6),G(['#c8742a','#2a8a3a','#e8e0c8','#8a2a8a'][k%4]),g,-13.8,1.35+(k%2)*.45,(WZ-1.4)*((k>>1)/2.5-1)));
-  /* chandeliers */
-  const crystal=U('#fff4d8'); for(const x of [-9,-2,5]){ mk(torus(.45,.03,4,16),gold,g,x,2.95,0,Math.PI/2); for(let k=0;k<14;k++){ const a=k/14*Math.PI*2; B(g,crystal,x+Math.cos(a)*.45,2.8,Math.sin(a)*.45,.05,.16,.05); } B(g,crystal,x,2.6,0,.12,.3,.12); }
+  /* the stage: boards in a lit frame, footlights, pleated velvet curtains under a scalloped valance, the marquee, speakers, a lighting truss */
+  const boards=M(paTex(32,32,(g,w,h)=>{ for(let k=0;k<8;k++) vfill(g,0,k*4,w,4,[[0,['#6a3a1e','#5a3018','#7a4426','#623418'][k%4]],[.85,'#3a1e0e'],[1,'#1a0a04']]); for(let k=0;k<8;k++) R(g,'#1a0a04',(k*13)%w,k*4,.5,4); for(let k=0;k<20;k++) R(g,rgba('#000000',.1),(k*7)%w,(k*5)%h,3,.3); },3,807));
+  for(let k=0;k<4;k++){ const zc=-WZ+WZ*2*(k+.5)/4; bx(g,{nx:'stageF',side:'dark',top:'dark'},12.3,0,zc,3.2,.45,WZ*2/4); }
+  nc(mk(wplane(3.2,WZ*2,.8,.8),boards,g,12.3,.452,0,-Math.PI/2)); nc(bx(g,'gold',10.72,.42,0,.06,.05,WZ*2));
+  for(let k=0;k<11;k++) nc(lit(g,'foot',10.76,.45,-2.5+k*.5,.08,.06,.14));
+  for(const s of [-1,1]) for(let k=0;k<5;k++){ const zc=s*(.95+k*.4); nc(bx(g,'velvet',13.6+(k%2)*.08,.45,zc,.1,2.9,.42,0)); }
+  for(let k=0;k<9;k++){ const zc=-WZ+.32+k*(WZ*2-.64)/8; nc(bx(g,'velvet',13.5,2.85,zc,.14,.55-(k%2)*.12,.72)); } nc(bx(g,'gold',13.42,3.3,0,.1,.06,WZ*2));
+  nc(mk(wplane(1.8,2.4),C('#120a0a'),g,13.94,1.65,0,0,-Math.PI/2,0)); nc(card(g,'marquee',13.9,2.3,0,1.5,.38,-Math.PI/2));
+  geoA(g,'chrome',cyl(.015,.015,1.5,6),11.9,1.2,0); nc(geoA(g,'chrome',cyl(.12,.14,.03,12),11.9,.47,0)); nc(cylA(g,{side:'dark',top:'chrome'},.03,.025,.12,8,11.9,1.98,0,0,0,.3));
+  for(const s of [-1,1]){ bx(g,{nx:'speaker',side:'dark'},13.2,.45,s*2.45,.5,.75,.5); nc(bx(g,{nx:'speaker',side:'dark'},13.2,1.2,s*2.45,.42,.45,.42)); }
+  nc(bx(g,'chrome',11.2,3.15,0,.08,.08,WZ*2)); for(const z of [-1.8,-.6,.6,1.8]){ nc(cylA(g,{side:'dark',bottom:'foot'},.08,.1,.22,10,11.2,3.0,z,0,0,-.4)); }
+  /* the bar at the back: mahogany panels, a padded rail and a brass foot rail, the back bar of bottles on lit shelves */
+  for(let k=0;k<6;k++){ const zc=-2.1+.35+k*.7; bx(g,{px:'mahog',side:'dark',top:'woodTop'},-12.5,0,zc,.7,1.1,.7); }
+  for(let k=0;k<6;k++) nc(bx(g,{top:paRot(A,'woodTop',1),side:'woodTop'},-12.45,1.1,-(WZ-.75)+(WZ*2-1.5)*(k+.5)/6,.86,.05,(WZ*2-1.5)/6)); nc(bx(g,'rail',-12.08,1.1,0,.1,.07,WZ*2-1.5)); nc(geoA(g,'brass',cyl(.025,.025,WZ*2-1.6,8),-12.0,.18,0,Math.PI/2));
+  for(const z of [-1.6,-.6,.4,1.4]) nc(bx(g,'brass',-12.05,0,z,.03,.18,.03));
+  for(const [z0,z1] of [[-WZ+.15,-.75],[.75,WZ-.15]]){ const zc=(z0+z1)/2, wd=z1-z0; K(nc(card(g,'backbar',-13.96,1.75,zc,wd,1.1,Math.PI/2)));
+    for(const y of [1.25,1.7,2.15]) K(nc(bx(g,'woodTop',-13.82,y,zc,.28,.04,wd))); for(let k=0;k<Math.floor(wd/.16);k++) for(const y of [1.29,1.74]){ const b='b'+((k+(y>1.5?1:0))%4); K(nc(paGeo(g,mA,A,b,lathe([[0,.035,.035],[.16,.04,.04],[.2,.015,.015],[.28,.012,.012]],8),-13.82,y,z0+.1+k*.16))); } }
+  K(nc(card(g,'cashier',-13.9,2.6,0,1.6,.4,Math.PI/2)));
+  for(let k=0;k<5;k++) nc(paGeo(g,mA,A,'glass',cyl(.035,.03,.1,8),-12.35,1.2,-1.5+k*.7)); for(const z of [-.3,.3]){ nc(geoA(g,'brass',cyl(.02,.02,.4,6),-12.6,1.35,z)); nc(bx(g,'brass',-12.55,1.5,z,.12,.02,.02)); }
   WG.casino.spots={king:{x:12.0,z:-.4,ry:-Math.PI/2,y:.45},king_c:{x:4.2,z:1.3,ry:-Math.PI/2},king_c2:{x:-6.8,z:-1.6,ry:Math.PI/2}};
 };
 
 /* ---------- 03 · Copacabana pool deck ---------- */
 CAR_BUILD.pool=function pool(){
-  const deck=M(P2(32,32,(g,w,h)=>{ R(g,'#f2ece0',0,0,w,h); for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(Math.sin(x/w*Math.PI*4+Math.sin(y/h*Math.PI*2)*2.2)>.55) R(g,'#2a2a2e',x,y,1,1); }),{});
-  const white=C('#f4f2ec'), teal=C('#2ac0d0'), wood=M(woodT('#c8a070','#a88050',21));
-  const water=M(P2(32,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#38d0e0'],[1,'#20a8c8']]); const r=rng(22); for(let i=0;i<14;i++){ g.strokeStyle=rgba('#c8f8ff',.6); g.lineWidth=1; g.beginPath(); const x=r()*w,y=r()*h; g.moveTo(x,y); g.quadraticCurveTo(x+4,y-3,x+8,y+1); g.stroke(); } },0),{unlit:true,color:[.92,.98,1]});
-  const g=shell('pool',{floor:deck,floorTile:1.2,dado:M(lineT('#f2ece0','#d8d0c0',23)),upper:white,pier:white,trim:C('#2a9a5a'),end:M(lineT('#2a9a5a','#1e7a46',24)),door:C('#2a9a5a'),lo:.9,hi:3.2,noTop:true,
+  const kit=paKit('pool',paPoolKit), A=kit.A, S=kit.S, mA=M(A.tex), mS=M(S.tex,{unlit:true}), mCut=M(A.tex,{cut:true,double:true}), white=C('#f4f2ec');
+  const water=M(P2(64,64,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#38d0e0'],[1,'#22aacc']]); const r=rng(22);
+    for(let i=0;i<46;i++){ const x=r()*w,y=r()*h,s=3+r()*5; g.strokeStyle=rgba('#e8ffff',.35+r()*.3); g.lineWidth=.5+r()*.6; g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x+s*.5,y-s*.4,x+s,y+r()*1.5-.5); g.quadraticCurveTo(x+s*1.4,y+s*.3,x+s*1.9,y-.2); g.stroke(); }
+    for(let i=0;i<18;i++) ell(g,r()*w,r()*h,2+r()*3,1,rgba('#1a8ab0',.25)); for(let i=0;i<30;i++) R(g,rgba('#ffffff',.6),r()*w,r()*h,1.2,.4); },0),{unlit:true,color:[.92,.98,1]});
+  const g=shell('pool',{floor:M(kit.walls.deck),floorTile:1.2,dado:M(kit.walls.wall),upper:white,pier:white,trim:C('#2a9a5a'),end:M(kit.walls.end),door:M(paDoor('#2a9a5a','#f2c230','#fff4d8')),lo:.9,hi:3.2,noTop:true,
     wins:[[-13.6,13.6]],lamps:[lamp(-10,2.5,0,[1.0,.8,.6],6),lamp(11.5,2.2,0,[1.4,.4,1.0],5),lamp(0,1.0,0,[.3,.9,1.0],6)],sunK:1.15,ambK:1.1});
-  /* the pool, raised in a tiled rim */
-  for(const s of [-1,1]){ B(g,C('#e8f0f2'),0,0,s*1.5,14,.55,.2); B(g,C('#e8f0f2'),s*6.9,0,0,.2,.55,3.2); } mk(wplane(13.6,2.8,1.6,1.6),water,g,0,.45,0,-Math.PI/2); B(g,C('#2a90a8'),0,0,0,13.6,.44,2.8); WG.pool.anim.push(t=>{ water.rep=[1+Math.sin(t*.7)*.02,1]; });
-  for(const s of [-1,1]) B(g,C('#2ac0d0'),0,.55,s*1.6,14,.04,.08); for(let k=0;k<2;k++){ B(g,C('#c8ccd2'),-6.6,.55,-1.0+k*.4,.04,.7,.04); }
-  /* striped loungers with towels */
-  const lounge=M(stripes('#f2c230','#f2ece0'),{});
-  for(const s of [-1,1]) for(let i=0;i<5;i++){ const x=-6+i*3,z=s*2.3,n=N(g,x,0,z,0,s<0?.0:Math.PI,0); B(n,white,0,0,0,1.6,.28,.6); B(n,lounge,0,.28,0,1.5,.06,.56); B(n,lounge,-.7,.3,0,.5,.06,.56,0,0,.7); }
-  /* umbrellas */
-  const umb=M(P2(16,16,(g,w,h)=>{ for(let x=0;x<w;x+=4){ R(g,'#e0473a',x,0,2,h); R(g,'#f2ece0',x+2,0,2,h); } }),{double:true});
-  for(const x of [-4.5,1.5,7.5]) for(const s of [-1,1]){ if(x===1.5&&s>0) continue; mk(cyl(.025,.025,2.3,6),white,g,x,1.15,s*2.4); mk(lathe([[0,1.0,1.0],[.4,.05,.05]],10,{capB:false}),umb,g,x,2.1,s*2.4); }
-  /* palms in pots */
-  for(const x of [-8.5,8.5]) for(const s of [-1,1]){ mk(cyl(.3,.24,.6,10),C('#c8643a'),g,x,.3,s*2.4); B(g,C('#7a5a3e'),x,.6,s*2.4,.12,1.8,.12,0,0,.1); for(let k=0;k<7;k++) mk(box(.14,.05,1.1),C('#3f8a3e'),g,x,2.45,s*2.4,.0,k/7*Math.PI*2,.45); }
-  /* tiki bar under thatch at the back */
-  const thatch=M(P2(16,16,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8a060'],[1,'#a88048']]); for(let x=0;x<w;x+=2) R(g,'#8a6a38',x,0,1,h); },8,25),{double:true});
-  B(g,wood,-12.4,0,0,.8,1.1,WZ*2-1.8); B(g,C('#2a9a5a'),-12.05,1.1,0,.14,.05,WZ*2-1.8); mk(box(2.2,.15,WZ*2-.4),thatch,g,-12.8,2.6,0,0,0,-.25); for(const z of [-1.9,1.9]) B(g,wood,-12.4,0,z,.12,2.6,.12);
-  for(let k=0;k<6;k++) K(mk(cyl(.05,.05,.18,6),G(['#f2c230','#e0473a','#2a9a5a'][k%3]),g,-12.4,1.2,(WZ-1.4)*(k/2.5-1)));
-  /* the DJ booth and speaker stacks */
-  B(g,C('#121214'),12,0,0,1.0,1.1,2.4); B(g,M(textTex(32,16,'#121214',[['TREMOR','c',5,'#ff3fa4']]),{unlit:true}),11.48,.5,0,.02,.4,1.6);
-  for(const z of [-.6,.6]) mk(cyl(.26,.26,.04,14),C('#2a2a2e'),g,12,1.12,z);
-  const spk=M(P2(16,16,(g,w,h)=>{ R(g,'#1a1a1e',0,0,w,h); ell(g,8,8,6,6,'#2a2a30'); ell(g,8,8,3,3,'#0a0a0c'); }));
-  for(const s of [-1,1]) for(let k=0;k<3;k++) B(g,F(C('#1a1a1e'),spk),13.3,k*.9,s*2.1,.9,.9,.9,-Math.PI/2*s*0);
-  for(let k=0;k<30;k++){ const x=-13+k*.9, y=3.05+Math.sin(k*.6)*.12; B(g,U(['#ff3fa4','#f2c230','#29e0e6','#7cf06a'][k%4]),x,y,0,.08,.08,.08); } B(g,C('#2a2a2e'),0,3.1,0,26,.02,.02);
+  const bx=(n,r,x,y,z,w,h,d,ry=0,rx=0,rz=0)=>paBox(n,mA,A,r,x,y,z,w,h,d,ry,rx,rz), lit=(n,r,x,y,z,w,h,d,ry=0)=>paBox(n,mS,S,r,x,y,z,w,h,d,ry);
+  const card=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mS,S,r,x,y,z,w,h,ry), pcard=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mA,A,r,x,y,z,w,h,ry), nc=paNC, hide=paHide;
+  const geoA=(n,r,geo,x,y,z,rx=0,ry=0,rz=0)=>paGeo(n,mA,A,r,geo,x,y,z,rx,ry,rz), cylA=(n,o,rt,rb,h,seg,x,y,z,rx=0,ry=0,rz=0)=>paCyl(n,mA,A,o,rt,rb,h,seg,x,y,z,rx,ry,rz);
+  WG.pool.paint={bx,lit,card,pcard,geoA,cylA,A,S,mA,mS,mCut};
+  /* the low wall: a green coping and a chrome rail on posts, open to the sky above */
+  for(const s of [-1,1]){ const sg=WG.pool.side[s], z=s*(WZ0-.06); nc(bx(sg,{top:'green',side:'green'},0,.9,z,WL-.8,.06,.2)); for(let k=0;k<8;k++) nc(geoA(sg,paRot(A,'chrome',1),cyl(.025,.025,(WL-.8)/8,8),-(WL-.8)/2+(WL-.8)*(k+.5)/8,1.32,z,0,0,Math.PI/2));
+    for(let x=-13.2;x<13.3;x+=1.65) nc(geoA(sg,'chrome',cyl(.02,.02,.42,6),x,1.12,z)); }
+  /* the pool, raised in a tiled rim with travertine coping, a mosaic band at the waterline, a chrome ladder */
+  for(const s of [-1,1]){ hide(B(g,white,0,0,s*1.5,14,.55,.2)); hide(B(g,white,s*6.9,0,0,.2,.55,3.2)); }
+  for(const s of [-1,1]){ for(let k=0;k<14;k++){ nc(bx(g,{side:'tileW',top:'coping'},-6.5+k,0,s*1.5,1,.55,.2)); nc(bx(g,{top:'coping',side:'coping'},-6.5+k,.55,s*1.53,1.0,.05,.3)); } for(let k=0;k<14;k++) nc(bx(g,'mosaic',-6.3+k*.97,.42,s*1.395,.97,.13,.01));
+    for(let k=0;k<3;k++){ const zc=-1.07+k*1.07; nc(bx(g,{side:'tileW',top:'coping'},s*6.9,0,zc,.2,.55,1.07)); nc(bx(g,'coping',s*6.93,.55,zc,.3,.05,1.07)); } nc(bx(g,'mosaic',s*6.795,.42,0,.01,.13,2.8)); }
+  mk(wplane(13.6,2.8,1.6,1.6),water,g,0,.45,0,-Math.PI/2); B(g,C('#2a90a8'),0,0,0,13.6,.44,2.8); WG.pool.anim.push(t=>{ water.rep=[1+Math.sin(t*.7)*.02,1]; });
+  for(const z of [-1.0,-.6]){ nc(geoA(g,'chrome',cyl(.022,.022,.85,8),-6.62,.6,z)); nc(geoA(g,'chrome',cyl(.022,.022,.3,8),-6.77,1.02,z,0,0,Math.PI/2)); nc(geoA(g,'chrome',cyl(.022,.022,.3,8),-6.92,.88,z)); }
+  for(const y of [.15,.32]) nc(bx(g,'chrome',-6.58,y,-.8,.08,.025,.4));
+  /* loungers: aluminium frames, slatted beds, striped cushions, a rolled towel at the head */
+  for(const s of [-1,1]) for(let i=0;i<5;i++){ const x=-6+i*3,z=s*2.3,n=N(g,x,0,z,0,s<0?.0:Math.PI,0), cu=i%2?'cushT':'cushY';
+    hide(B(n,white,0,0,0,1.6,.28,.6)); for(const dx of [-.72,.72]) for(const dz of [-.26,.26]) nc(bx(n,'white',dx,0,dz,.05,.24,.05)); for(const dz of [-.28,.28]) nc(bx(n,'white',0,.2,dz,1.6,.05,.04));
+    nc(bx(n,{top:'slats',side:'white'},.1,.22,0,1.3,.03,.56)); nc(bx(n,{top:cu,side:cu},.12,.25,0,1.25,.07,.54)); nc(bx(n,{top:'slats',side:'white'},-.68,.3,0,.55,.03,.56,0,0,.7)); nc(bx(n,{top:cu,side:cu},-.66,.33,0,.5,.07,.54,0,0,.7));
+    nc(geoA(n,i%2?'towel2':'towel',cyl(.07,.07,.5,10),-.42,.36,0,Math.PI/2)); if(i%2===0) nc(bx(n,{top:i%4?'towel2':'towel',side:'towel'},.5,.32,0,.42,.03,.36,.2)); }
+  /* umbrellas with tables round the poles: drinks with straws, a magazine, a cooler */
+  const canopy=[[0,1.05,1.05],[.18,.7,.7],[.38,.08,.08],[.42,.02,.02]];
+  [[-4.5,'umbR'],[1.5,'umbY'],[7.5,'umbR']].forEach(([x,u])=>{ for(const s of [-1,1]){ if(x===1.5&&s>0) continue; const z=s*2.4;
+    geoA(g,'chrome',cyl(.025,.025,2.3,6),x,1.15,z); nc(paGeo(g,mCut,A,u,lathe(canopy,16,{capB:false}),x,2.05,z)); nc(geoA(g,'chrome',cyl(.035,.035,.1,8),x,2.5,z)); nc(bx(g,'chrome',x,1.4,z,.06,.05,.06));
+    nc(cylA(g,{side:'white',top:'white'},.28,.28,.03,16,x,.55,z)); nc(geoA(g,'white',cyl(.03,.03,.55,6),x,.27,z)); nc(geoA(g,'white',cyl(.2,.22,.03,10),x,.015,z));
+    nc(geoA(g,'glass',cyl(.035,.025,.12,8),x+.15,.63,z-s*.08)); nc(geoA(g,'glass2',cyl(.035,.025,.12,8),x-.12,.63,z-s*.14)); nc(bx(g,'red',x+.16,.66,z-s*.08,.006,.14,.006,0,0,.3)); nc(bx(g,{top:'mag',side:'white'},x+.02,.57,z+s*.12,.2,.006,.15,.4)); } });
+  nc(bx(g,{side:'cooler',top:'white'},4.4,0,2.55,.5,.35,.32)); nc(geoA(g,'ball',lathe([[0,.01,.01],[.05,.14,.14],[.15,.16,.16],[.25,.14,.14],[.3,.01,.01]],10),-1.5,0,2.0));
+  for(const [x,z] of [[-6.4,1.95],[3.2,-1.95],[6,1.95]]) for(const dz of [-.06,.06]) nc(bx(g,dz<0?'red':'cushT',x,0,z+dz,.24,.015,.09,.1));
+  /* palms in painted pots: ringed trunks, arching fronds */
+  for(const x of [-8.5,8.5]) for(const s of [-1,1]){ const z=s*2.4; cylA(g,{side:'pot',top:'trunk'},.3,.24,.6,12,x,.3,z); nc(geoA(g,'pot',torus(.31,.04,4,14),x,.6,z,Math.PI/2));
+    nc(geoA(g,'trunk',cyl(.08,.1,1.0,8),x+.03,1.1,z,0,0,.06)); nc(geoA(g,'trunk',cyl(.07,.08,.9,8),x+.1,2.0,z,0,0,.12)); hide(B(g,C('#7a5a3e'),x,.6,z,.12,1.8,.12,0,0,.1));
+    for(let k=0;k<9;k++){ const a=k/9*Math.PI*2+s; nc(paGeo(g,mCut,A,'frond',paFrond(1.3+(k%3)*.15,.55,.9),x+.15,2.42,z,0,a,0)); } }
+  /* tiki bar under a fringed thatch: bamboo front, carved masks on the posts, bottles, coconuts, a pineapple, the sign */
+  for(let k=0;k<5;k++){ const zc=-(WZ-.9)+(WZ*2-1.8)*(k+.5)/5; bx(g,{px:'bamboo',side:'woodTop',top:'woodTop'},-12.4,0,zc,.8,1.1,(WZ*2-1.8)/5); }
+  for(let k=0;k<5;k++) nc(bx(g,{top:paRot(A,'woodTop',1),side:'woodTop'},-12.35,1.1,-(WZ-.85)+(WZ*2-1.7)*(k+.5)/5,.95,.05,(WZ*2-1.7)/5)); nc(bx(g,'green',-11.88,1.06,0,.06,.06,WZ*2-1.7));
+  for(let k=0;k<5;k++) nc(bx(g,{top:'thatch',side:'thatch',bottom:'thatch'},-12.8,2.6,-(WZ-.2)+(WZ*2-.4)*(k+.5)/5,2.2,.15,(WZ*2-.4)/5,0,0,-.25)); for(let k=0;k<5;k++){ const zc=-(WZ-.2)+(WZ*2-.4)*(k+.5)/5; nc(paCard(g,mCut,A,'fringe',-11.76,2.5,zc,(WZ*2-.4)/5+.02,.35,Math.PI/2)); }
+  for(const z of [-1.9,1.9]){ geoA(g,'bamboo',cyl(.07,.07,2.6,8),-12.4,1.3,z); nc(pcard(g,'mask',-12.32,1.45,z,.22,.34,Math.PI/2)); }
+  nc(pcard(g,'sign',-11.72,2.12,0,1.6,.4,Math.PI/2));
+  for(let k=0;k<6;k++) K(nc(paGeo(g,mA,A,'bt'+(k%4),lathe([[0,.04,.04],[.18,.045,.045],[.23,.016,.016],[.3,.014,.014]],8),-12.5,1.15,(WZ-1.4)*(k/2.5-1))));
+  for(const [z,r] of [[-1.25,'coco'],[-.95,'coco'],[.85,'pine'],[1.4,'coco']]) nc(geoA(g,r,lathe([[0,.02,.02],[.04,.07,.07],[.1,.07,.07],[.14,.03,.03]],8),-12.15,1.15,z));
+  for(let k=0;k<3;k++) nc(geoA(g,k%2?'glass2':'glass',cyl(.035,.025,.12,8),-12.1,1.21,-.3+k*.25));
+  for(const z of [-WZ+.6,WZ-.6]){ K(nc(bx(g,'woodTop',-13.8,1.5,z,.3,.04,.9))); for(let k=0;k<4;k++) K(nc(paGeo(g,mA,A,'bt'+k,lathe([[0,.035,.035],[.16,.04,.04],[.21,.015,.015],[.27,.012,.012]],8),-13.8,1.54,z-.33+k*.22))); }
+  /* the DJ booth: decks, a mixer, a laptop; speaker stacks with chrome cone rings; surfboards against the front wall */
+  bx(g,{nx:'dark',side:'dark',top:'dark'},12,0,0,1.0,1.1,2.4); nc(card(g,'tremor',11.49,.55,0,1.7,.42,-Math.PI/2)); nc(bx(g,'chrome',11.49,1.08,0,.04,.03,2.44));
+  for(const z of [-.6,.6]){ nc(bx(g,'dark',12,1.1,z,.5,.05,.5)); nc(cylA(g,{side:'dark',top:'vinyl'},.21,.21,.02,20,12,1.16,z)); nc(bx(g,'chrome',12.15,1.16,z+.18,.25,.015,.02,.5)); }
+  nc(bx(g,{top:paRot(A,'mixer',1),side:'dark'},12,1.1,0,.42,.07,.5)); nc(bx(g,'dark',12.25,1.1,-.05,.3,.02,.38,0,0,0)); nc(card(g,'screen',12.38,1.25,-.05,.36,.24,-Math.PI/2));
+  for(const s of [-1,1]) for(let k=0;k<3;k++){ bx(g,{nx:'speaker',side:'dark',top:'dark'},13.3,k*.9,s*2.1,.9,.9,.9); nc(geoA(g,'chrome',torus(.28,.025,4,16),12.84,k*.9+.45,s*2.1,0,Math.PI/2)); }
+  for(const [z,r] of [[1.25,'surf1'],[-1.3,'surf2']]) nc(bx(g,{side:r,front:r,back:r},13.62,0,z,.06,2.1,.5,0,0,-.1));
+  /* strings of party lights over the deck */
+  for(let k=0;k<30;k++){ const x=-13+k*.9, y=3.05+Math.sin(k*.6)*.12; nc(paGeo(g,mS,S,'bulb'+(k%4),lathe([[0,.02,.02],[.04,.05,.05],[.09,.04,.04],[.12,.01,.01]],8),x,y-.06,0)); } nc(B(g,C('#2a2a2e'),0,3.1,0,26,.02,.02));
   WG.pool.spots={tremor:{x:11.4,z:.0,ry:-Math.PI/2},tremor_c:{x:-2,z:2.0,ry:-Math.PI/2},tremor_c2:{x:4,z:-2.0,ry:Math.PI/2}};
 };
 
@@ -248,26 +343,53 @@ CAR_BUILD.dimsum=function dimsum(){
 
 /* ---------- 08 · capsule hotel ---------- */
 CAR_BUILD.capsule=function capsule(){
-  const white=M(lineT('#eeeee8','#d8d8d2',71)), carpet=M(P2(16,16,(g,w,h)=>{ R(g,'#3a3a44',0,0,w,h); const r=rng(72); for(let i=0;i<20;i++) R(g,'#4a4a54',r()*w|0,r()*h|0,1,1); },4,72));
-  const g=shell('capsule',{floor:carpet,floorTile:.6,ceil:C('#f4f4f0'),dado:white,upper:white,pier:white,trim:C('#29e0e6'),end:white,door:C('#2a2a34'),
+  const kit=paKit('capsule',paCapsuleKit), A=kit.A, S=kit.S, mA=M(A.tex), mS=M(S.tex,{unlit:true}), white=M(kit.walls.wall);
+  const g=shell('capsule',{floor:M(kit.walls.floor),floorTile:.6,ceil:M(kit.walls.ceil),dado:white,upper:white,pier:white,trim:C('#29e0e6'),end:white,door:M(paDoor('#2a2a34','#29e0e6','#e8f4ff')),
     wins:[[-1.8,-.4],[.4,1.8]],lamps:[lamp(-10,2.8,0,[.85,.95,1.1],6),lamp(-4,2.8,0,[.85,.95,1.1],6),lamp(0,2.6,0,[1.2,.5,1.0],5),lamp(4,2.8,0,[.85,.95,1.1],6),lamp(10,2.8,0,[.85,.95,1.1],6)]});
-  /* two storeys of pods down both walls, the middle left open as a lounge */
-  const pod=C('#f4f4ee'), podIn=[U('#ffe8c0'),U('#c8e8ff'),U('#1a1a22')], num=(n)=>M(textTex(16,8,'#f4f4ee',[[String(n),'c',2,'#2a2a34']]));
+  const bx=(n,r,x,y,z,w,h,d,ry=0,rx=0,rz=0)=>paBox(n,mA,A,r,x,y,z,w,h,d,ry,rx,rz), lit=(n,r,x,y,z,w,h,d,ry=0)=>paBox(n,mS,S,r,x,y,z,w,h,d,ry);
+  const card=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mS,S,r,x,y,z,w,h,ry), pcard=(n,r,x,y,z,w,h,ry=0)=>paCard(n,mA,A,r,x,y,z,w,h,ry), nc=paNC;
+  const geoA=(n,r,geo,x,y,z,rx=0,ry=0,rz=0)=>paGeo(n,mA,A,r,geo,x,y,z,rx,ry,rz);
+  /* two storeys of pods down both walls, the middle left open as a lounge. Each pod is a moulded shell with a raised
+     rim round a recessed, lit opening: some lit warm, some cool, some dark, some with the blind down */
   const PODX=[...Array(9)].map((_,i)=>-12.8+i*1.15).concat([...Array(9)].map((_,i)=>3.6+i*1.15));
-  for(const s of [-1,1]) PODX.forEach((x,i)=>{ for(let lv=0;lv<2;lv++){ const y=lv*1.25, n=N(WG.capsule.side[s],x,y,s*2.25);
-      B(n,pod,0,0,0,1.1,1.2,1.25); mk(wplane(.9,.85),podIn[(i+lv+(s>0?1:0))%3],n,0,.6,-s*.63,0,s>0?Math.PI:0,0); B(n,C('#2a2a34'),0,.05,-s*.63,.95,.06,.02);
-      mk(wplane(.24,.12),num(100*(lv+1)+i+(s>0?20:0)),n,.35,1.08,-s*.64,0,s>0?Math.PI:0,0); }
-    B(WG.capsule.side[s],C('#c8ccd2'),x+.5,0,s*1.6,.04,2.5,.04); });
-  /* lounge: neon sign, vending machines, sofas, a shelf of comics */
-  const neon=M(textTex(64,16,'#14141c',[['CAPSULES','c',4,'#29e0e6',1]]),{unlit:true}); mk(wplane(2.8,.7),neon,g,0,2.9,-2.86);
-  const vm=(x,c,z)=>B(g,F(C(c),M(P2(32,64,(g,w,h)=>{ R(g,c,0,0,w,h); R(g,'#e8f4ff',3,4,w-6,30); const r=rng(x*13); for(let y=0;y<3;y++) for(let k=0;k<5;k++) R(g,['#d63a2c','#2a6ad8','#f2c230','#2a9a5a','#f28a3a'][(k+y)%5],5+k*5,7+y*9,3,7); R(g,'#2a2a30',4,40,w-8,8); }),{emissive:0x1a1a1a})),x,0,z,.9,1.9,.7);
-  vm(2.4,'#d63a2c',-2.4); vm(3.3,'#2a6ad8',-2.4);
-  const sofa=M(fabT('#2a2a34',73)); for(const s of [-1,1]){ K(B(g,sofa,-1.2+s*0,0,s*1.6,2.2,.42,.8)); K(B(g,sofa,-1.2,.42,s*1.95,2.2,.5,.16)); }
-  mk(cyl(.4,.4,.04,12),C('#f4f4ee'),g,-1.2,.45,0); mk(cyl(.05,.05,.45,6),C('#c8ccd2'),g,-1.2,.22,0);
-  const spines=M(P2(32,32,(g,w,h)=>{ R(g,'#2a2a34',0,0,w,h); const r=rng(74); for(let y=1;y<h;y+=8) for(let x=1;x<w;x+=2) R(g,['#d63a2c','#2a6ad8','#f2c230','#2a9a5a','#ff4fae','#f2ece0'][r()*6|0],x,y,1,6); }));
-  B(g,F(C('#2a2a34'),spines),2.85,0,2.3,1.6,2.2,.4);
-  for(let x=-13;x<13.5;x+=2) B(g,U('#29e0e6'),x,.005,0,1.2,.01,.04);
-  for(let k=0;k<6;k++) B(g,F(C('#c8ccd2'),M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#d8dce0'],[1,'#b8bcc0']]); R(g,'#8a8e94',0,0,1,h); R(g,'#2a2a34',11,14,2,4); text(g,String(k+1),3,3,'#2a2a34',1); }))),-13.4,0,-1.5+k*.62,.6,1.9,.6,Math.PI/2).keep=1;
+  for(const s of [-1,1]) PODX.forEach((x,i)=>{ const side=WG.capsule.side[s], ry=s>0?Math.PI:0;
+    for(let lv=0;lv<2;lv++){ const y=lv*1.25, n=N(side,x,y,s*2.25), f=-s*.625, hsh=(i*7+lv*3+(s>0?5:0))%9, t='wcwdwcwdc'[hsh], zc=-s*.265;
+      const solid=bx(n,'podside',0,0,0,1.1,1.2,1.25); solid.vis=false; solid.keepHidden=1; /* the pod as the colliders know it; what you see is hollow */
+      nc(bx(n,{side:'podside',top:'podside',bottom:'podside'},0,0,s*.3,1.1,1.2,.65)); nc(bx(n,'podside',0,1.0,zc,1.1,.2,.48)); nc(bx(n,'podside',0,0,zc,1.1,.2,.48)); for(const dx of [-.49,.49]) nc(bx(n,'podside',dx,.2,zc,.12,.8,.48));
+      nc(bx(n,'rimH',0,1.0,f+s*.06,1.1,.2,.12)); nc(bx(n,'rimH',0,0,f+s*.06,1.1,.2,.12)); for(const dx of [-.49,.49]) nc(bx(n,'rimV',dx,.2,f+s*.06,.12,.8,.12));
+      /* inside: lit back wall with a little screen, a glowing ceiling, the side walls, a made bed */
+      nc(card(n,'pB'+t,0,.6,-s*.026,.86,.8,ry)); nc(paCard(n,mS,S,'pC'+t,0,.998,zc,.86,.48,0,Math.PI/2)); for(const dx of [-.429,.429]) nc(card(n,'pS'+t,dx,.6,zc,.48,.8,dx<0?Math.PI/2:-Math.PI/2));
+      nc(lit(n,{top:'pM'+t,side:'pM'+t},0,.2,zc,.86,.12,.48)); nc(lit(n,'pP'+t,.22,.32,-s*.12,.32,.08,.2,.1)); nc(lit(n,'pK'+t,-.15,.32,-s*.36,.5,.05,.26,-.08));
+      if(hsh===4||hsh===8) nc(card(n,'blind',0,.66,f+s*.11,.86,.68,ry));
+      nc(pcard(n,'n'+(100*(lv+1)+i+(s>0?20:0)),.3,1.1,f-s*.003,.2,.12,ry)); nc(bx(n,'steel',-.25,.19,f-s*.02,.4,.025,.05));
+      if(lv===0&&hsh%3===0) for(const dx of [-.1,.1]) nc(bx(side,'slip',x+dx,0,s*1.42,.1,.035,.26,0)); }
+    bx(side,'steel',x+.575,0,s*1.6,.04,2.5,.04);
+    if(i%2===0) for(let k=0;k<3;k++) nc(bx(side,'steel',x+.575,.38+k*.36,s*1.585,.035,.025,.12)); });
+  /* along the top of the pods: a cyan cove light, signs for the pod numbers above */
+  for(const s of [-1,1]){ const side=WG.capsule.side[s], ry=s>0?Math.PI:0, z=s*(WZ0-.02);
+    for(const [x0,x1] of [[-13.4,-3.0],[3.0,13.4]]){ nc(lit(side,'led',(x0+x1)/2,2.47,s*1.63,x1-x0,.025,.03)); nc(bx(side,'white',(x0+x1)/2,2.45,s*1.75,x1-x0,.05,.3)); }
+    [[-10.5,s<0?'sign1':'sign3'],[-5.5,s<0?'sign1':'sign3'],[5.5,s<0?'sign2':'sign4'],[10.5,s<0?'sign2':'sign4']].forEach(([x,r])=>nc(pcard(side,r,x,2.85,z,1.6,.4,ry)));
+    nc(bx(side,'white',0,WH-.12,z,WL,.12,.1)); nc(lit(side,'led',0,WH-.13,s*(WZ0-.09),WL,.012,.02)); nc(bx(side,'dark',0,0,z,WL,.1,.05)); }
+  /* lounge: a neon sign on a dark panel, vending machines, sofas with cushions, a coffee table, a manga shelf, a floor lamp, plants */
+  nc(bx(g,'dark',0,2.5,-2.86,3.2,.82,.06)); nc(card(g,'neon',0,2.91,-2.825,3.0,.72)); nc(lit(g,'led',0,2.5,-2.82,3.2,.02,.02));
+  const vm=(x,r)=>{ bx(g,{front:'dark',side:'vmside',top:'dark'},x,0,-2.4,.9,1.9,.7); nc(card(g,r,x,1.0,-2.045,.84,1.76)); nc(bx(g,'dark',x,1.9,-2.38,.94,.08,.74)); nc(bx(g,'steel',x,.3,-2.02,.7,.04,.06)); nc(bx(g,'dark',x+.38,.1,-2.07,.04,1.82,.06)); nc(bx(g,'dark',x-.38,.1,-2.07,.04,1.82,.06)); };
+  vm(2.5,'vmR'); vm(-2.5,'vmB'); nc(bx(g,'cab',-1.65,0,-2.62,.5,.6,.5)); nc(geoA(g,'cup',cyl(.035,.03,.1,8),-1.55,.65,-2.55));
+  for(const s of [-1,1]){ K(bx(g,{side:'sofa',top:'sofa'},-1.2,0,s*1.6,2.2,.3,.8)); K(bx(g,'sofa',-1.2,.42,s*1.95,2.2,.5,.16));
+    for(const dx of [-.53,.53]) K(nc(bx(g,'sofa',-1.2+dx,.3,s*1.55,1.04,.14,.68))); for(const dx of [-1.15,1.15]) K(bx(g,'sofa',-1.2+dx,0,s*1.62,.14,.62,.84));
+    for(const [dx,r,a] of [[-.7,'pillowC',.2],[.75,'pillowP',-.25]]) K(nc(bx(g,r,-1.2+dx,.44,s*1.78,.4,.36,.12,a,s*.25))); }
+  nc(bx(g,'rug',-1.2,0,0,2.6,.006,2.0)); geoA(g,'tabletop',cyl(.42,.42,.04,16),-1.2,.45,0); geoA(g,'steel',cyl(.04,.04,.45,8),-1.2,.22,0); nc(geoA(g,'steel',cyl(.22,.22,.02,12),-1.2,.01,0));
+  nc(bx(g,{top:'mag',side:'white'},-1.35,.47,.1,.34,.012,.24,.3)); nc(bx(g,{top:'mag',side:'white'},-1.3,.482,.06,.34,.012,.24,-.2));
+  for(const [dx,dz] of [[.15,-.18],[.25,.12]]) nc(geoA(g,'cup',cyl(.035,.03,.1,8),-1.2+dx,.52,dz));
+  /* the manga shelf: a carcass full of spines, real shelf boards across it */
+  bx(g,{front:'spines',side:'white',top:'white'},2.55,0,2.45,.9,2.2,.4); for(let k=0;k<6;k++) nc(bx(g,'shelf',2.55,.04+k*.42,2.24,.9,.03,.06)); for(const dx of [-.44,.44]) nc(bx(g,'white',2.55+dx,0,2.24,.03,2.2,.05));
+  nc(geoA(g,'steel',cyl(.015,.015,1.6,6),-2.6,.8,2.4)); nc(geoA(g,'steel',cyl(.18,.18,.02,12),-2.6,.01,2.4)); nc(paGeo(g,mS,S,'shade',cyl(.16,.22,.3,12,{open:true}),-2.6,1.7,2.4));
+  for(const [x,z] of [[2.7,-1.25],[-2.7,1.5]]){ nc(geoA(g,'pot',cyl(.2,.15,.4,10),x,.2,z)); for(let k=0;k<7;k++){ const a=k/7*Math.PI*2; nc(bx(g,'leaf',x+Math.cos(a)*.12,.38,z+Math.sin(a)*.12,.1,.02,.55,-a+Math.PI/2,.0,0)).r=[.7,-a+Math.PI/2,0]; } }
+  /* ceiling downlights in steel rings, cyan LED dashes on the floor, the exit sign */
+  for(let x=-12;x<=12;x+=2){ nc(geoA(g,'steel',cyl(.12,.12,.02,12),x,WH-.01,0)); nc(paGeo(g,mS,S,'down',cyl(.09,.09,.01,12),x,WH-.022,0)); }
+  for(let x=-13;x<13.5;x+=2) nc(lit(g,'led',x,.005,0,1.2,.01,.04));
+  nc(card(g,'exit',WL/2-.04,2.45,0,.6,.22,-Math.PI/2));
+  /* lockers at the back, numbered, with keypads */
+  for(let k=0;k<6;k++) bx(g,{px:'locker',side:'white',top:'white'},-13.4,0,-1.5+k*.62,.6,1.9,.6).keep=1;
   WG.capsule.spots={ren:{x:-.4,z:-.5,ry:-Math.PI/2},ren_c:{x:-6,z:.2,ry:-Math.PI/2},ren_c2:{x:7,z:-.2,ry:Math.PI/2}};
 };
 

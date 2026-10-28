@@ -1827,7 +1827,7 @@ function loftHalf(g,secs,side,flipU,mi){ const base=g.P.length/3,start=g.I.lengt
   g.groups.push({start,count:g.I.length-start,mi}); }
 function loft(secs){ const g=new Geo(); loftHalf(g,secs,1,false,0); loftHalf(g,secs,-1,true,0); smoothNormals(g); return g; }
 const NAVY='#14203a', GOLD='#d4ad5a';
-function liveryTex(W){ return P2(512,64,(g,w,h)=>{ const row=y=>vRow(y,h);
+function liveryTex(W){ return P2(2048,256,(g,w,h)=>{ const row=y=>vRow(y,h);
   vfill(g,0,0,w,row(3.9),[[0,'#c8ccd2'],[1,'#a8aeb6']]); R(g,'#7e848c',0,row(3.9)|0,w,1);
   vfill(g,0,row(3.9),w,row(-.1)-row(3.9),[[0,'#22305a'],[.5,NAVY],[1,'#0e1628']]);
   vfill(g,0,row(-.1),w,h-row(-.1),[[0,'#0a0f1c'],[1,'#05080f']]);
@@ -1836,7 +1836,14 @@ function liveryTex(W){ return P2(512,64,(g,w,h)=>{ const row=y=>vRow(y,h);
   if(W.key==='pool'){ vfill(g,0,row(4.4),w,row(2.95)-row(4.4),[[0,'#6ad0e0'],[1,'#2a8aa8']]); for(let x=8;x<w;x+=30) R(g,'#c8ccd2',x,row(4.4)|0,2,(row(2.95)-row(4.4))|0); }
   for(const [u0,u1] of W.wins){ const x0=u0*w,x1=u1*w,y0=row(2.62),y1=row(1.02); vfill(g,x0,y0,x1-x0,y1-y0,[[0,'#5a7a9a'],[.35,'#1e2e48'],[1,'#0e1626']]); R(g,GOLD,x0,y0,x1-x0,1); R(g,GOLD,x0,y1,x1-x0,1); R(g,rgba('#ffffff',.22),x0+3,y0+2,3,(y1-y0)*.5); }
   for(const u of [.03,.97]){ const x=u*w; R(g,'#3a4a6a',x-7,row(2.8)|0,1,(row(.15)-row(2.8))|0); R(g,'#3a4a6a',x+7,row(2.8)|0,1,(row(.15)-row(2.8))|0); R(g,'#5a7a9a',x-4,row(2.5)|0,8,8); }
-  const lab=W.label; text(g,lab,(w-textW(lab,1))/2|0,row(.62)|0,GOLD,1); text(g,W.num,w*.07|0,row(.62)|0,'#f2ece0',1);
+  /* close-up detail: a gloss band reflecting the platform lights, panel seams with rivets, road grime low down */
+  vfill(g,0,row(3.3),w,row(2.7)-row(3.3),[[0,'rgba(255,255,255,0)'],[.5,'rgba(190,210,255,.10)'],[1,'rgba(255,255,255,0)']]);
+  vfill(g,0,row(.7),w,row(.05)-row(.7),[[0,'rgba(140,170,230,0)'],[.5,'rgba(140,170,230,.10)'],[1,'rgba(140,170,230,0)']]);
+  vfill(g,0,row(.5),w,row(-.7)-row(.5),[[0,'rgba(20,14,8,0)'],[1,'rgba(20,14,8,.45)']]);
+  const seam=x=>{ R(g,'rgba(0,0,0,.45)',x|0,row(3.85)|0,1,(row(-.05)-row(3.85))|0); R(g,'rgba(255,255,255,.10)',(x|0)+1,row(3.85)|0,1,(row(-.05)-row(3.85))|0); for(let y=3.7;y>0;y-=.32){ R(g,'rgba(0,0,0,.5)',(x|0)-3,row(y)|0,2,2); R(g,'rgba(255,255,255,.18)',(x|0)-3,row(y)|0,1,1); R(g,'rgba(0,0,0,.5)',(x|0)+3,row(y)|0,2,2); } };
+  const wx=W.wins.flatMap(([a,b])=>[a*w,b*w]); for(let x=w*.08;x<w*.93;x+=w/12){ if(!wx.some(v=>Math.abs(v-x)<14)) seam(x); }
+  for(let x=0;x<w;x+=6) R(g,'rgba(0,0,0,.25)',x,row(-.25)|0,3,(row(-.6)-row(-.25))|0); /* skirt louvres */
+  const lab=W.label; g.save(); g.scale(3,3); text(g,lab,(w/3-textW(lab,1))/2|0,row(.62)/3-2|0,GOLD,1); text(g,W.num,w*.07/3|0,row(.62)/3-2|0,'#f2ece0',1); g.restore();
 },4,W.num.charCodeAt(1)); }
 function noseTex(){ return P2(128,64,(g,w,h)=>{ const row=y=>vRow(y,h);
   vfill(g,0,0,w,h,[[0,'#22305a'],[1,'#0e1628']]); vfill(g,0,row(-.1),w,h-row(-.1),[[0,'#0a0f1c'],[1,'#05080f']]);
@@ -1847,17 +1854,35 @@ function tailTex(){ return P2(128,64,(g,w,h)=>{ const row=y=>vRow(y,h);
   vfill(g,0,0,w,h,[[0,'#22305a'],[1,'#0e1628']]); vfill(g,0,row(4.5),w*.85,row(1.0)-row(4.5),[[0,'#5a7a9a'],[.4,'#1e2e48'],[1,'#0e1626']]); for(let x=10;x<w*.85;x+=16) R(g,GOLD,x,row(4.5)|0,1,(row(1.0)-row(4.5))|0);
   R(g,GOLD,0,row(.9)|0,w,1); ell(g,w*.92,row(.9),3,2,'#ff4a3a'); },3,19); }
 function winGlowTex(W){ return P2(512,16,(g,w,h)=>{ for(const [u0,u1] of W.wins){ vfill(g,u0*w,0,(u1-u0)*w,h,[[0,'#fff6e0'],[1,'#d8b888']]); for(let x=u0*w+8;x<u1*w;x+=14) R(g,'#5a4a3a',x|0,h-7,3,7); } }); }
-const LIVERY={}, GLOWM={};
+const LIVERY={}, GLOWM={}; let mGangway=null, mExtFrame=null, mExtDark=null, mExtRail=null;
+function gangwayTex(){ return P2(48,64,(g,w,h)=>{ const row=y=>vRow(y,h);
+  vfill(g,0,0,w,h,[[0,'#2a3448'],[.45,'#1a2236'],[1,'#0c101a']]); vfill(g,0,row(-.1),w,h-row(-.1),[[0,'#0a0d14'],[1,'#05070b']]);
+  for(let x=0;x<w;x+=4){ hfill(g,x,0,4,h,[[0,'rgba(0,0,0,.45)'],[.35,'rgba(0,0,0,0)'],[.6,'rgba(255,255,255,.10)'],[1,'rgba(0,0,0,.35)']]); }
+  R(g,rgba(GOLD,.55),0,row(.9)|0,w,1); R(g,rgba(GOLD,.55),0,(row(.9)|0)+3,w,1); },3,23); }
 const mBogie=M(null,{color:0x22242a}), mWheel=M(tSteel,{color:[.55,.55,.58]});
 function bogie(parent,x){ const b=N(parent,x,0,0); mk(box(3.6,.5,GAUGE*2+.6),mBogie,b,0,-.66,0); for(const dx of [-1.25,1.25]) for(const z of [-GAUGE,GAUGE]) mk(cyl(.5,.5,.16,12),mWheel,b,dx,-.6,z,Math.PI/2); return b; }
 function buildCarExt(parent,W,x){ const n=N(parent,x,0,0);
   const mat=LIVERY[W.key]||(LIVERY[W.key]=M(liveryTex(W)));
   const secs=[]; for(let i=0;i<=14;i++){ const t=i/14; secs.push({x:-CAR_L/2+t*CAR_L,sz:1,sy:1,dy:0,u:t}); }
   mk(loft(secs),mat,n); bogie(n,-CAR_L*.36); bogie(n,CAR_L*.36);
-  mk(box(CAR_GAP+.1,3.6,3.6+DW*2),M(null,{color:0x14161a}),n,CAR_L/2+CAR_GAP/2,1.7,0);
+  /* the gangway: a full-profile rubber fairing closes the gap to the next car, like a real bullet train's, ribbed like bellows */
+  if(W.key!=='cab'){ const gx0=CAR_L/2-.05,gx1=CAR_L/2+CAR_GAP+.05,gs=[]; for(let i=0;i<=1;i++) gs.push({x:gx0+(gx1-gx0)*i,sz:.975,sy:.985,dy:0,u:i});
+    mk(loft(gs),mGangway||(mGangway=M(gangwayTex())),n); mk(box(CAR_GAP+.3,.22,.3),mBogie,n,CAR_L/2+CAR_GAP/2,-.5,0); }
   const gm=GLOWM[W.key]||(GLOWM[W.key]=M(winGlowTex(W),{cut:true,emissive:W.glow,color:[.1,.1,.1]}));
   const gw=N(n); gw.vis=false; n.glow=gw;
   for(const s of [1,-1]){ const gp=plane(CAR_L,1.6,24,1); if(s<0) for(let i=0;i<gp.T.length;i+=2) gp.T[i]=1-gp.T[i]; mk(gp,gm,gw,0,1.82,s*(CAR_HW+.06),0,s>0?0:Math.PI,0); }
+  /* relief, so it doesn't read as a sticker up close: window frames standing proud of the glass, doors with frames,
+     grab rails and step plates, a rain gutter along the roof edge */
+  { const fm=mExtFrame||(mExtFrame=M(null,{color:0xd4ad5a})), dk=mExtDark||(mExtDark=M(null,{color:0x0e1424})), rail=mExtRail||(mExtRail=M(null,{color:0xc8ccd2}));
+    for(const s of [1,-1]){ const z=s*(CAR_HW+.09);
+      for(const [u0,u1] of W.wins){ const x0=-CAR_L/2+u0*CAR_L,x1=-CAR_L/2+u1*CAR_L,cx=(x0+x1)/2,ww=x1-x0;
+        mk(box(ww+.14,.07,.06),fm,n,cx,2.66,z); mk(box(ww+.14,.07,.06),fm,n,cx,.98,z); mk(box(.07,1.75,.06),fm,n,x0-.035,1.82,z); mk(box(.07,1.75,.06),fm,n,x1+.035,1.82,z);
+        for(let k=1;k<Math.round(ww/2.4);k++){ const mx=x0+k*ww/Math.round(ww/2.4); mk(box(.08,1.62,.05),dk,n,mx,1.82,z); } }
+      for(const u of [.03,.97]){ const dx=-CAR_L/2+u*CAR_L;
+        mk(box(1.02,.06,.05),dk,n,dx,2.82,z-s*.02); mk(box(.06,2.75,.05),dk,n,dx-.5,1.42,z-s*.02); mk(box(.06,2.75,.05),dk,n,dx+.5,1.42,z-s*.02);
+        for(const e of [-1,1]){ mk(cyl(.022,.022,1.1,6),rail,n,dx+e*.68,1.25,z+s*.04); mk(box(.05,.05,.1),rail,n,dx+e*.68,1.78,z); mk(box(.05,.05,.1),rail,n,dx+e*.68,.72,z); }
+        mk(box(1.2,.05,.32),rail,n,dx,-.12,s*(CAR_HW+.1)); mk(box(.12,.06,.03),G('#7cf06a'),n,dx,3.02,z); }
+      mk(box(CAR_L-.4,.06,.08),rail,n,0,3.55,s*(CAR_HW-.02)); } }
   if(W.key==='cab'){ const ns=[]; for(let i=0;i<=10;i++){ const t=i/10; ns.push({x:CAR_L/2+t*12,sz:Math.max(.03,1-.86*Math.pow(t,1.5)),sy:Math.max(.05,1-.7*Math.pow(t,1.1)),dy:-1.05*Math.pow(t,1.3),u:t}); }
     mk(loft(ns),M(noseTex()),n); const pm=M(null,{color:0x3a3c40});
     mk(box(2,.1,.9),pm,n,-8,4.65,0); mk(box(.08,1.3,.08),pm,n,-8.3,5.2,0,0,0,.6); mk(box(.08,1.3,.08),pm,n,-7.7,5.2,0,0,0,-.6); mk(box(.1,.08,2.4),pm,n,-8,5.75,0); }

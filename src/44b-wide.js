@@ -52,27 +52,45 @@ CAR_POST.pool=function(){ const g=WG.pool.g, white=C('#f4f2ec'), wood=M(woodT('#
 };
 
 /* pub: high tables down the middle, an etched-glass snug screen at the front */
-CAR_POST.pub=function(){ const g=WG.pub.g, oak=M(woodT('#5a3420','#3a2014',341,true)), brass=C('#d4ad5a');
-  for(const x of [-9,-5.5,-2]){ mk(cyl(.06,.06,1.0,6),brass,g,x,.5,.25); mk(cyl(.3,.3,.04,10),C('#2a1408'),g,x,.02,.25); mk(cyl(.4,.4,.05,12),oak,g,x,1.03,.25);
-    for(const dz of [-.15,.18]) mk(cyl(.05,.045,.16,8),G('#d8a040'),g,x+dz,1.14,.25+dz*.6); }
-  const glass=M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#e8d8a8'],[1,'#c8b078']]); g.strokeStyle='#f8f0d8'; for(let y=4;y<h;y+=8){ g.beginPath(); g.arc(8,y,4,0,Math.PI*2); g.stroke(); } R(g,'#5a3420',0,0,w,1); }),{emissive:0x2a2010});
+CAR_POST.pub=function(){ const g=WG.pub.g, {mA,r}=WG.pub.atl, brass=C('#d4ad5a');
+  /* high tables: oak tops on beer barrels, pints on mats (the pole stays as the table's collision inside the barrel) */
+  for(const x of [-9,-5.5,-2]){ const p=mk(cyl(.06,.06,1.0,6),brass,g,x,.5,.25); qHide(p); mk(qUV(cyl(.4,.4,.05,16),[r.oak,r.mahog,r.oak]),mA,g,x,1.03,.25);
+    const n=N(g,x,0,.25); qL(n,mA,r.oakV,[[0,.26,.26],[.25,.31,.31],[.5,.33,.33],[.75,.31,.31],[1.0,.26,.26]],12,0,0,0); for(const y of [.12,.32,.68,.88]) qT(n,mA,r.iron,y<.5?.29+y*.12:.29+(1-y)*.12,.012,3,14,0,y,0,Math.PI/2);
+    for(const [dx,dz,k] of [[-.15,-.09,0],[.18,.11,2]]){ qC(n,mA,[r.oak,k?r.mat2:r.mat1,r.oak],dx,1.057,dz,.05,.05,.004,10); qL(n,mA,k===2?r.stout:r.pint,[[0,.03,.03],[.1,.034,.034],[.13,.04,.04],[.15,.038,.038]],8,dx,1.059,dz); } qNC(n); }
+  /* the snug screen: fielded oak below, acid-etched glass above, brass rail */
   const zs=NARROW?[[-2.4,-.8],[.8,2.4]]:[[-3.6,-.9],[.9,3.6]];
-  for(const [z0,z1] of zs){ const zc=(z0+z1)/2, wd=z1-z0; B(g,oak,8.6,0,zc,.12,1.0,wd); B(g,glass,8.6,1.0,zc,.05,.9,wd-.1); B(g,oak,8.6,1.9,zc,.14,.08,wd+.04); for(const z of [z0,z1]) B(g,oak,8.6,0,z,.14,1.98,.14); }
+  for(const [z0,z1] of zs){ const zc=(z0+z1)/2, wd=z1-z0; qB(g,mA,[r.barPanel,r.barPanel,r.oak,r.oak,r.oak,r.oak],8.6,0,zc,.12,1.0,wd); qB(g,mA,[r.etched,r.etched,r.oak,r.oak,r.oak,r.oak],8.6,1.0,zc,.05,.9,wd-.1); qB(g,mA,r.mahog,8.6,1.9,zc,.14,.08,wd+.04); for(const z of [z0,z1]) qB(g,mA,r.oakV,8.6,0,z,.14,1.98,.14);
+    const n=N(g); qBar(n,mA,r.brass,8.6,1.0,zc,wd-.1,.04,.16,'z'); qBar(n,mA,r.brass,8.52,.62,zc,wd-.2,.03,.03,'z'); for(const z of [z0+.25,zc,z1-.25]) qB(n,mA,r.brass,8.54,.58,z,.06,.05,.02); qNC(n); }
 };
 
 /* banya: a cold plunge tub in the sauna, an ice bear on the ice side */
-CAR_POST.banya=function(){ const g=WG.banya.g, wood=M(woodT('#a87a46','#8a5a30',361)), ice=U('#bfefff'), hoop=C('#3a2a1a');
+CAR_POST.banya=function(){ const g=WG.banya.g, {mA,mU,r}=WG.banya.atl, hoop=C('#3a2a1a');
   const tl=NARROW?2.4:3.2, tw=NARROW?1.1:1.8;
-  B(g,wood,-7.5,0,0,tl,.9,tw); mk(wplane(tl-.2,tw-.2),U('#7ad0f0'),g,-7.5,.84,0,-Math.PI/2); for(const dx of [-tl*.38,0,tl*.38]) B(g,hoop,-7.5+dx,.2,0,.06,.06,tw+.04); B(g,hoop,-7.5,.66,0,tl+.04,.06,tw+.04);
-  const bear=N(g,12.2,0,WZ-1.0,0,-.6,0); B(bear,ice,0,0,0,1.3,.45,.9); B(bear,ice,0,.45,0,.95,.75,.75); B(bear,ice,.52,.55,0,.48,.42,.56); B(bear,ice,.8,.68,0,.28,.2,.3); for(const s of [-1,1]) B(bear,ice,.48,.93,s*.19,.1,.12,.1);
+  /* the cold plunge: a hollow staved tub with iron hoops, water near the brim, a ladder over the side (the solid box stays as its collision) */
+  const tb=B(g,hoop,-7.5,0,0,tl,.9,tw); qHide(tb); const n=N(g,-7.5,0,0);
+  for(const s of [-1,1]){ qB(n,mA,qF(r.tub,r.tub,r.tub,r.wood),0,0,s*(tw/2-.04),tl,.9,.08); qB(n,mA,qF(r.tub,r.tub,r.tub,r.wood),s*(tl/2-.04),0,0,.08,.9,tw-.16);
+    qB(n,mA,r.wood,0,.9,s*(tw/2-.04),tl+.04,.035,.11); qB(n,mA,r.wood,s*(tl/2-.04),.9,0,.11,.035,tw-.16); }
+  qB(n,mA,r.plank,0,0,0,tl-.16,.06,tw-.16); qPl(n,mU,r.water,0,.8,0,tl-.16,tw-.16,-Math.PI/2);
+  for(const y of [.1,.42,.74]){ for(const s of [-1,1]){ qBar(n,mA,r.iron,0,y,s*(tw/2+.006),tl+.03,.05,.014); qBar(n,mA,r.iron,s*(tl/2+.006),y,0,tw+.03,.05,.014,'z'); } }
+  for(const s of [-1,1]) qB(n,mA,r.wood,tl/2-.02,.25,s*.18,.04,.85,.04,0,0,-.35); for(let k=0;k<3;k++) qB(n,mA,r.wood,tl/2-.03-k*.1+.15,.4+k*.25,0,.04,.03,.4);
+  qNC(n);
+  /* the ice bear, carved: same blocks, painted ice, eyes and a nose */
+  const bear=N(g,12.2,0,WZ-1.0,0,-.6,0), ice=qF(r.ice,r.ice,r.ice,r.iceTop); qB(bear,mA,ice,0,0,0,1.3,.45,.9); qB(bear,mA,ice,0,.45,0,.95,.75,.75); qB(bear,mA,ice,.52,.55,0,.48,.42,.56); qB(bear,mA,ice,.8,.68,0,.28,.2,.3); for(const s of [-1,1]) qB(bear,mA,ice,.48,.93,s*.19,.1,.12,.1);
+  const f=N(bear); for(const s of [-1,1]){ qB(f,mA,r.iron,.765,.9,s*.12,.02,.04,.04); qB(f,mU,r.iceGlow,-.4,0,s*.46,.4,.3,.02); } qB(f,mA,r.iron,.945,.76,0,.02,.06,.08); qB(f,mU,r.iceGlow,0,.0,0,1.5,.04,1.1); qNC(f);
 };
 
 /* dim sum: the moon gate, the only way through to the kitchen half */
-CAR_POST.dimsum=function(){ const g=WG.dimsum.g, lac=C('#a81c1c'), gold=C('#d4ad5a'), r=1.4, cy=1.4, X=-5;
-  for(let y=0;y<WH-.001;y+=.1){ const dy=y+.05-cy, hw=Math.abs(dy)<r?Math.sqrt(r*r-dy*dy):0; for(const s of [-1,1]) if(WZ-hw>.01) B(g,lac,X,y,s*(hw+WZ)/2,.3,.1,WZ-hw); }
-  for(let k=0;k<32;k++){ const a=k/32*Math.PI*2, y=cy+Math.sin(a)*r; if(y<.05) continue; B(g,gold,X,y-.05,Math.cos(a)*r,.34,.1,.3,0,-a); }
+CAR_POST.dimsum=function(){ const g=WG.dimsum.g, lac=C('#a81c1c'), gold=C('#d4ad5a'), r=1.4, cy=1.4, X=-5, {mA,r:A}=WG.dimsum.atl;
+  /* the stepped boxes stay as the gate's collision; what you see is one lacquered slab with a true round opening, gold rings on both faces */
+  for(let y=0;y<WH-.001;y+=.1){ const dy=y+.05-cy, hw=Math.abs(dy)<r?Math.sqrt(r*r-dy*dy):0; for(const s of [-1,1]) if(WZ-hw>.01){ const n=B(g,lac,X,y,s*(hw+WZ)/2,.3,.1,WZ-hw); qHide(n); } }
+  const v=N(g); mk(qHole(WZ,WH,cy,r,.3,56),WG.dimsum.lacq,v,X,0,0,0,Math.PI/2,0);
+  for(const s of [-1,1]){ qT(v,mA,A.frame,r+.04,.05,6,56,X+s*.16,cy,0,0,Math.PI/2,0); qT(v,mA,A.frame,r+.2,.022,4,56,X+s*.155,cy,0,0,Math.PI/2,0);
+    qB(v,mA,s>0?[A.plaque,A.blackL,A.blackL,A.blackL,A.blackL,A.blackL]:[A.blackL,A.plaque,A.blackL,A.blackL,A.blackL,A.blackL],X+s*.17,2.9,0,.03,.4,1.3);
+    for(const z of [-1,1]){ const zc=z*2.15; qB(v,mA,s>0?[A.splat,A.rose,A.rose,A.rose,A.rose,A.rose]:[A.rose,A.splat,A.rose,A.rose,A.rose,A.rose],X+s*.165,.12,zc,.03,.75,1.2);
+      qB(v,mA,s>0?[A.art3,A.blackL,A.blackL,A.blackL,A.blackL,A.blackL]:[A.blackL,A.art2,A.blackL,A.blackL,A.blackL,A.blackL],X+s*.165,1.15,zc+z*.08,.03,1.0,.95); B(v,gold,X+s*.18,2.17,zc+z*.08,.03,.04,1.0); B(v,gold,X+s*.18,1.11,zc+z*.08,.03,.04,1.0); } }
+  for(let k=0;k<32;k++){ const a=k/32*Math.PI*2, y=cy+Math.sin(a)*r; if(y<.05) continue; const n=B(g,gold,X,y-.05,Math.cos(a)*r,.34,.1,.3,0,-a); qHide(n); }
   for(const y of [.1,WH-.3]) B(g,gold,X,y,0,.34,.06,WZ*2);
-  const plaque=M(textTex(32,12,'#121014',[['GOLDEN CRANE','c',3,'#d4ad5a']]),{unlit:true}); for(const s of [-1,1]) mk(wplane(1.6,.5),plaque,g,X+s*.16,Math.min(WH-.5,cy+r+.35),0,0,s*Math.PI/2,0);
+  qNC(v);
 };
 
 /* trattoria and the capsule hotel need nothing more: the art set's room is the fight. */

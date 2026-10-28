@@ -5912,7 +5912,7 @@ function chime(ac,t){ [988,784,659].forEach((f,i)=>{ const o=ac.createOscillator
    ===================================================================== */
 const LOBBY={on:false,ring:0,ringT:0,answered:false,paT:14,nagT:50,vendCd:0,targets:[],hits:0,useI:[],ticket:null,root:null};
 /* where things stand on platform 0 (station coordinates after centring; the start is at x=-8, z=RZ-1.6, facing the train at -z) */
-const LOBBY_AT={kiosk:[-6.4,3.4],phone:[-11.2,0],vend:[-13.0,0],bench:[1.6,0],sign:[-3,0]}; /* [x, distance in from the back wall] (kiosk free-standing, facing the start) */
+const LOBBY_AT={kiosk:[-6.4,3.4],phone:[-4.8,0],vend:[-2.9,0],bench:[1.6,0],sign:[-3,0]}; /* [x, distance in from the back wall] (kiosk free-standing, facing the start) */
 const mKioskBody=()=>M(P2(32,64,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#24345e'],[.5,'#14203a'],[1,'#0c1426']]); R(g,BRAND.gold,0,0,w,1); R(g,BRAND.gold,0,h-1,w,1); R(g,'rgba(255,255,255,.12)',1,1,1,h-2); },3,77));
 
 /* interactables: a box in the world that a fist can poke (VR) or the crosshair + G can use (flat screen) */
@@ -5936,12 +5936,17 @@ function buildLobby(){ LOBBY.useI.length=0; LOBBY.targets.length=0; const root=N
       g.fillStyle=BRAND.cream; g.font=`700 30px ${BRAND.jp}`; g.fillText(K.title||'WORLD LOOP · ONE DAY · ONE SEAT',22,204);
       g.font=`600 24px ${BRAND.mono}`; g.fillStyle='#b8d0ff'; g.fillText(sv&&sv.leg>0?'Saved at: '+ROUTE[sv.leg].title.replace(' · B5',''):'No journey saved.',22,250);
       const labs=[K.newRun||'NEW RUN',K.cont||'CONTINUE',K.settings||'SETTINGS'], cols=['#7cf06a',sv&&sv.leg>0?BRAND.gold2:'#4a5468','#29e0e6'];
-      labs.forEach((s,i)=>{ const bx=22+i*((w-44)/3); g.fillStyle=cols[i]; g.font=`700 24px ${BRAND.jp}`; g.fillText(s,bx+6,312); g.fillRect(bx+6,344,(w-44)/3-24,6); }); });
+      labs.forEach((s,i)=>{ const cw=(w-44)/3, bx=22+i*cw; g.fillStyle=cols[i]; let fs=24; g.font=`700 ${fs}px ${BRAND.jp}`; while(g.measureText(s).width>cw-18&&fs>12){ fs--; g.font=`700 ${fs}px ${BRAND.jp}`; } g.fillText(s,bx+6,312+(24-fs)/2); g.fillRect(bx+6,344,cw-24,6); }); });
     LOBBY.kioskTex=scr; mk(box(.9,.68,.02),M(scr,{unlit:true}),k,0,1.48,.351); mk(box(.98,.76,.03),gold,k,0,1.48,.34);
     mk(box(1.02,.1,.3),dark,k,0,1.05,.42,-.5); /* the button shelf */
     const bm=[G('#7cf06a'),G('#f2d27a'),G('#29e0e6')], acts=[()=>kioskNew(),()=>kioskCont(),()=>{ sfx('click'); openMenu(); }];
     for(let i=0;i<3;i++){ const b=mk(cyl(.07,.07,.05,14),bm[i],k,-.3+i*.3,1.11,.46,Math.PI/2-.5); addUse(b,[.075,.06,.07],h=>{ b.p[2]=.44; setTimeout(()=>b.p[2]=.46,160); acts[i](); }); }
-    const slot=mk(box(.3,.03,.05),dark,k,.25,.62,.36); LOBBY.slot=slot; }
+    const slot=mk(box(.3,.03,.05),dark,k,.25,.62,.36); LOBBY.slot=slot;
+    /* the back of the machine faces the train: a poster, so it isn't a blank box from the platform */
+    const back=brandTex(256,384,(g,w,h)=>{ g.fillStyle=BRAND.navy; g.fillRect(0,0,w,h); g.strokeStyle=BRAND.gold; g.lineWidth=5; g.strokeRect(8,8,w-16,h-16); roundel(g,w/2,112,78);
+      g.textAlign='center'; g.textBaseline='alphabetic'; g.fillStyle=BRAND.gold2; g.font=`400 40px ${BRAND.word}`; g.fillText('TICKETS',w/2,250); g.fillStyle=BRAND.cream; g.font=`700 20px ${BRAND.jp}`; g.fillText('切符 · BILLETS · BIGLIETTI',w/2,286);
+      g.fillStyle=BRAND.teal; g.font=`600 16px ${BRAND.mono}`; g.fillText('ONE DAY · ONE SEAT · ONE WORLD',w/2,330); });
+    mk(box(.86,1.3,.02),M(back,{unlit:true}),k,0,1.15,-.355); }
   /* the payphone: wall-hung, receiver on the hook, rings until you pick up */
   { const [x]=LOBBY_AT.phone, z=zB-.12, p=N(root,x,0,z,0,Math.PI,0);
     mk(box(.5,.8,.22,{at:[0,.4,0]}),M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#3a9a6a'],[1,'#1e6a44']]); R(g,'#0e3a24',2,4,w-4,10); for(let k=0;k<12;k++) R(g,'#d8e0d8',3+(k%3)*4,17+(k/3|0)*3.4,3,2); R(g,'rgba(255,255,255,.15)',1,1,1,h-2); },2,78)),p,0,1.05,0);

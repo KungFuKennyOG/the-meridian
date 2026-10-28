@@ -29,7 +29,7 @@ function tnShop(g,x,y,w,h,kind){ const r=rng(kind*7+3);
   else { /* pachinko: gold and chrome, chasing bulbs */ vfill(g,x,y,w,h,[[0,'#3a1a4a'],[1,'#1a0a24']]); for(let k=0;k<w;k+=1.6) ell(g,x+k+.8,y+1,.5,.5,TN_NEON[(k/1.6|0)%6]); text(g,'PACHINKO',x+w/2-textW('PACHINKO',.6)/2,y+h*.1,'#f5c542',.6);
     vfill(g,x+2,y+h*.32,w-4,h*.68,[[0,'#fff2c8'],[1,'#e0a040']]); for(let k=0;k<6;k++) R(g,'#c8a040',x+3+k*(w-6)/6,y+h*.32,.5,h*.68); }
   vfill(g,x,y+h-2,w,2,[[0,rgba('#000000',0)],[1,rgba('#000000',.4)]]); }
-OK.tokyonight={
+OUTK.tokyonight={
   sky:()=>oSkyTex([[0,'#04061a'],[.5,'#141436'],[.8,'#3a1e5a'],[.94,'#6a2a6a'],[1,'#8a3a70']],{stars:120,seed:91,clouds:5,cloudCol:'#4a2a5a',cloudShade:'#1a1030'}),
   pos:{
     far(g,w,h,r){ const base=91; let x=0; while(x<w){ const tw=3+r()*7, th=10+r()*32; vfill(g,x,base-th,tw,th,[[0,'#1a1830'],[1,'#100e20']]); for(let y=base-th+1;y<base;y+=1.2) for(let xx=x+.4;xx<x+tw-.4;xx+=1) if(r()<.32) R(g,r()<.8?'#ffd890':'#9ae8f0',xx,y,.5,.5); if(r()<.4) R(g,'#ff3a3a',x+tw/2,base-th-1,.6,.6); x+=tw+r()*2; }
@@ -46,7 +46,7 @@ OK.tokyonight={
         else if(bw>18){ vGlow(g,x+bw/2,top+10,bw*.7,c,.35); tnSign(g,x+2,top+5,bw-4,8,i+2,false); }
         R(g,'#0a0912',x,base-9,bw,9); vfill(g,x+1,base-8,bw-2,7,[[0,['#ffd8a0','#f2f6fa','#ffe0a0'][i%3]],[1,'#a86a3a']]); x+=bw+r()*2; i++; }
       R(g,'#2a2836',0,base-32,w,3); R(g,'#ff3fa4',0,base-29,w,.6); for(let k=10;k<w;k+=50) R(g,'#22202e',k,base-29,4,29); },
-    verge:()=>PX(256,88,4,(g,w,h)=>{ const r=rng(171);
+    verge:()=>outPX(256,88,4,(g,w,h)=>{ const r=rng(171);
       /* the street at night: wet asphalt full of neon reflections, white lines, a narrow pavement, gravel */
       vfill(g,0,0,w,10,[[0,'#3a3844'],[1,'#2e2c38']]); for(let x=0;x<w;x+=4) R(g,'#24222c',x,0,.4,10);
       vfill(g,0,10,w,58,[[0,'#1a1a22'],[.5,'#22222a'],[1,'#1a1a22']]); for(let i=0;i<2400;i++) R(g,rgba(r()<.5?'#ffffff':'#000000',.05),r()*w,10+r()*58,.6,.4);
@@ -56,9 +56,9 @@ OK.tokyonight={
     vergeW:11, vergeTile:32,
     ground:()=>P2(64,64,(g,w,h)=>{ R(g,'#16141e',0,0,w,h); const r=rng(173); for(let i=0;i<60;i++) R(g,rgba(TN_NEON[i%7],.2),r()*w,r()*h,1,1); },6,173), groundTile:8 }
 };
-OK.tokyonight.neg=Object.assign({},OK.tokyonight.pos,{ far(g,w,h,r){ const base=91; let x=0; while(x<w){ const tw=4+r()*9, th=14+r()*46; vfill(g,x,base-th,tw,th,[[0,'#1a1830'],[1,'#100e20']]); for(let y=base-th+1;y<base;y+=1.2) for(let xx=x+.4;xx<x+tw-.4;xx+=1) if(r()<.3) R(g,r()<.8?'#ffd890':'#9ae8f0',xx,y,.5,.5); if(r()<.5){ R(g,'#ff3a3a',x+tw/2,base-th-1,.6,.6); vGlow(g,x+tw/2,base-th-1,3,'#ff3a3a',.35); } x+=tw+r()*2; }
+OUTK.tokyonight.neg=Object.assign({},OUTK.tokyonight.pos,{ far(g,w,h,r){ const base=91; let x=0; while(x<w){ const tw=4+r()*9, th=14+r()*46; vfill(g,x,base-th,tw,th,[[0,'#1a1830'],[1,'#100e20']]); for(let y=base-th+1;y<base;y+=1.2) for(let xx=x+.4;xx<x+tw-.4;xx+=1) if(r()<.3) R(g,r()<.8?'#ffd890':'#9ae8f0',xx,y,.5,.5); if(r()<.5){ R(g,'#ff3a3a',x+tw/2,base-th-1,.6,.6); vGlow(g,x+tw/2,base-th-1,3,'#ff3a3a',.35); } x+=tw+r()*2; }
   R(g,'#100e1e',0,base,w,h-base); vfill(g,0,base-30,w,30,[[0,rgba('#6a2a6a',0)],[1,rgba('#8a3a7a',.35)]]); } });
-OK.tokyonight.kit={S:4, ah:288,
+OUTK.tokyonight.kit={S:4, ah:288,
   cells:{f1:[0,0,64,16],f2:[0,16,64,16],f3:[0,32,64,16],f4:[0,48,64,16],gI:[0,64,64,24],gK:[64,64,64,24],gR:[128,64,64,24],gP:[192,64,64,24],side:[64,0,32,32],par:[64,32,64,8],roofT:[96,0,16,16],bill:[128,0,64,24],
     v1:[192,0,16,48],v2:[208,0,16,48],v3:[224,0,16,48],v4:[240,0,16,48],h1:[128,24,48,16],h2:[176,24,48,16],lantern:[224,48,12,16],vend:[64,40,20,36],vendS:[84,40,10,36],
     bike:[0,88,24,14],taxi:[24,88,40,14],taxiE:[64,88,16,14],taxiT:[80,88,16,8],xfmr:[96,88,14,20],noren:[112,88,32,12],sign2:[144,88,16,24],cone:[160,88,8,12],
@@ -74,7 +74,7 @@ OK.tokyonight.kit={S:4, ah:288,
     v1:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,0), v2:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,1), v3:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,2), v4:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,4),
     h1:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,3,false), h2:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,6,false),
     lantern:(g,x,y,w,h)=>{ R(g,'#1a0e08',x+w/2-.4,y,.8,2); ell(g,x+w/2,y+h*.55,w*.45,h*.4,'#ff4a2a'); vGlow(g,x+w/2,y+h*.55,w*.5,'#ffb080',.6); for(let k=0;k<4;k++) R(g,rgba('#8a1a0a',.6),x+1,y+h*.3+k*h*.12,w-2,.3); R(g,'#1a0e08',x+w*.2,y+h*.15,w*.6,1); R(g,'#1a0e08',x+w*.2,y+h*.92,w*.6,1); glyphs(g,x+w/2-2.5,y+h*.4,1,5,'#1a0e08',3,true); },
-    vend:(g,x,y,w,h)=>{ vfill(g,x,y,w,h,[[0,'#f2f6fa'],[1,'#c8d0d8']]); R(g,'#2a5ad8',x,y,w,4); R(g,'#1a2a3a',x+1.5,y+5,w-3,h*.42); for(let r_=0;r_<3;r_++) for(let k=0;k<5;k++){ const cx=x+3+k*3, cy=y+7+r_*5; vfill(g,cx,cy,2,3.4,[[0,['#f2c230','#2a8a5a','#e04a30','#2a6ad8','#f2f2f2'][(k+r_)%5]],[1,'#3a3a3a']]); }
+    vend:(g,x,y,w,h)=>{ vfill(g,x,y,w,h,[[0,'#f2f6fa'],[1,'#c8d0d8']]); R(g,'#2a5ad8',x,y,w,4); R(g,'#1a2a3a',x+1.5,y+5,w-3,h*.42); for(let outHash=0;outHash<3;outHash++) for(let k=0;k<5;k++){ const cx=x+3+k*3, cy=y+7+outHash*5; vfill(g,cx,cy,2,3.4,[[0,['#f2c230','#2a8a5a','#e04a30','#2a6ad8','#f2f2f2'][(k+outHash)%5]],[1,'#3a3a3a']]); }
       radial(g,x+w/2,y+h*.3,w*.8,[[0,rgba('#e8f4ff',.4)],[1,rgba('#e8f4ff',0)]]); R(g,'#3a3a40',x+3,y+h*.62,w-6,h*.1); R(g,'#2a2a30',x+3,y+h*.82,w-6,h*.1); },
     vendS:(g,x,y,w,h)=>{ vfill(g,x,y,w,h,[[0,'#dcdcd8'],[1,'#a8a8a4']]); R(g,'#2a5ad8',x,y,w,4); },
     bike:(g,x,y,w,h)=>{ g.strokeStyle='#1a1a1e'; g.lineWidth=.6; for(const cx of [x+5,x+w-5]){ g.beginPath(); g.arc(cx,y+h-4.5,4,0,6.28); g.stroke(); } g.strokeStyle='#c8c8cc'; g.beginPath(); g.moveTo(x+5,y+h-4.5); g.lineTo(x+11,y+h-9); g.lineTo(x+w-5,y+h-4.5); g.moveTo(x+11,y+h-9); g.lineTo(x+10,y+h-12); g.moveTo(x+w-7,y+h-11); g.lineTo(x+w-5,y+h-4.5); g.stroke(); R(g,'#1a1a1e',x+8.6,y+h-12.6,3,1); R(g,'#c8c8cc',x+w-9,y+h-11.4,4,.6); },
@@ -85,7 +85,7 @@ OK.tokyonight.kit={S:4, ah:288,
     noren:(g,x,y,w,h)=>{ for(let k=0;k<5;k++) vfill(g,x+k*w/5+.3,y,w/5-.6,h,[[0,'#2a2a5a'],[1,'#1a1a3a']]); glyphs(g,x+w/2-6,y+3,2,6,'#f2ece0',9,false); },
     sign2:(g,x,y,w,h)=>tnSign(g,x+1,y+1,w-2,h-2,5),
     cone:(g,x,y,w,h)=>{ poly(g,[[x+1,y+h],[x+w-1,y+h],[x+w/2,y]],'#f26a2a'); R(g,'#f2f2ec',x+2,y+h*.45,w-4,1.2); },
-    pole:STDCELL.pole,
+    pole:OUT_STDCELL.pole,
   },
   place(E,side,r,P){
     /* concrete poles every 30 m, a mess of wires and transformers */
@@ -94,7 +94,7 @@ OK.tokyonight.kit={S:4, ah:288,
     /* the buildings, floor by floor, shops at the bottom, signs out over the street */
     let u=0, i=0; const F=['f1','f2','f3','f4'], G=['gI','gK','gR','gP'], V=['v1','v2','v3','v4'];
     while(u<P-5){ const w=6+r()*6, fl=3+(r()*6|0), d=15.4, cu=u+w/2;
-      const top=towerKit(E,cu,d,w,9,fl,{g:G[(i+(side==='pos'?0:2))%4],f:[F[i%4],F[(i+1)%4]],p:'par',e:'side',t:'roofT'},{r,fh:3,gh:3.6});
+      const top=outTower(E,cu,d,w,9,fl,{g:G[(i+(side==='pos'?0:2))%4],f:[F[i%4],F[(i+1)%4]],p:'par',e:'side',t:'roofT'},{r,fh:3,gh:3.6});
       E.card(cu+(r()<.5?-1:1)*w*.32,d-1.1,2.2,Math.min(top-4,5+r()*3),V[(i+r()*4|0)%4],{n:1,a0:Math.PI/2,y:3.8+r()*2,sb:1});
       if(r()<.5) E.card(cu,d-2,3.8,1.3,r()<.5?'h1':'h2',{n:1,a0:Math.PI/2,y:4.5+r()*3});
       if(r()<.35) E.box(cu,d+2,Math.min(w-1,7),2.6,.3,{f:'bill',e:'dark',t:'dark'},{y:top});
@@ -105,4 +105,4 @@ OK.tokyonight.kit={S:4, ah:288,
     for(let k=0;k<2;k++) E.box(r()*P,side==='pos'?9.4:7.6,4.4,1.5,1.8,{f:'taxi',e:'taxiE',t:'taxiT'},{ao:.6});
     for(let k=0;k<6;k++) E.card(r()*P,13.2,.5,.7,'cone',{n:2});
   } };
-OK.tokyonight.kit.atlas=kitAtlas(OK.tokyonight.kit);
+OUTK.tokyonight.kit.atlas=outKitAtlas(OUTK.tokyonight.kit);

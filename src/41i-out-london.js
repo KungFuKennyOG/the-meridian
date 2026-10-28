@@ -16,7 +16,7 @@ function lonHouse(g,x,y,w,h,o){ const r=rng(o.seed), brick=o.brick, top=y+h*.06;
   R(g,'#a8a49c',dx-1.5,y+h-1.5,dw+3,1.5); R(g,'#b8b4ac',dx-1,y+h-2.6,dw+2,1.2);
   vfill(g,x,y+h-3,w,3,[[0,rgba('#000000',0)],[1,rgba('#000000',.35)]]); hfill(g,x+w-1,y,1,h,[[0,rgba('#000000',0)],[1,rgba('#000000',.3)]]); }
 
-OK.london={
+OUTK.london={
   sky:()=>oSkyTex([[0,'#5a6070'],[.5,'#848a96'],[.85,'#a8acb2'],[1,'#b8bcc0']],{clouds:26,cloudCol:'#a4a8b2',cloudShade:'#6a707c',seed:61,haze:'#b4b8bc'}),
   pos:{ midSpec:{yb:-.5}, backSpec:{yb:-.5}, groundK:.5,
     far(g,w,h,r){ const base=89;
@@ -43,7 +43,7 @@ OK.london={
       /* a red lightship, a police launch, a buoy */ poly(g,[[60,wl-5],[110,wl-5],[106,wl],[64,wl]],'#c8202a'); text(g,'NORE',76,wl-4,'#f2f2ec',.7); R(g,'#e8e4dc',80,wl-9,14,4); R(g,'#3a3a3a',86,wl-24,.8,15); ell(g,86.4,wl-24,2.4,2.4,'#c8202a');
       poly(g,[[300,wl-3],[330,wl-3],[334,wl-5],[300,wl-5]],'#1a2a4a'); R(g,'#f2f2ec',306,wl-8,14,3); R(g,'#2a5ad8',300,wl-4.5,34,.6); R(g,'#3a6af8',312,wl-9.2,2,1.2);
       ell(g,200,wl-1.5,1.8,2,'#e8b020'); for(let i=0;i<50;i++) ell(g,r()*w,wl-.4,2+r()*5,.3,rgba('#c8d0d8',.45)); },
-    verge:()=>PX(256,64,4,(g,w,h)=>{ const r=rng(83);
+    verge:()=>outPX(256,64,4,(g,w,h)=>{ const r=rng(83);
       /* wet york-stone flags with sky in the puddles */ for(let y=0;y<h-15;y+=7) for(let x=((y/7)%2)*5;x<w;x+=10){ const c=mix('#8a8680','#6e6a66',r()); vfill(g,x+.2,y+.2,9.6,6.6,[[0,mix(c,'#ffffff',.06)],[1,c]]); }
       for(let i=0;i<30;i++){ const x=r()*w, y=r()*(h-18); ell(g,x,y,3+r()*6,.8+r()*1.4,rgba('#a8b0bc',.55)); ell(g,x-1,y-.3,2+r()*3,.4,rgba('#d8dce0',.5)); }
       vfill(g,0,h-15,w,15,[[0,'#6a6660'],[1,'#5a5650']]); for(let i=0;i<2400;i++) R(g,['#8a867e','#4a4640','#7a766e','#3a3630'][i%4],r()*w,h-15+r()*15,.6+r()*.6,.5+r()*.4); }),
@@ -62,7 +62,7 @@ OK.london={
         poly(g,[[x-.5,top],[x+bw+.5,top],[x+bw-2,top-5],[x+2,top-5]],'#4a4e58'); R(g,'#7a4232',x+1,top-8,3,4); for(let k=0;k<3;k++) R(g,'#c8643a',x+1.2+k,top-9,.6,1.2);
         for(const [yy,lit] of [[top+5,.3],[top+13,.3]]) for(const xx of [x+1.5,x+bw-4.5]){ R(g,'#f2ece0',xx-.5,yy-.5,4,6); vfill(g,xx,yy,3,5,r()<lit?[[0,'#ffe0a0'],[1,'#e0a050']]:[[0,'#8a9aa8'],[1,'#3a4a58']]); }
         R(g,'#f2ece0',x,top+bh*.66,bw,bh*.34); R(g,['#1a2a5a','#2a5a3a','#8a1a2a','#1a1a1a','#f2c230'][r()*5|0],x+bw*.6,base-7,2.6,7); x+=bw; i++; } },
-    verge:()=>PX(256,88,4,(g,w,h)=>{ const r=rng(89);
+    verge:()=>outPX(256,88,4,(g,w,h)=>{ const r=rng(89);
       /* far pavement, the road (wet, with a bus lane in red), near pavement, a grass strip, the ballast */
       for(let y=0;y<10;y+=4) for(let x=(y/4%2)*4;x<w;x+=8) vfill(g,x+.2,y+.2,7.6,3.6,[[0,'#9a968e'],[1,'#86827a']]); R(g,'#b8b4aa',0,10,w,1.2);
       vfill(g,0,11.2,w,34,[[0,'#3e3e42'],[.5,'#4a4a4e'],[1,'#3e3e42']]); vfill(g,0,11.2,w,12,[[0,'#7a3a34'],[1,'#6a3430']]); for(let i=0;i<2600;i++) R(g,rgba(r()<.5?'#ffffff':'#000000',.07),r()*w,11.2+r()*34,.6,.4);
@@ -75,7 +75,7 @@ OK.london={
     vergeW:11, vergeTile:32,
     ground:()=>P2(64,64,(g,w,h)=>{ R(g,'#4a4a4e',0,0,w,h); const r=rng(91); for(let i=0;i<200;i++) R(g,rgba('#ffffff',.06),r()*w,r()*h,1,1); },6,91), groundTile:8 }
 };
-OK.london.kit={S:4, ah:320,
+OUTK.london.kit={S:4, ah:320,
   cells:{hA:[0,0,40,52],hB:[40,0,40,52],hC:[80,0,40,52],hD:[120,0,40,52],slate:[160,0,32,32],brick:[192,0,32,32],chim:[224,0,16,16],pots:[240,0,16,8],pub:[160,32,64,40],stucco:[224,16,16,16],
     bus:[0,52,96,40],busE:[96,52,24,40],busT:[120,52,16,16],cab:[0,92,40,16],cabE:[40,92,16,16],cabT:[56,92,16,8],phone:[136,52,16,40],phoneT:[152,52,8,8],pillar:[152,60,12,20],lampL:[164,72,16,24],lampD:[180,72,16,24],
     plane:[0,108,64,64],parapet:[64,108,64,12],bench:[64,120,24,10],railing:[88,120,48,12],poster:[136,96,48,24],coping:[184,96,32,8],granite:[216,96,32,16],
@@ -104,7 +104,7 @@ OK.london.kit={S:4, ah:320,
     cabE:(g,x,y,w,h)=>{ R(g,'#1a1a1e',x+1,y+h*.35,w-2,h*.5); vfill(g,x+2,y+h*.08,w-4,h*.26,[[0,'#8aa0b4'],[1,'#2a3440']]); R(g,'#c8c8c4',x+3,y+h*.55,w-6,h*.12); ell(g,x+2.5,y+h*.5,1.2,1.2,'#f2f0d0'); ell(g,x+w-2.5,y+h*.5,1.2,1.2,'#f2f0d0'); },
     cabT:(g,x,y,w,h)=>R(g,'#1e1e22',x,y,w,h),
     phone:(g,x,y,w,h)=>{ vfill(g,x,y,w,h,[[0,'#e02a24'],[1,'#a01a16']]); R(g,'#c01e1a',x,y,w,3); R(g,'#1a1a1a',x+2,y+3.5,w-4,2); text(g,'PHONE',x+2.3,y+3.8,'#f2f2ec',.4);
-      for(let r_=0;r_<6;r_++) for(let c=0;c<3;c++) vfill(g,x+2+c*4,y+7+r_*4.6,3.4,4,[[0,'#c8d8e0'],[1,'#5a6a78']]); R(g,'#a01a16',x+1,y+h-3,w-2,3); },
+      for(let outHash=0;outHash<6;outHash++) for(let c=0;c<3;c++) vfill(g,x+2+c*4,y+7+outHash*4.6,3.4,4,[[0,'#c8d8e0'],[1,'#5a6a78']]); R(g,'#a01a16',x+1,y+h-3,w-2,3); },
     phoneT:(g,x,y,w,h)=>R(g,'#c01e1a',x,y,w,h),
     pillar:(g,x,y,w,h)=>{ hfill(g,x+2,y+4,w-4,h-5,[[0,'#a01a16'],[.4,'#e02a24'],[1,'#8a1410']]); ell(g,x+w/2,y+4,w/2-1.5,3,'#c01e1a'); R(g,'#1a1a1a',x+3.5,y+7,w-7,1); R(g,'#f2c230',x+4,y+9.5,w-8,.6); R(g,'#1a1a1a',x+1.5,y+h-1.5,w-3,1.5); },
     lampL:(g,x,y,w,h)=>{ const cx=x+w/2; R(g,'#1a1a1c',cx-.5,y+h*.5,1,h*.5); for(const dx of [-1,1]){ g.strokeStyle='#1a1a1c'; g.lineWidth=.7; g.beginPath(); g.moveTo(cx,y+h*.55); g.quadraticCurveTo(cx+dx*5,y+h*.5,cx+dx*5,y+h*.36); g.stroke(); ell(g,cx+dx*5,y+h*.28,2.6,3,'#fff2c8'); ell(g,cx+dx*5,y+h*.28,1.6,2,'#ffffff'); R(g,'#1a1a1c',cx+dx*5-1.6,y+h*.17,3.2,1); } R(g,'#d4ad5a',cx-.5,y+h*.1,1,2); },
@@ -147,4 +147,4 @@ OK.london.kit={S:4, ah:320,
         u+=w; i++; }
       for(let k=0;k<20;k++) E.card(r()*P,5.2+r()*.6,.8,.4,'tufts',{n:2,sb:.7}); }
   } };
-OK.london.kit.atlas=kitAtlas(OK.london.kit);
+OUTK.london.kit.atlas=outKitAtlas(OUTK.london.kit);

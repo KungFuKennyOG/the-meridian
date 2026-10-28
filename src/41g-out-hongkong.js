@@ -28,11 +28,11 @@ function hkShop(g,x,y,w,h,o){ const r=rng(o.seed); vfill(g,x,y,w,h,[[0,'#6a6660'
     R(g,'#2a2a2e',sx,y+h*.3,sw,.5); for(let j=0;j<sw;j+=1.5) R(g,rgba('#3a3a3e',.5),sx+j,y+h*.3,.3,h*.12); }
   hkSign(g,x+w*.12,y+1,w*.76,h*.2,o.sign+o.seed,false); vfill(g,x,y+h-2,w,2,[[0,rgba('#000000',0)],[1,rgba('#000000',.4)]]); }
 
-OK.hongkong={
+OUTK.hongkong={
   sky:()=>oSkyTex([[0,'#5a8ac2'],[.5,'#a8c8e2'],[.85,'#dce6ec'],[1,'#ece8e0']],{clouds:12,cloudShade:'#a0aac0',seed:31,haze:'#e8e4dc',cirrus:8}),
   pos:{ midSpec:{yb:-.5}, backSpec:{yb:-.5}, groundK:.5,
     far(g,w,h,r){ const base=90;
-      /* the Peak and its ridges */ oRange(g,w,h,base,x=>22+opn(x,w,401,2)*10+Math.abs(opn(x,w,402,6))*6,{shade:'#5e7e72',lit:'#86a294',haze:'#dce4e4',dark:'#4a6a60'},{seed:11,hazeH:30,hazeA:.75,gullies:60});
+      /* the Peak and its ridges */ oRange(g,w,h,base,x=>22+outPN(x,w,401,2)*10+Math.abs(outPN(x,w,402,6))*6,{shade:'#5e7e72',lit:'#86a294',haze:'#dce4e4',dark:'#4a6a60'},{seed:11,hazeH:30,hazeA:.75,gullies:60});
       /* the island's towers along the shore */ let x=0; while(x<w){ const tw=3+r()*6, th=8+r()*20+(Math.sin(x/w*Math.PI*4)>.3?12:0), c=['#c8d4dc','#a8b8c4','#d8d0c4','#8a9cac','#b8c8d0'][r()*5|0];
         vfill(g,x,base-th,tw,th,[[0,mix(c,'#ffffff',.2)],[1,mix(c,'#5a6a7a',.3)]]); for(let y=base-th+1;y<base;y+=1.2) R(g,rgba('#2a3a4a',.25),x,y,tw,.4); R(g,rgba('#ffffff',.25),x,base-th,.5,th);
         if(r()<.15){ poly(g,[[x,base-th],[x+tw,base-th],[x+tw/2,base-th-5]],c); R(g,'#8a9aa8',x+tw/2-.15,base-th-9,.3,4); } x+=tw+r()*1.2; }
@@ -51,18 +51,18 @@ OK.hongkong={
       junk(140,1); junk(420,.7);
       /* a sampan and a harbour buoy */ poly(g,[[300,wl-3],[330,wl-3.6],[326,wl],[304,wl]],'#6a4a2e'); poly(g,[[306,wl-3],[320,wl-3],[318,wl-7],[308,wl-7]],'#3a5a3a'); ell(g,40,wl-2,2,2.4,'#e04a2a'); R(g,'#e04a2a',39.6,wl-7,.8,5);
       for(let i=0;i<60;i++) ell(g,r()*w,wl-.6,2+r()*5,.35,rgba('#ffffff',.45)); },
-    verge:()=>PX(256,72,4,(g,w,h)=>{ const r=rng(43);
+    verge:()=>outPX(256,72,4,(g,w,h)=>{ const r=rng(43);
       /* granite slabs, a tactile strip near the railing, a drain line */ for(let y=0;y<h;y+=6) for(let x=((y/6)%2)*6;x<w;x+=12){ const c=mix('#b8b0a4','#a49c90',r()); vfill(g,x+.2,y+.2,11.6,5.6,[[0,mix(c,'#ffffff',.08)],[1,c]]); for(let i=0;i<14;i++) R(g,rgba(r()<.5?'#000000':'#ffffff',.08),x+r()*12,y+r()*6,.4,.4); }
       R(g,'#d8c070',0,4,w,3); for(let x=0;x<w;x+=1.2) for(let y=4.4;y<7;y+=1.2) ell(g,x+.6,y,.3,.3,'#b8a050'); R(g,'#6a6a6a',0,h-17,w,1.2); for(let x=0;x<w;x+=2) R(g,'#3a3a3a',x,h-17,1,1.2);
       vfill(g,0,h-15,w,15,[[0,'#8a8478'],[1,'#7a746a']]); for(let i=0;i<2400;i++) R(g,['#a8a294','#6a645a','#94907e','#5a564e'][i%4],r()*w,h-15+r()*15,.6+r()*.6,.5+r()*.4); }),
     vergeW:9, vergeTile:32,
     ground:()=>P2(128,128,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#3e7290'],[.5,'#346886'],[1,'#3e7290']]); const r=rng(47); for(let i=0;i<260;i++){ const x=r()*w, y=r()*h, L=2+r()*6; ell(g,x,y,L,.35,rgba('#9ad0e8',.35)); ell(g,x+1,y+.8,L*.8,.3,rgba('#1a4a66',.4)); } },0,47), groundTile:14 },
   neg:{
-    far(g,w,h,r){ const base=91; oRange(g,w,h,base,x=>18+opn(x,w,411,2)*10+Math.abs(opn(x,w,412,5))*8,{shade:'#5a7a6a',lit:'#7e9a86',haze:'#dce2e0',dark:'#46645a'},{seed:13,hazeH:28,hazeA:.7,gullies:50});
+    far(g,w,h,r){ const base=91; oRange(g,w,h,base,x=>18+outPN(x,w,411,2)*10+Math.abs(outPN(x,w,412,5))*8,{shade:'#5a7a6a',lit:'#7e9a86',haze:'#dce2e0',dark:'#46645a'},{seed:13,hazeH:28,hazeA:.7,gullies:50});
       let x=0; while(x<w){ const tw=3+r()*5, th=10+r()*24, c=['#d8d4cc','#c8ccd0','#e0d8cc','#b8c0c4'][r()*4|0]; vfill(g,x,base-th,tw,th,[[0,c],[1,mix(c,'#6a7078',.3)]]); for(let y=base-th+1;y<base;y+=1.1) R(g,rgba('#3a4a5a',.2),x,y,tw,.35); x+=tw+r()*3; }
       oHaze(g,w,base-34,base,'#e4e4e0',.0,.6); R(g,'#8a908c',0,base,w,h-base); },
     back(g,w,h,r){ const base=94;
-      oWoodedHills(g,w,h,base,x=>28+opn(x,w,421,2)*12,['#3a5e48','#4a6e52','#6a8a62','#8aa874'],{seed:14,size:2.6,haze:'#dfe4e2',hazeH:30,hazeA:.5,fillBelow:'#6a7068'});
+      oWoodedHills(g,w,h,base,x=>28+outPN(x,w,421,2)*12,['#3a5e48','#4a6e52','#6a8a62','#8aa874'],{seed:14,size:2.6,haze:'#dfe4e2',hazeH:30,hazeA:.5,fillBelow:'#6a7068'});
       /* residential slabs climbing the slope: pale, gridded, a red or green crown */ let x=0; while(x<w){ const tw=7+r()*9, th=30+r()*40, c=['#e4dccc','#d4dcd8','#e8d8d0','#ccd4dc','#dce4cc'][r()*5|0];
         vfill(g,x,base-th,tw,th,[[0,mix(c,'#ffffff',.15)],[1,mix(c,'#5a6068',.25)]]); for(let y=base-th+2;y<base;y+=1.5){ R(g,rgba('#3a4a5a',.35),x+.6,y,tw-1.2,.6); } for(let k=1;k<tw/2.2;k++) R(g,rgba('#000000',.08),x+k*2.2,base-th,.3,th);
         R(g,['#c8402a','#2a8a5a','#e8e4dc','#2a5aa8'][r()*4|0],x,base-th-1.5,tw,1.5); hfill(g,x+tw*.8,base-th,tw*.2,th,[[0,rgba('#000000',0)],[1,rgba('#000000',.2)]]); x+=tw+2+r()*8; }
@@ -73,7 +73,7 @@ OK.hongkong={
         for(let y=top+2;y<base-6;y+=3.4) for(let xx=x+1;xx<x+bw-2;xx+=3){ R(g,r()<.15?'#ffe0a0':mix(c,'#2a3040',.5),xx,y,2,1.8); if(r()<.2) R(g,'#e8e8e4',xx,y+2,1.6,.9); }
         if(i%2===0){ const sx=x+bw-2, sy=top+8+r()*14; R(g,'#4a4a50',sx-3,sy+1,6,.5); hkSign(g,sx+1,sy-4,5,18,i+3); } if(i%3===1) hkSign(g,x+2,top+bh*.5,bw*.7,5,i,false);
         R(g,'#2a2a30',x,base-6,bw,6); vfill(g,x+1,base-5,bw-2,4,[[0,'#f2d8a0'],[1,'#a88848']]); x+=bw+.5; i++; } },
-    verge:()=>PX(256,88,4,(g,w,h)=>{ const r=rng(53);
+    verge:()=>outPX(256,88,4,(g,w,h)=>{ const r=rng(53);
       /* the far pavement, the tram street (rails, yellow kerb lines), a gravel shoulder */
       for(let y=0;y<10;y+=3) for(let x=(y/3%2)*3;x<w;x+=6) vfill(g,x+.15,y+.15,5.7,2.7,[[0,'#c8bca8'],[1,'#b0a490']]); R(g,'#8a8a86',0,10,w,1.5);
       vfill(g,0,11.5,w,58,[[0,'#4a4a4e'],[.5,'#56565a'],[1,'#4a4a4e']]); for(let i=0;i<3000;i++) R(g,rgba(r()<.5?'#ffffff':'#000000',.07),r()*w,11.5+r()*58,.6,.4);
@@ -84,7 +84,7 @@ OK.hongkong={
     vergeW:11, vergeTile:32,
     ground:()=>P2(64,64,(g,w,h)=>{ R(g,'#3a3a3e',0,0,w,h); const r=rng(59); for(let i=0;i<200;i++) R(g,rgba('#ffffff',.06),r()*w,r()*h,1,1); },6,59), groundTile:8 }
 };
-OK.hongkong.kit={S:4, ah:320,
+OUTK.hongkong.kit={S:4, ah:320,
   cells:{f1:[0,0,64,16],f2:[0,16,64,16],f3:[0,32,64,16],f4:[0,48,64,16],g1:[0,64,64,24],par:[0,88,64,8],
     f5:[64,0,64,16],f6:[64,16,64,16],g2:[64,32,64,24],side:[64,56,32,32],roofT:[96,56,16,16],seawall:[64,88,64,8],
     s1:[128,0,16,48],s2:[144,0,16,48],s3:[160,0,16,48],s4:[176,0,16,48],s5:[192,0,16,48],sh1:[208,0,48,16],sh2:[208,16,48,16],lampH:[208,32,16,16],bollard:[224,32,8,12],taxiE:[232,32,16,14],
@@ -153,7 +153,7 @@ OK.hongkong.kit={S:4, ah:320,
       /* the tenements, floor by floor, signs hanging out over the street */
       let u=0, i=0; const fl=['f1','f2','f3','f4','f5','f6'];
       while(u<P-6){ const w=8+r()*6, fls=4+(r()*6|0), dp=10, d=14.2, cu=u+w/2, F=[fl[i%6],fl[(i+2)%6]];
-        const top=towerKit(E,cu,d,w,dp,fls,{g:['g1','g2','g3','g4'][i%4],f:F,p:'par',e:'side',t:'roofT'},{r,fh:3,gh:4.2});
+        const top=outTower(E,cu,d,w,dp,fls,{g:['g1','g2','g3','g4'][i%4],f:F,p:'par',e:'side',t:'roofT'},{r,fh:3,gh:4.2});
         for(let k=0;k<1+(r()*2|0);k++){ const sy=5+r()*Math.max(1,top-11), sk=['s1','s2','s3','s4','s5'][(i+k)%5]; E.card(cu+(k?-1:1)*w*.3,d-1.25,2.4,4,sk,{n:1,a0:Math.PI/2,y:sy,sb:1}); E.box(cu+(k?-1:1)*w*.3,d-2.5,.08,.08,2.5,'blackmetal',{y:sy+4}); }
         if(r()<.45){ const sy=5.5+r()*4; E.card(cu,d-2.2,4.4,1.4,r()<.5?'sh1':'sh2',{n:1,a0:Math.PI/2,y:sy}); }
         if(r()<.2) E.card(cu,d-.3,w*.8,Math.min(top,14),'scaff',{n:1,y:2}); if(r()<.35) E.box(cu-w*.25,d,1.6,1.4,1.2,{f:'side',e:'side',t:'roofT'},{y:top});
@@ -161,4 +161,4 @@ OK.hongkong.kit={S:4, ah:320,
         u+=w; i++; }
       for(let k=0;k<12;k++) E.card(r()*P,5.1+r()*.5,.8,.4,'tufts',{n:2,sb:.7}); }
   } };
-OK.hongkong.kit.atlas=kitAtlas(OK.hongkong.kit);
+OUTK.hongkong.kit.atlas=outKitAtlas(OUTK.hongkong.kit);

@@ -17,36 +17,36 @@ function jHouse(g,x,base,w,h,o={}){ const roofH=h*.55, wallH=h-roofH*.55, r=rng(
   for(let yy=ry+roofH*.25;yy<wy;yy+=1.1) R(g,rgba('#000000',.18),x-ov+(yy-ry)*.1,yy,w+ov*2-(yy-ry)*.2,.3);
   poly(g,[[x+w*.12,ry+roofH*.22],[x+w*.88,ry+roofH*.22],[x+w*.8,ry],[x+w*.2,ry]],mix(ec,'#000000',.15));
   R(g,mix(ec,'#ffffff',.25),x+w*.18,ry-.6,w*.64,1.1); R(g,rgba('#000000',.35),x-ov,wy+.5,w+ov*2,.7); }
-function pagoda(g,cx,base,ht){ const tiers=5, th=ht*.78/tiers;
+function outPagoda(g,cx,base,ht){ const tiers=5, th=ht*.78/tiers;
   for(let k=0;k<tiers;k++){ const y=base-k*th, ww=ht*.4-k*ht*.04;
     vfill(g,cx-ww*.34,y-th,ww*.68,th,[[0,'#8a3a2a'],[.5,'#b04a34'],[1,'#6a2a1e']]); for(let j=0;j<3;j++) R(g,'#e8dcc4',cx-ww*.3+j*ww*.22,y-th*.72,ww*.14,th*.42); R(g,'#4a1a14',cx-ww*.34,y-th*.3,ww*.68,.4);
     g.fillStyle=grad(g,0,y-th*1.1,0,y-th*.8,[[0,'#5a6474'],[1,'#2a3040']]); g.beginPath(); g.moveTo(cx-ww*.66,y-th*.78); g.quadraticCurveTo(cx-ww*.5,y-th*.9,cx-ww*.42,y-th*1.08); g.lineTo(cx+ww*.42,y-th*1.08); g.quadraticCurveTo(cx+ww*.5,y-th*.9,cx+ww*.66,y-th*.78); g.lineTo(cx+ww*.5,y-th*.84); g.lineTo(cx-ww*.5,y-th*.84); g.fill();
     R(g,rgba('#000000',.3),cx-ww*.5,y-th*.84,ww,.5); R(g,rgba('#ffffff',.25),cx-ww*.42,y-th*1.08,ww*.84,.35); }
   R(g,'#b89a3a',cx-.3,base-ht,.6,ht*.24); for(let k=0;k<7;k++) R(g,'#c9a23a',cx-.9+k*.04,base-ht+k*ht*.028+1.5,1.8-k*.1,.35); }
-OK.japan={
+OUTK.japan={
   sky:()=>oSkyTex([[0,'#3f86d0'],[.55,'#9ccbee'],[.85,'#d8ecf6'],[1,'#f2f2ea']],{clouds:16,cloudShade:'#a8b8d0',seed:11,cirrus:6}),
   pos:{
     far(g,w,h,r){ const base=91;
-      oRange(g,w,h,base,x=>14+opn(x,w,301,3)*7+Math.abs(opn(x,w,302,7))*5,{shade:'#8ea6c8',lit:'#b8cae2',haze:'#e8eef2'},{seed:4,hazeH:18,hazeA:.85,gullies:40});
-      oRange(g,w,h,base,x=>6+opn(x,w,303,5)*4,{shade:'#6f9090',lit:'#8eaaa4',haze:'#e2eae8'},{seed:5,hazeH:10,hazeA:.6,gullies:30});
+      oRange(g,w,h,base,x=>14+outPN(x,w,301,3)*7+Math.abs(outPN(x,w,302,7))*5,{shade:'#8ea6c8',lit:'#b8cae2',haze:'#e8eef2'},{seed:4,hazeH:18,hazeA:.85,gullies:40});
+      oRange(g,w,h,base,x=>6+outPN(x,w,303,5)*4,{shade:'#6f9090',lit:'#8eaaa4',haze:'#e2eae8'},{seed:5,hazeH:10,hazeA:.6,gullies:30});
       R(g,'#a8bca4',0,base,w,h-base); },
     back(g,w,h,r){ const base=94;
-      oWoodedHills(g,w,h,base,x=>10+opn(x,w,311,2)*7+opn(x,w,312,6)*3,['#3a6248','#4c7a52','#6e9a5c','#94b870'],{seed:6,size:2.4,haze:'#e4ecee',hazeH:14,hazeA:.35,fillBelow:'#6a8c5a'});
+      oWoodedHills(g,w,h,base,x=>10+outPN(x,w,311,2)*7+outPN(x,w,312,6)*3,['#3a6248','#4c7a52','#6e9a5c','#94b870'],{seed:6,size:2.4,haze:'#e4ecee',hazeH:14,hazeA:.35,fillBelow:'#6a8c5a'});
       for(let i=0;i<9;i++){ const x=20+i*56+r()*20; jHouse(g,x,base,10,7,{seed:i,roof:'#4a5262'}); }
       oHaze(g,w,0,base,'#e8eef2',.25,.05); },
     mid(g,w,h,r){ const base=95;
       /* tree line and a wooded knoll behind the fields */
-      oWoodedHills(g,w,h,base-14,x=>4+opn(x,w,321,3)*4+Math.max(0,Math.sin((x/w)*Math.PI*2+1))*10,['#2e5638','#3e6c42','#5e8e4c','#86ae5e'],{seed:7,size:2.8,fillBelow:'#5e8a44'});
+      oWoodedHills(g,w,h,base-14,x=>4+outPN(x,w,321,3)*4+Math.max(0,Math.sin((x/w)*Math.PI*2+1))*10,['#2e5638','#3e6c42','#5e8e4c','#86ae5e'],{seed:7,size:2.8,fillBelow:'#5e8a44'});
       /* paddies running away from the line: sky in the water, rows of seedlings, earth dikes */
       for(let y=base-14;y<base;y+=3.5){ vfill(g,0,y,w,2.6,[[0,'#b8daf0'],[1,'#8ab8d8']]); R(g,'#7a9a4a',0,y+2.6,w,.9); for(let x=(y*7)%3;x<w;x+=2.2) R(g,rgba('#4a8a3a',.7),x,y+.6,.5,1.2); }
       for(let x=30;x<w;x+=70) R(g,'#7a8a4a',x,base-14,1,14);
-      /* farmhouses, a pagoda, sakura, drying racks */
+      /* farmhouses, a outPagoda, sakura, drying racks */
       for(const [x,wd] of [[24,30],[150,26],[330,32],[430,24]]){ jHouse(g,x,base-12,wd,18,{seed:x,shoji:true}); oCrown(g,x-6,base-26,9,8,['#2e5a30','#40703a','#62904a'],x); }
-      pagoda(g,250,base-12,46); oCrown(g,236,base-14,8,6,['#2e5a30','#40703a','#62904a'],5);
+      outPagoda(g,250,base-12,46); oCrown(g,236,base-14,8,6,['#2e5a30','#40703a','#62904a'],5);
       for(const x of [100,205,290,380,480]) { oTrunk(g,x,base-12,base-22,1.4,.8,['#5a4434','#3a2c22','#2a2018']); oCrown(g,x,base-25,10,7,['#c86a8a','#ef9ab4','#ffcbd8','#fff2f6'],x); }
       for(const x of [60,200,360]){ for(let k=0;k<7;k++) R(g,'#6a4a2e',x+k*4,base-7,.6,5); R(g,'#6a4a2e',x,base-7,26,.6); for(let k=0;k<12;k++) R(g,k%2?'#c8a860':'#b89a50',x+.5+k*2.1,base-6.6,1.8,3); }
       /* poles along a farm road */ for(let x=12;x<w;x+=64){ R(g,'#8a8a88',x,base-30,.8,18); R(g,'#5a5a58',x-2.5,base-29,5.8,.6); } g.strokeStyle='#2a2a2a'; g.lineWidth=.25; for(let x=12;x<w;x+=64){ g.beginPath(); g.moveTo(x-2,base-28.6); g.quadraticCurveTo(x+30,base-26,x+62,base-28.6); g.stroke(); } },
-    verge:()=>PX(256,160,4,(g,w,h)=>{ const r=rng(17);
+    verge:()=>outPX(256,160,4,(g,w,h)=>{ const r=rng(17);
       /* far edge (top) to the line (bottom): paddies, a grass dike, a concrete channel, the gravel shoulder */
       const dike=x=>[0,64,128,192].some(k=>Math.abs(((x-k)%256+256)%256)<3);
       /* water holding the sky: a soft gradient, cloud reflections, ripples */
@@ -66,18 +66,18 @@ OK.japan={
     ground:()=>P2(128,128,(g,w,h)=>{ const r=rng(23); R(g,'#7aa860',0,0,w,h); for(let y=0;y<h;y+=16) for(let x=0;x<w;x+=32){ const c=['#9ac4d8','#86b4cc','#7aa860','#8ab468','#a6c088'][r()*5|0]; vfill(g,x+1,y+1,30,14,[[0,mix(c,'#ffffff',.1)],[1,c]]); } for(let x=0;x<w;x+=32) R(g,'#6a8a48',x,0,1.2,h); for(let y=0;y<h;y+=16) R(g,'#6a8a48',0,y,w,1.2); },6,23), groundTile:48 },
   neg:{
     far(g,w,h,r){ const base=91, cx=150;
-      oRange(g,w,h,base,x=>12+opn(x,w,331,3)*6+Math.abs(opn(x,w,332,8))*4,{shade:'#94aacb',lit:'#bccce4',haze:'#eaf0f4'},{seed:8,hazeH:16,hazeA:.85,gullies:30});
+      oRange(g,w,h,base,x=>12+outPN(x,w,331,3)*6+Math.abs(outPN(x,w,332,8))*4,{shade:'#94aacb',lit:'#bccce4',haze:'#eaf0f4'},{seed:8,hazeH:16,hazeA:.85,gullies:30});
       /* the volcano: a long concave cone, snowfields running down the gullies */
       const vol=x=>{ const d=Math.abs(((x-cx)%w+w)%w>w/2?((x-cx)%w+w)%w-w:((x-cx)%w+w)%w)/110; return d<1?Math.max(0,40*Math.pow(1-d,1.6)-(d<.06?1.2:0)):0; };
       oRange(g,w,h,base,x=>vol(x),{shade:'#6c7ea8',lit:'#9cb0d4',snow:'#f8faff',snowShade:'#c4d0e6',haze:'#e8eef4',dark:'#5a6a94'},{seed:9,snowLine:.42,hazeH:14,hazeA:.7,gullies:60,light:1});
-      oRange(g,w,h,base,x=>5+opn(x,w,333,5)*3.5,{shade:'#6a8c86',lit:'#88a8a0',haze:'#e2eae8'},{seed:10,hazeH:8,hazeA:.5});
+      oRange(g,w,h,base,x=>5+outPN(x,w,333,5)*3.5,{shade:'#6a8c86',lit:'#88a8a0',haze:'#e2eae8'},{seed:10,hazeH:8,hazeA:.5});
       R(g,'#a4b8a0',0,base,w,h-base); },
     back(g,w,h,r){ const base=94;
-      oWoodedHills(g,w,h,base,x=>12+opn(x,w,341,2)*9+opn(x,w,342,5)*3,['#36603e','#467448','#689656','#8eb46a'],{seed:12,size:2.4,haze:'#e4ecee',hazeH:16,hazeA:.4,fillBelow:'#5e8650'});
+      oWoodedHills(g,w,h,base,x=>12+outPN(x,w,341,2)*9+outPN(x,w,342,5)*3,['#36603e','#467448','#689656','#8eb46a'],{seed:12,size:2.4,haze:'#e4ecee',hazeH:16,hazeA:.4,fillBelow:'#5e8650'});
       /* a temple roof in the trees */ jHouse(g,300,base-12,22,12,{roof:'#3a3e48',seed:2}); R(g,'#c8402a',298,base-6,1,6); R(g,'#c8402a',322,base-6,1,6);
       oHaze(g,w,0,base,'#e8eef2',.22,.05); },
     mid(g,w,h,r){ const base=95;
-      oWoodedHills(g,w,h,base-6,x=>10+opn(x,w,351,3)*6+opn(x,w,352,7)*2,['#2a5234','#3a663e','#5a8a4a','#82aa5a'],{seed:13,size:2.6,fillBelow:'#4e7a3e'});
+      oWoodedHills(g,w,h,base-6,x=>10+outPN(x,w,351,3)*6+outPN(x,w,352,7)*2,['#2a5234','#3a663e','#5a8a4a','#82aa5a'],{seed:13,size:2.6,fillBelow:'#4e7a3e'});
       /* bamboo groves */ for(const x of [40,210,400]) for(let k=0;k<26;k++){ const bx=x+k*1.3+r()*.6, top=base-30-r()*8; R(g,k%3?'#6a9a46':'#88b45a',bx,top,.6,base-top-4); for(let j=0;j<6;j++) ell(g,bx+(r()-.5)*4,top+r()*16,2.2,.6,['#4a7a32','#6a9a42','#8ab858'][j%3]); }
       /* the village: houses along the lane, garden walls, persimmons */
       for(const [x,wd] of [[70,30],[120,24],[260,34],[310,26],[450,30]]){ jHouse(g,x,base-3,wd,20,{seed:x,shoji:true,roof:x%3?'#3e4656':'#5a4a40'}); }
@@ -85,7 +85,7 @@ OK.japan={
       for(const x of [100,180,240,350,420,500]){ oTrunk(g,x,base-3,base-14,1.2,.7,['#5a4434','#3a2c22','#2a2018']); oCrown(g,x,base-17,7,6,['#2e5a2a','#4a7e36','#78a848'],x); for(let k=0;k<6;k++) ell(g,x+(r()-.5)*10,base-17+(r()-.5)*7,.7,.7,'#f0782a'); }
       for(const x of [160,380]){ R(g,'#c83a2a',x,base-14,1.2,11); R(g,'#c83a2a',x+9,base-14,1.2,11); R(g,'#2a2220',x-2,base-15.4,13.2,1.4); R(g,'#c83a2a',x-1,base-12.6,11,.8); }
       for(let x=30;x<w;x+=72){ R(g,'#8a8a88',x,base-30,.8,27); R(g,'#5a5a58',x-2.5,base-29,5.8,.6); } g.strokeStyle='#2a2a2a'; g.lineWidth=.25; for(let x=30;x<w;x+=72){ g.beginPath(); g.moveTo(x-2,base-28.6); g.quadraticCurveTo(x+36,base-25,x+72,base-28.6); g.stroke(); } },
-    verge:()=>PX(256,160,4,(g,w,h)=>{ const r=rng(19);
+    verge:()=>outPX(256,160,4,(g,w,h)=>{ const r=rng(19);
       /* far edge: grass and garden plots; then the lane; grass with clover and flowers; the gravel shoulder */
       vfill(g,0,0,w,h-15,[[0,'#6a9a48'],[1,'#7aaa52']]);
       for(let i=0;i<5000;i++){ const x=r()*w, y=r()*(h-15); R(g,['#8ab858','#5a8a3a','#6e9e46','#98c068'][i%4],x,y,.5,1.1); }
@@ -100,7 +100,7 @@ OK.japan={
 };
 
 /* the trackside kit: one atlas, 3D posts and boxes and crossed cards */
-OK.japan.kit={S:4,
+OUTK.japan.kit={S:4,
   cells:{pole:[0,0,6,96],arm:[6,0,6,24],xfmr:[12,0,14,20],wire:[26,0,4,4],sakura:[32,0,64,64],bamboo:[96,0,40,64],persim:[136,0,48,56],bpine:[184,0,48,56],shrub:[232,0,24,20],grass:[232,20,24,14],
     houseF:[0,96,72,40],houseE:[72,96,40,40],roof:[112,96,48,32],tin:[160,96,32,32],shedF:[192,96,48,32],
     stone:[0,136,16,16],red:[16,136,8,16],black:[24,136,8,16],jizo:[32,136,16,24],vend:[48,136,20,36],vendS:[68,136,10,36],hasa:[80,136,64,28],heron:[144,136,16,16],kakashi:[160,136,16,28],post:[176,136,6,24],wood:[182,136,16,16],plaster:[198,136,16,16],xsign:[214,136,24,40],stripe:[238,136,8,32],
@@ -132,7 +132,7 @@ OK.japan.kit={S:4,
     cl('jizo',(g,x,y,w,h)=>{ const cx=x+w/2; ell(g,cx,y+h*.82,w*.42,h*.2,'#8a867a'); vfill(g,cx-w*.3,y+h*.3,w*.6,h*.55,[[0,'#a8a498'],[1,'#7a766a']]); ell(g,cx,y+h*.24,w*.24,h*.13,'#aeaa9e'); ell(g,cx-w*.06,y+h*.2,w*.1,h*.06,'#c8c4b8');
       poly(g,[[cx-w*.32,y+h*.38],[cx+w*.32,y+h*.38],[cx,y+h*.62]],'#d8302a'); poly(g,[[cx-w*.28,y+h*.39],[cx,y+h*.39],[cx,y+h*.55]],'#f04a3a'); R(g,'#5a564a',x+2,y+h-2,w-4,2); });
     cl('vend',(g,x,y,w,h)=>{ vfill(g,x,y,w,h,[[0,'#f2f2ee'],[1,'#c8c8c4']]); R(g,'#c83a2a',x,y,w,4); text(g,'DRINK',x+3,y+1,'#ffffff',.5);
-      R(g,'#1a2a3a',x+1.5,y+5,w-3,h*.42); for(let r_=0;r_<3;r_++) for(let k=0;k<5;k++){ const cx=x+3+k*3, cy=y+7+r_*5; vfill(g,cx,cy,2,3.4,[[0,['#f2c230','#2a8a5a','#e04a30','#2a6ad8','#f2f2f2'][(k+r_)%5]],[1,'#3a3a3a']]); R(g,'#ffffff',cx+.4,cy+.4,.5,2); }
+      R(g,'#1a2a3a',x+1.5,y+5,w-3,h*.42); for(let outHash=0;outHash<3;outHash++) for(let k=0;k<5;k++){ const cx=x+3+k*3, cy=y+7+outHash*5; vfill(g,cx,cy,2,3.4,[[0,['#f2c230','#2a8a5a','#e04a30','#2a6ad8','#f2f2f2'][(k+outHash)%5]],[1,'#3a3a3a']]); R(g,'#ffffff',cx+.4,cy+.4,.5,2); }
       for(let k=0;k<5;k++) R(g,'#e04a3a',x+3+k*3,y+21.4,1.6,.8); R(g,'#3a3a40',x+3,y+h*.62,w-6,h*.1); R(g,'#2a2a30',x+3,y+h*.82,w-6,h*.1); R(g,'#8a8a90',x+w-6,y+h*.55,3,4); radial(g,x+w/2,y+h*.3,w*.6,[[0,rgba('#e8f4ff',.25)],[1,rgba('#e8f4ff',0)]]); });
     cl('vendS',(g,x,y,w,h)=>{ vfill(g,x,y,w,h,[[0,'#dcdcd8'],[1,'#a8a8a4']]); R(g,'#a82a1c',x,y,w,4); });
     cl('hasa',(g,x,y,w,h)=>{ const r=rng(43); for(let k=0;k<6;k++){ const px=x+2+k*12; R(g,'#5a4430',px,y+2,1.2,h-2); } R(g,'#6a5038',x,y+4,w,1.2);

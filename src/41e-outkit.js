@@ -5,9 +5,9 @@
    scene files that follow (41f..) and built into strips and a trackside atlas by src/42-scenery.js.
    ===================================================================================================== */
 /* periodic value noise in x (period w) for any frequency: smooth ridges that wrap */
-const opn=(x,w,s,f=3,oct=4)=>pn(x,w,s,f,oct);
+const outPN=(x,w,s,f=3,oct=4)=>pn(x,w,s,f,oct);
 /* a sky band: gradient, a sun glow, painted cumulus with lit tops and shaded bellies, a little cirrus; wraps in x */
-function oSkyTex(stops,o={}){ return PX(256,128,o.S||4,(g,w,h)=>{ vfill(g,0,0,w,h,stops);
+function oSkyTex(stops,o={}){ return outPX(256,128,o.S||4,(g,w,h)=>{ vfill(g,0,0,w,h,stops);
   const r=rng(o.seed||5);
   if(o.glow) for(const dx of [-w,0,w]) radial(g,o.glow[0]*w+dx,o.glow[1]*h,o.glow[2]*w,[[0,o.glow[3]],[1,rgba('#000000',0)]]);
   if(o.stars){ for(let i=0;i<o.stars;i++){ const y=r()*h*.62, a=(.3+r()*.7)*(1-y/(h*.7)); const s=r()<.08?.9:.45; g.fillStyle=`rgba(255,248,232,${a})`; g.fillRect(r()*w,y,s,s); } }
@@ -152,7 +152,7 @@ function oShadow(g,x,y,w,h,a=.4){ radial(g,x+w/2,y+h/2,Math.min(w,h)/2,[[0,rgba(
 function oCell(g,c,fn){ const [x,y,w,h]=c; g.save(); g.beginPath(); g.rect(x,y,w,h); g.clip(); fn(g,x,y,w,h); g.restore(); }
 
 /* ---------- standard atlas cells any scene can name; a scene's own painters override these ---------- */
-const STDCELL={
+const OUT_STDCELL={
   wire:(g,x,y,w,h)=>R(g,'#1e1e22',x,y,w,h),
   dark:(g,x,y,w,h)=>vfill(g,x,y,w,h,[[0,'#3a3a3e'],[1,'#1a1a1e']]),
   white:(g,x,y,w,h)=>vfill(g,x,y,w,h,[[0,'#f6f6f2'],[1,'#d8d8d2']]),
@@ -171,10 +171,10 @@ const STDCELL={
   rock:(g,x,y,w,h)=>{ const r=rng(61); ell(g,x+w/2,y+h*.62,w*.48,h*.38,'#5a5a56'); for(let i=0;i<14;i++){ const a=r()*6.28, d=r()*.6; ell(g,x+w/2+Math.cos(a)*w*.3*d-w*.06,y+h*.55+Math.sin(a)*h*.25*d-h*.06,w*(.12+r()*.12),h*(.1+r()*.1),['#7a7a74','#8a8882','#6a6a64'][i%3]); } ell(g,x+w*.4,y+h*.4,w*.16,h*.08,'#9a9892'); R(g,'#4a4a46',x,y+h-1.5,w,1.5); },
 };
 /* paint every cell of a kit: its own painter if it has one, else the standard one */
-function kitAtlas(K){ return (g)=>{ for(const k in K.cells){ const fn=(K.paint&&K.paint[k])||STDCELL[k]; if(fn) oCell(g,K.cells[k],fn); } }; }
+function outKitAtlas(K){ return (g)=>{ for(const k in K.cells){ const fn=(K.paint&&K.paint[k])||OUT_STDCELL[k]; if(fn) oCell(g,K.cells[k],fn); } }; }
 /* a floor-by-floor tower front: ground floor cell, n floors from a few floor cells, a parapet. One box face per floor keeps the
    texture sharp up close. cells: {g: ground, f:[floor cells], p: parapet, e: side, t: roof} */
-function towerKit(E,u,d,w,dp,floors,cells,o={}){ const fh=o.fh||3, gh=o.gh||4, r=o.r||Math.random;
+function outTower(E,u,d,w,dp,floors,cells,o={}){ const fh=o.fh||3, gh=o.gh||4, r=o.r||Math.random;
   E.box(u,d,w,gh,dp,{f:cells.g,e:cells.e,t:null},{ao:.7});
   for(let i=0;i<floors;i++) E.box(u,d,w,fh,dp,{f:cells.f[(r()*cells.f.length)|0],e:cells.e,t:null},{y:gh+i*fh,sb:1,st:1,ao:1,fs:1-.0*i});
   const top=gh+floors*fh; E.box(u,d,w,o.ph||1,dp,{f:cells.p||cells.e,e:cells.e,t:cells.t||cells.e},{y:top,ao:1});

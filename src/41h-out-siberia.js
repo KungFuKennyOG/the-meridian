@@ -15,12 +15,12 @@ function sibChurch(g,cx,base,s){ R(g,'#f2ece0',cx-14*s,base-26*s,28*s,26*s); vfi
   for(const [dx,yy,sz] of [[0,-40,8],[-11,-29,4.5],[11,-29,4.5]]){ const X=cx+dx*s, Y=base+yy*s, S_=sz*s; g.fillStyle=grad(g,X-S_,0,X+S_,0,[[0,'#5a9ae0'],[.4,'#2a6ab0'],[1,'#1a4a80']]); g.beginPath(); g.moveTo(X-S_,Y); g.bezierCurveTo(X-S_*1.2,Y-S_*1.1,X-S_*.2,Y-S_*1.4,X,Y-S_*2); g.bezierCurveTo(X+S_*.2,Y-S_*1.4,X+S_*1.2,Y-S_*1.1,X+S_,Y); g.fill();
     for(let k=0;k<8;k++) ell(g,X-S_*.6+k*S_*.17,Y-S_*.7+Math.sin(k)*S_*.2,S_*.08,S_*.08,'#f2d260'); R(g,'#d4ad5a',X-.3*s,Y-S_*2.9,.6*s,S_*.9); R(g,'#d4ad5a',X-1*s,Y-S_*2.6,2*s,.4*s); } }
 
-OK.siberia={
+OUTK.siberia={
   sky:()=>oSkyTex([[0,'#8a96aa'],[.5,'#b4bec8'],[.85,'#d8dee4'],[1,'#e8ecf0']],{clouds:22,cloudCol:'#e2e6ec',cloudShade:'#9aa4b4',seed:41,haze:'#e8ecf0'}),
   pos:{ groundK:.5,
     far(g,w,h,r){ const base=91;
-      oRange(g,w,h,base,x=>16+opn(x,w,501,3)*8+Math.abs(opn(x,w,502,7))*6,{shade:'#9aaabc',lit:'#c8d2de',snow:'#eef2f6',snowShade:'#b8c4d4',haze:'#e2e8ee',dark:'#8a9aae'},{seed:15,snowLine:.25,hazeH:22,hazeA:.85,gullies:80});
-      oRange(g,w,h,base,x=>5+opn(x,w,503,4)*3,{shade:'#4a5a5a',lit:'#6a7a78',haze:'#dfe6ec'},{seed:16,hazeH:6,hazeA:.7});
+      oRange(g,w,h,base,x=>16+outPN(x,w,501,3)*8+Math.abs(outPN(x,w,502,7))*6,{shade:'#9aaabc',lit:'#c8d2de',snow:'#eef2f6',snowShade:'#b8c4d4',haze:'#e2e8ee',dark:'#8a9aae'},{seed:15,snowLine:.25,hazeH:22,hazeA:.85,gullies:80});
+      oRange(g,w,h,base,x=>5+outPN(x,w,503,4)*3,{shade:'#4a5a5a',lit:'#6a7a78',haze:'#dfe6ec'},{seed:16,hazeH:6,hazeA:.7});
       vfill(g,0,base,w,h-base,[[0,'#cddbe6'],[1,'#e6eef4']]); for(let i=0;i<80;i++) ell(g,r()*w,base+1+r()*(h-base-1),3+r()*8,.3,rgba('#ffffff',.6)); },
     back(g,w,h,r){ const base=95; R(g,'#dde6ee',0,base-2,w,3);
       for(let i=0;i<14;i++){ const x=r()*w, c=['#c8402a','#2a6ab0','#4a7a3a','#d8a020','#7a5434'][i%5], hw=4+r()*3; vfill(g,x,base-hw*.9,hw,hw*.9,[[0,mix(c,'#ffffff',.15)],[1,mix(c,'#000000',.2)]]); poly(g,[[x-.6,base-hw*.9],[x+hw+.6,base-hw*.9],[x+hw/2,base-hw*1.35]],'#f2f6fa'); R(g,'#3a3a3e',x+hw*.4,base-hw*.5,hw*.25,hw*.5);
@@ -31,7 +31,7 @@ OK.siberia={
       for(let i=0;i<26;i++){ const x=r()*w, L=6+r()*14, H=2+r()*4; for(let k=0;k<L;k+=1.6){ const hh=H*(.5+r()*.6); poly(g,[[x+k,base-1],[x+k+1.8,base-1],[x+k+1.2,base-1-hh],[x+k+.3,base-1-hh*.8]],['#a8d0e8','#8ac0e0','#c8e4f4','#7ab0d4'][(k|0)%4]); R(g,rgba('#ffffff',.6),x+k+.3,base-1-hh*.8,.6,hh*.5); } }
       R(g,'#eef2f6',0,base-1.2,w,2); poly(g,[[200,base-2],[224,base-2.6],[220,base],[204,base]],'#5a4a3a'); R(g,'#eef2f6',204,base-2.8,16,.8);
       for(let i=0;i<40;i++) ell(g,r()*w,base-.5,2+r()*4,.4,rgba('#ffffff',.7)); },
-    verge:()=>PX(256,96,4,(g,w,h)=>{ const r=rng(61);
+    verge:()=>outPX(256,96,4,(g,w,h)=>{ const r=rng(61);
       vfill(g,0,0,w,h,[[0,'#dfe8f0'],[.6,'#eef2f6'],[1,'#e2e8ee']]);
       for(let i=0;i<120;i++){ const x=r()*w, y=r()*h; ell(g,x,y,4+r()*10,1+r()*2,rgba('#b8c8dc',.35)); ell(g,x-1,y-.6,3+r()*6,.6+r()*1,rgba('#ffffff',.6)); }
       /* the shore: ice at the far edge, reeds through the snow, footprints */ vfill(g,0,0,w,12,[[0,'#b8d4e6'],[1,'#d8e6f0']]); for(let i=0;i<40;i++) ell(g,r()*w,r()*10,4+r()*8,.3,rgba('#ffffff',.6));
@@ -42,8 +42,8 @@ OK.siberia={
     ground:()=>P2(128,128,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#d4e2ec'],[.5,'#c8dae8'],[1,'#d4e2ec']]); const r=rng(67); for(let i=0;i<160;i++){ const x=r()*w,y=r()*h; ell(g,x,y,4+r()*14,.4+r()*.6,rgba(r()<.5?'#ffffff':'#a8c4d8',.5)); } for(let i=0;i<10;i++){ g.strokeStyle=rgba('#8ab0cc',.5); g.lineWidth=.5; g.beginPath(); let x=r()*w,y=r()*h; g.moveTo(x,y); for(let k=0;k<6;k++){ x+=(r()-.3)*14; y+=(r()-.5)*8; g.lineTo(x,y); } g.stroke(); } },0,67), groundTile:20 },
   neg:{
     far(g,w,h,r){ const base=91;
-      oRange(g,w,h,base,x=>18+opn(x,w,511,2)*9+Math.abs(opn(x,w,512,6))*4,{shade:'#7a8a96',lit:'#a8b4c0',snow:'#e8eef4',snowShade:'#b4c0cc',haze:'#e2e8ee'},{seed:17,snowLine:.45,hazeH:24,hazeA:.8});
-      oWoodedHills(g,w,h,base,x=>8+opn(x,w,513,3)*4,['#3a4a46','#46564e','#5a6a62','#e8eef2'],{seed:18,size:1.6,haze:'#e2e8ee',hazeH:12,hazeA:.6,fillBelow:'#dfe6ec'}); },
+      oRange(g,w,h,base,x=>18+outPN(x,w,511,2)*9+Math.abs(outPN(x,w,512,6))*4,{shade:'#7a8a96',lit:'#a8b4c0',snow:'#e8eef4',snowShade:'#b4c0cc',haze:'#e2e8ee'},{seed:17,snowLine:.45,hazeH:24,hazeA:.8});
+      oWoodedHills(g,w,h,base,x=>8+outPN(x,w,513,3)*4,['#3a4a46','#46564e','#5a6a62','#e8eef2'],{seed:18,size:1.6,haze:'#e2e8ee',hazeH:12,hazeA:.6,fillBelow:'#dfe6ec'}); },
     back(g,w,h,r){ const base=94;
       /* taiga: ranks of dark spruce with snow on every tier */ R(g,'#e6ecf2',0,base-4,w,h); for(let row=0;row<3;row++) for(let i=0;i<120;i++){ const x=r()*w, ht=10+r()*12-row*2, y=base-row*1.5-pn(x,w,521,2)*6;
         oTree(g,x-ht*.25,y-ht,ht*.5,ht,'snowspruce',i+row*200,{pal:[mix('#24382e','#e2e8ee',row*.25),mix('#33493c','#e2e8ee',row*.25),mix('#4a6450','#e2e8ee',row*.25)],tiers:6}); }
@@ -53,7 +53,7 @@ OK.siberia={
       for(let i=0;i<20;i++){ const x=r()*w, ht=14+r()*8; oTree(g,x-ht*.3,base-3-ht,ht*.6,ht,'birch',i+500,{bare:true}); }
       sibChurch(g,300,base-2,1.15);
       for(const [x,wd] of [[40,26],[90,22],[160,28],[400,24],[460,26]]){ sibIzba(g,x,base-2,wd,18,{seed:x,smoke:x%3===0,lit:x%2===0}); for(let k=0;k<wd+8;k+=1.6) R(g,'#7a5a3a',x-4+k,base-5,.6,3); R(g,'#7a5a3a',x-4,base-4.4,wd+8,.5); R(g,'#f2f6fa',x-4,base-5.2,wd+8,.5); } },
-    verge:()=>PX(256,128,4,(g,w,h)=>{ const r=rng(71);
+    verge:()=>outPX(256,128,4,(g,w,h)=>{ const r=rng(71);
       vfill(g,0,0,w,h,[[0,'#e2eaf2'],[1,'#eef2f6']]); for(let i=0;i<140;i++){ const x=r()*w, y=r()*h; ell(g,x,y,4+r()*10,1+r()*2,rgba('#b8c8dc',.35)); ell(g,x-1,y-.6,3+r()*6,.6+r()*1,rgba('#ffffff',.6)); }
       /* the village road: packed snow, tyre ruts, a grey slush edge */ vfill(g,0,40,w,22,[[0,'#c8ccd0'],[.5,'#d8dce0'],[1,'#c4c8cc']]); for(const y of [45,50,53,58]){ R(g,'#a8aeb6',0,y,w,1.2); for(let x=0;x<w;x+=1) R(g,rgba('#8a9098',.4),x,y+.3+Math.sin(x*.3)*.3,.8,.5); }
       for(let i=0;i<300;i++) R(g,rgba('#6a6a6a',.15),r()*w,40+r()*22,.6,.4);
@@ -62,7 +62,7 @@ OK.siberia={
     vergeW:16, vergeTile:32,
     ground:()=>P2(128,128,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#e2eaf2'],[1,'#eaf0f6']]); const r=rng(73); for(let i=0;i<120;i++){ const x=r()*w,y=r()*h; ell(g,x,y,5+r()*12,1+r()*2,rgba('#b8c8dc',.3)); } },0,73), groundTile:24 }
 };
-OK.siberia.kit={S:4,
+OUTK.siberia.kit={S:4,
   cells:{izbaF:[0,0,72,32],izbaE:[72,0,40,32],roofSnow:[112,0,48,32],logs:[160,0,32,16],woodEnd:[192,0,16,16],picket:[208,0,48,16],
     snowfence:[0,32,64,16],birch:[64,32,40,64],spruce:[104,32,48,64],bareBirch:[152,32,40,64],reeds:[192,32,40,20],snowbush:[192,52,32,20],woodpole:[232,32,6,64],insul:[238,32,6,6],
     snowman:[0,96,24,32],lada:[24,96,48,16],ladaE:[72,96,16,16],snowT:[88,96,16,16],boat:[104,96,48,16],gable:[152,96,40,24],banyaF:[192,96,48,24],
@@ -120,4 +120,4 @@ OK.siberia.kit={S:4,
       E.box(84,9.6,4.3,1.45,1.8,{f:'lada',e:'ladaE',t:'snowT'},{ao:.7}); E.card(130,10.8,1.2,1.7,'snowman',{n:2});
       for(let i=0;i<8;i++) E.card(r()*P,7+r()*1.5,3.6,8,'bareBirch',{n:3,sb:.75}); }
   } };
-OK.siberia.kit.atlas=kitAtlas(OK.siberia.kit);
+OUTK.siberia.kit.atlas=outKitAtlas(OUTK.siberia.kit);

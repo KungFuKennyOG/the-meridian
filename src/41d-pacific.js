@@ -6,7 +6,7 @@
    white sea pens, tube worms round a vent glowing orange, kelp and rock ridges as silhouettes, jellyfish
    pulsing pink and cyan, shoals of lantern fish with lit photophores, a whale passing overhead in the dark.
    ===================================================================================================== */
-const OK={}; /* per-scene outside definitions (sky, card layers, verge, ground, trackside kit), read by src/42-scenery.js */
+const OUTK={}; /* per-scene outside definitions (sky, card layers, verge, ground, trackside kit), read by src/42-scenery.js */
 SCENES.pacific=Object.assign({},SCENES.atlantic,{name:'Pacific tunnel',country:'Under the ocean',sub:'A glass tube from California to Japan',
   note:'Nine thousand kilometres of glass on the floor of the Pacific, run through the night. Deeper and darker than the Atlantic: jellyfish, lantern fish, and the lights of the train.',
   light:{amb:[.1,.16,.26],dir:[0,1,.2],dirCol:[.12,.24,.42]},horizon:'#06182e',top:'#020812',ground:{pos:'#14202a',neg:'#14202a'},particles:'mote',
@@ -28,21 +28,21 @@ function seaRocks(g,x,y,w,h,pal,seed){ const r=rng(seed); const b=y+h; g.fillSty
 function seaKelp(g,x,y,w,h,pal,seed){ const r=rng(seed); for(let k=0;k<4;k++){ const bx=x+w*(.2+k*.2), sway=(r()-.5)*w*.4; g.strokeStyle=pal[k%2]; g.lineWidth=1.2; g.beginPath(); g.moveTo(bx,y+h); g.bezierCurveTo(bx+sway,y+h*.6,bx-sway,y+h*.3,bx+sway*.5,y+2); g.stroke();
     for(let j=0;j<14;j++){ const t=j/14, px=bx+sway*Math.sin(t*3)*.6, py=y+h-t*(h-4); g.fillStyle=pal[2]; g.save(); g.translate(px,py); g.rotate((j%2?.6:-.6)+(r()-.5)*.3); g.beginPath(); g.ellipse(j%2?2.4:-2.4,0,2.6,.9,0,0,6.28); g.fill(); g.restore(); if(pal[3]&&j%4===0) ell(g,px,py,.7,.7,pal[3]); } } }
 /* an underwater sky: gradient, shafts or nothing, drifting motes */
-function seaWater(o){ return PX(256,128,3,(g,w,h)=>{ vfill(g,0,0,w,h,o.stops); const r=rng(o.seed||7);
+function seaWater(o){ return outPX(256,128,3,(g,w,h)=>{ vfill(g,0,0,w,h,o.stops); const r=rng(o.seed||7);
   for(let i=0;i<(o.shafts||0);i++){ const x=r()*w, wd=4+r()*12, sl=(r()-.5)*20; for(const dx of [-w,0,w]){ g.fillStyle=grad(g,0,0,0,h*.85,[[0,rgba(o.shaft,.28)],[1,rgba(o.shaft,0)]]); g.beginPath(); g.moveTo(x+dx,0); g.lineTo(x+dx+wd,0); g.lineTo(x+dx+wd+sl,h*.85); g.lineTo(x+dx+sl-wd*.4,h*.85); g.fill(); } }
   if(o.caustic) for(let i=0;i<60;i++) ell(g,r()*w,r()*h*.25,3+r()*6,.6,rgba(o.caustic,.2));
   for(let i=0;i<(o.motes||0);i++) R(g,rgba(o.mote,.2+r()*.3),r()*w,h*.3+r()*h*.7,.6,.6);
   if(o.silhouettes) for(let i=0;i<o.silhouettes;i++){ const x=r()*w, y=h*(.78+r()*.1), sw=10+r()*30; for(const dx of [-w,0,w]) ell(g,x+dx,y,sw,3+r()*4,rgba(o.silCol,.5)); } }); }
 /* swimmers: cards that drift and pulse past the windows */
-function swimCard(sc,tex,cells,AW,AH,cell,w,h,n,o){ const gb=new GB(), E=kitEmitter(gb,o.s||1,cells,AW,AH); E.card(0,0,w,h,cell,{n,y:-GROUND_Y-h/2,sb:1,st:1});
+function swimCard(sc,tex,cells,AW,AH,cell,w,h,n,o){ const gb=new OutGB(), E=outKit(gb,o.s||1,cells,AW,AH); E.card(0,0,w,h,cell,{n,y:-GROUND_Y-h/2,sb:1,st:1});
   const node=mk(gb.done(),M(tex,{unlit:true,cut:true}),sc.root,0,o.y,o.z); const f=Object.assign({n:node,x:o.x,y0:o.y,ph:o.ph||0},o); sc.swim.push(f); return f; }
 
 /* ===================================== SOUTH ATLANTIC ===================================== */
-OK.atlantic={
+OUTK.atlantic={
   sky:()=>seaWater({stops:[[0,'#06223a'],[.45,'#0e4a66'],[.8,'#1a7a90'],[1,'#2a8a98']],shafts:16,shaft:'#9ae8f8',caustic:'#bff4ff',motes:120,mote:'#bfefff',silhouettes:10,silCol:'#0e3a50',seed:7}),
   pos:{}, neg:{} };
-for(const side of ['pos','neg']) Object.assign(OK.atlantic[side],{
-  far(g,w,h,r){ const base=92; oRange(g,w,h,base,x=>12+opn(x,w,side==='pos'?801:811,2)*8+Math.abs(opn(x,w,802,6))*4,{shade:'#164a5e',lit:'#1e5a6e',haze:'#1a6a80'},{seed:51,hazeH:30,hazeA:.85,gullies:20}); R(g,'#1a6a80',0,base,w,h-base); oHaze(g,w,0,h,'#1a6a80',.35,.35); },
+for(const side of ['pos','neg']) Object.assign(OUTK.atlantic[side],{
+  far(g,w,h,r){ const base=92; oRange(g,w,h,base,x=>12+outPN(x,w,side==='pos'?801:811,2)*8+Math.abs(outPN(x,w,802,6))*4,{shade:'#164a5e',lit:'#1e5a6e',haze:'#1a6a80'},{seed:51,hazeH:30,hazeA:.85,gullies:20}); R(g,'#1a6a80',0,base,w,h-base); oHaze(g,w,0,h,'#1a6a80',.35,.35); },
   back(g,w,h,r){ const base=95; for(let i=0;i<10;i++){ const x=r()*w, sw=20+r()*40, sh=6+r()*14; seaRocks(g,x-sw/2,base-sh,sw,sh,['#1e5a6a','#286a7a','#1a5060','#3a7a88'],i+side.length); }
     for(let i=0;i<14;i++){ const x=r()*w; seaKelp(g,x-4,base-30-r()*14,8,34,['#1e5a4a','#2a6a52','#2e6e4e'],i+30); }
     if(side==='neg'){ /* the wreck: a broken hull on its side, masts, a gun port row */ const wx=300, wb=base-2; poly(g,[[wx-50,wb],[wx+40,wb],[wx+52,wb-12],[wx+30,wb-20],[wx-36,wb-18],[wx-56,wb-6]],'#1e4a56'); for(let k=0;k<8;k++) R(g,'#14363e',wx-38+k*9,wb-12,3,2.4);
@@ -53,13 +53,13 @@ for(const side of ['pos','neg']) Object.assign(OK.atlantic[side],{
     for(let i=0;i<16;i++){ const x=r()*w; seaCoral(g,x-5,base-10,10,10,['brain','branch','fan','anemone'][i%4],i+90); }
     for(let i=0;i<6;i++){ const x=r()*w, y=20+r()*40; for(let k=0;k<16;k++){ const fx=x+(r()-.5)*24, fy=y+(r()-.5)*8; ell(g,fx,fy,1.2,.5,'#bfe8f2'); poly(g,[[fx-1.2,fy],[fx-2.2,fy-.6],[fx-2.2,fy+.6]],'#bfe8f2'); } }
     oHaze(g,w,0,h,'#1a6a80',.3,.18); },
-  verge:()=>PX(256,96,4,(g,w,h)=>{ const r=rng(181); vfill(g,0,0,w,h,[[0,'#3a7a86'],[1,'#5a9aa0']]);
+  verge:()=>outPX(256,96,4,(g,w,h)=>{ const r=rng(181); vfill(g,0,0,w,h,[[0,'#3a7a86'],[1,'#5a9aa0']]);
     for(let y=0;y<h;y+=2.4) for(let x=0;x<w;x+=1){ const k=Math.sin(x*.21+y*.9+Math.sin(x*.05)*2); if(k>.6) R(g,rgba('#9ad0d0',.45),x,y,1,.7); else if(k<-.7) R(g,rgba('#1e5a66',.35),x,y+.6,1,.6); }
     for(let i=0;i<40;i++) ell(g,r()*w,r()*h,.8,.5,['#f2e8d8','#e8c8a8','#c8a0c8'][i%3]); for(let i=0;i<10;i++){ const x=r()*w, y=r()*h; for(let k=0;k<5;k++){ const a=k*1.2566-1.57; g.strokeStyle='#e86a4a'; g.lineWidth=.6; g.beginPath(); g.moveTo(x,y); g.lineTo(x+Math.cos(a)*1.6,y+Math.sin(a)*1.6); g.stroke(); } }
     for(let i=0;i<60;i++) ell(g,r()*w,r()*h,2+r()*4,1,rgba('#9ae8f8',.18)); }),
   vergeW:12, vergeTile:32,
   ground:()=>P2(128,128,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#3a7a86'],[1,'#3a7a86']]); for(let y=0;y<h;y+=3) for(let x=0;x<w;x++) if(Math.sin(x*.18+y*.7+Math.sin(x*.06)*2)>.55) R(g,rgba('#7ab8bc',.4),x,y,1,.8); },0,183), groundTile:16 });
-OK.atlantic.kit={S:4,
+OUTK.atlantic.kit={S:4,
   cells:{kelp:[0,0,32,96],kelp2:[32,0,32,96],fan:[64,0,48,48],branch:[112,0,40,40],brain:[152,0,40,32],anemone:[192,0,32,32],sponge:[224,0,32,40],rockS:[64,48,64,40],rockB:[128,48,64,40],seagrass:[192,48,48,24],
     star:[0,96,16,16],shells:[16,96,32,16],anchor:[48,96,24,32],amph:[72,96,16,24],plinth:[88,96,32,16],wire:[120,96,4,4],dark:[124,96,4,4]},
   paint:{
@@ -83,9 +83,9 @@ OK.atlantic.kit={S:4,
     for(let i=0;i<12;i++) E.flat(r()*P,6+r()*6,.6,.6,'star',{y:.03}); for(let i=0;i<14;i++) E.flat(r()*P,6+r()*8,1.4,.7,'shells',{y:.03});
     if(side==='neg'){ E.card(80,11,1.4,1.8,'anchor',{n:2}); for(let k=0;k<4;k++) E.card(150+k*.9,10+k*.3,.8,1.1,'amph',{n:2}); }
   } };
-OK.atlantic.kit.atlas=kitAtlas(OK.atlantic.kit);
+OUTK.atlantic.kit.atlas=outKitAtlas(OUTK.atlantic.kit);
 SCENES.atlantic.swimmers=sc=>{ const C={whale:[0,0,256,96],shoal:[0,96,128,48],gold:[128,96,128,48],manta:[0,144,96,48],turtle:[96,144,64,48]}, AW=256, AH=192;
-  const t=PX(AW,AH,3,(g)=>{ oCell(g,C.whale,(g,x,y,w,h)=>seaWhale(g,x,y,w,h,['#1e3e58','#2e5470','#7a9ab0','#a8c4d4'])); oCell(g,C.shoal,(g,x,y,w,h)=>seaShoal(g,x,y,w,h,['#9ad8e8','#c8eef4','#5a9ab0'],40,1));
+  const t=outPX(AW,AH,3,(g)=>{ oCell(g,C.whale,(g,x,y,w,h)=>seaWhale(g,x,y,w,h,['#1e3e58','#2e5470','#7a9ab0','#a8c4d4'])); oCell(g,C.shoal,(g,x,y,w,h)=>seaShoal(g,x,y,w,h,['#9ad8e8','#c8eef4','#5a9ab0'],40,1));
     oCell(g,C.gold,(g,x,y,w,h)=>seaShoal(g,x,y,w,h,['#f2c230','#f28a3a','#fff0a0'],26,2)); oCell(g,C.manta,(g,x,y,w,h)=>seaManta(g,x,y,w,h)); oCell(g,C.turtle,(g,x,y,w,h)=>seaTurtle(g,x,y,w,h)); }); sc.texs.push(t);
   const r=rng(91), mv=(f,tt,tr,camX)=>{ f.n.p[0]=camX+wrapX(f.x-tr*f.k+tt*f.own-camX,f.kind==='whale'?220:110); f.n.p[1]=f.y0+Math.sin(tt*.4+f.ph)*f.bob; };
   for(let i=0;i<12;i++){ const s=i%2?1:-1, kind=i<2?'whale':i<4?'manta':i===4?'turtle':i%2?'shoal':'gold', sz={whale:[16,6],manta:[5,2],turtle:[2.4,1.6],shoal:[7,2.6],gold:[6,2.2]}[kind];
@@ -99,11 +99,11 @@ function seaManta(g,x,y,w,h){ g.fillStyle=grad(g,0,y,0,y+h,[[0,'#2a3a48'],[1,'#1
 function seaTurtle(g,x,y,w,h){ ell(g,x+w*.5,y+h*.5,w*.3,h*.28,'#5a6a3a'); for(let k=0;k<5;k++) ell(g,x+w*(.35+k*.07),y+h*(.42+(k%2)*.12),w*.05,h*.06,'#7a8a4a'); ell(g,x+w*.86,y+h*.48,w*.08,h*.1,'#8a9a6a'); for(const [dx,dy] of [[.3,.2],[.62,.2],[.3,.8],[.62,.8]]) ell(g,x+w*dx,y+h*dy,w*.1,h*.08,'#8a9a6a'); ell(g,x+w*.9,y+h*.45,.6,.6,'#0a0a0a'); }
 
 /* ===================================== PACIFIC ===================================== */
-OK.pacific={
+OUTK.pacific={
   sky:()=>seaWater({stops:[[0,'#000208'],[.5,'#020a18'],[.82,'#06182c'],[1,'#0a2236']],shafts:0,motes:260,mote:'#6a8aa8',silhouettes:16,silCol:'#000610',seed:9}),
   pos:{}, neg:{} };
-for(const side of ['pos','neg']) Object.assign(OK.pacific[side],{
-  far(g,w,h,r){ const base=92; oRange(g,w,h,base,x=>16+opn(x,w,side==='pos'?821:831,2)*10+Math.abs(opn(x,w,822,7))*6,{shade:'#04101c',lit:'#061826',haze:'#06182c'},{seed:61,hazeH:30,hazeA:.7,gullies:0}); R(g,'#06182c',0,base,w,h-base);
+for(const side of ['pos','neg']) Object.assign(OUTK.pacific[side],{
+  far(g,w,h,r){ const base=92; oRange(g,w,h,base,x=>16+outPN(x,w,side==='pos'?821:831,2)*10+Math.abs(outPN(x,w,822,7))*6,{shade:'#04101c',lit:'#061826',haze:'#06182c'},{seed:61,hazeH:30,hazeA:.7,gullies:0}); R(g,'#06182c',0,base,w,h-base);
     for(let i=0;i<20;i++) R(g,rgba('#4af0ff',.5),r()*w,base-r()*20,.5,.5); },
   back(g,w,h,r){ const base=95; for(let i=0;i<12;i++){ const x=r()*w, sw=24+r()*40, sh=10+r()*20; seaRocks(g,x-sw/2,base-sh,sw,sh,['#06121c','#0a1a26','#040e18','#122a38'],i+side.length*3); }
     for(let i=0;i<10;i++){ const x=r()*w; seaKelp(g,x-4,base-40-r()*16,8,44,['#071c18','#0a2420','#0c2a24'],i+130); }
@@ -114,14 +114,14 @@ for(const side of ['pos','neg']) Object.assign(OK.pacific[side],{
     for(let i=0;i<14;i++){ const x=r()*w; seaCoral(g,x-5,base-12,10,12,['sponge','pen','tube'][i%3],i+200); }
     for(let i=0;i<40;i++){ const x=r()*w, y=base-r()*30; ell(g,x,y,.4,.4,['#5af0ff','#ff6ad0','#9aff8a'][i%3]); }
     oHaze(g,w,0,h,'#06182c',.2,.12); },
-  verge:()=>PX(256,96,4,(g,w,h)=>{ const r=rng(191); vfill(g,0,0,w,h,[[0,'#16222c'],[1,'#22303a']]);
+  verge:()=>outPX(256,96,4,(g,w,h)=>{ const r=rng(191); vfill(g,0,0,w,h,[[0,'#16222c'],[1,'#22303a']]);
     for(let i=0;i<4000;i++) R(g,['#2a3a44','#0e1820','#34444e','#1a2630'][i%4],r()*w,r()*h,.5+r()*.6,.4+r()*.4);
     for(let i=0;i<70;i++){ const x=r()*w, y=r()*h; ell(g,x,y,1+r()*3,.6+r(),'#0a1218'); ell(g,x-.3,y-.3,.6+r()*1.4,.3+r()*.5,'#3a4a54'); }
     for(let i=0;i<24;i++){ const x=r()*w, y=r()*h; ell(g,x,y,.5,.5,['#5af0ff','#ff6ad0','#9aff8a'][i%3]); ell(g,x,y,1.2,1.2,rgba(['#5af0ff','#ff6ad0','#9aff8a'][i%3],.25)); }
     for(let i=0;i<14;i++){ const x=r()*w, y=r()*h; g.strokeStyle='#e8e0d8'; g.lineWidth=.3; g.beginPath(); g.arc(x,y,1.4,0,6.28); g.stroke(); } }),
   vergeW:14, vergeTile:32,
   ground:()=>P2(128,128,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#121e28'],[1,'#121e28']]); const r=rng(193); for(let i=0;i<500;i++) R(g,['#1a2832','#0a141c','#22303a'][i%3],r()*w,r()*h,1,1); },0,193), groundTile:16 });
-OK.pacific.kit={S:4,
+OUTK.pacific.kit={S:4,
   cells:{basalt:[0,0,64,40],basalt2:[64,0,64,40],pillow:[128,0,48,32],sponge:[176,0,40,48],pen:[216,0,40,48],tube:[0,40,48,40],kelpD:[48,40,32,96],kelpD2:[80,40,32,96],vent:[112,40,32,64],ventB:[144,40,32,32],
     whelk:[176,48,24,16],crab:[200,48,32,20],brittle:[176,64,24,24],glowpatch:[200,72,48,24],bones:[0,80,48,24],plinth:[112,104,32,16],wire:[144,104,4,4],dark:[148,104,4,4]},
   paint:{
@@ -131,7 +131,7 @@ OK.pacific.kit={S:4,
     sponge:(g,x,y,w,h)=>seaCoral(g,x,y,w,h,'sponge',25), pen:(g,x,y,w,h)=>seaCoral(g,x,y,w,h,'pen',26), tube:(g,x,y,w,h)=>seaCoral(g,x,y,w,h,'tube',27),
     kelpD:(g,x,y,w,h)=>seaKelp(g,x,y,w,h,['#0e2e28','#123630','#1a463a'],28), kelpD2:(g,x,y,w,h)=>seaKelp(g,x,y,w,h,['#122a22','#16322a','#1e3e32','#5af0ff'],29),
     vent:(g,x,y,w,h)=>{ const cx=x+w/2; g.fillStyle=grad(g,x,0,x+w,0,[[0,'#06080c'],[.4,'#1e222a'],[1,'#04060a']]); g.beginPath(); g.moveTo(cx-w*.4,y+h); g.lineTo(cx-w*.2,y+h*.5); g.lineTo(cx-w*.14,y+h*.12); g.lineTo(cx+w*.14,y+h*.12); g.lineTo(cx+w*.22,y+h*.55); g.lineTo(cx+w*.42,y+h); g.fill();
-      vGlow(g,cx,y+h*.12,w*.4,'#ff7a2a',.7); ell(g,cx,y+h*.12,w*.12,h*.025,'#ffd080'); for(let k=0;k<6;k++) R(g,rgba('#ff6a2a',.6),cx-w*.18+r_(k)*w*.36,y+h*(.3+r_(k+3)*.6),.6,1.6); },
+      vGlow(g,cx,y+h*.12,w*.4,'#ff7a2a',.7); ell(g,cx,y+h*.12,w*.12,h*.025,'#ffd080'); for(let k=0;k<6;k++) R(g,rgba('#ff6a2a',.6),cx-w*.18+outHash(k)*w*.36,y+h*(.3+outHash(k+3)*.6),.6,1.6); },
     ventB:(g,x,y,w,h)=>{ seaCoral(g,x,y,w,h,'tube',30); },
     whelk:(g,x,y,w,h)=>{ ell(g,x+w/2,y+h*.6,w*.35,h*.35,'#c8b8a8'); for(let k=0;k<4;k++){ g.strokeStyle='#8a7a6a'; g.lineWidth=.4; g.beginPath(); g.arc(x+w/2,y+h*.6,w*.1+k*w*.06,0,Math.PI*1.5); g.stroke(); } },
     crab:(g,x,y,w,h)=>{ ell(g,x+w/2,y+h*.6,w*.22,h*.18,'#c84a3a'); for(let k=0;k<4;k++){ g.strokeStyle='#a83a2a'; g.lineWidth=.6; for(const s of [-1,1]){ g.beginPath(); g.moveTo(x+w/2+s*w*.15,y+h*.62); g.lineTo(x+w/2+s*w*(.3+k*.05),y+h*(.5+k*.12)); g.lineTo(x+w/2+s*w*(.38+k*.04),y+h); g.stroke(); } } ell(g,x+w*.3,y+h*.4,w*.08,h*.08,'#e85a4a'); ell(g,x+w*.7,y+h*.4,w*.08,h*.08,'#e85a4a'); },
@@ -151,10 +151,10 @@ OK.pacific.kit={S:4,
     if(side==='pos'){ for(let k=0;k<3;k++){ const u=100+k*3.4; E.card(u,13+k,1.6,3.6+k,'vent',{n:2,sb:1}); E.card(u+1.4,12.6+k,1.6,1.4,'ventB',{n:2}); } }
     else E.card(140,12,5,2.4,'bones',{n:2,sb:.9});
   } };
-OK.pacific.kit.atlas=kitAtlas(OK.pacific.kit);
-function r_(k){ return (Math.sin(k*12.9898)*43758.5453)%1+(Math.sin(k*12.9898)*43758.5453<0?1:0); }
+OUTK.pacific.kit.atlas=outKitAtlas(OUTK.pacific.kit);
+function outHash(k){ return (Math.sin(k*12.9898)*43758.5453)%1+(Math.sin(k*12.9898)*43758.5453<0?1:0); }
 SCENES.pacific.swimmers=sc=>{ const C={jelly1:[0,0,64,96],jelly2:[64,0,64,96],jelly3:[128,0,64,96],lantern:[0,96,128,48],whale:[0,144,256,96],squid:[192,0,64,96],hatchet:[128,96,128,48]}, AW=256, AH=240;
-  const t=PX(AW,AH,3,(g)=>{ oCell(g,C.jelly1,(g,x,y,w,h)=>seaJelly(g,x,y,w,h,'#ff6ad0',1)); oCell(g,C.jelly2,(g,x,y,w,h)=>seaJelly(g,x,y,w,h,'#5af0ff',2)); oCell(g,C.jelly3,(g,x,y,w,h)=>seaJelly(g,x,y,w,h,'#c8a0ff',3));
+  const t=outPX(AW,AH,3,(g)=>{ oCell(g,C.jelly1,(g,x,y,w,h)=>seaJelly(g,x,y,w,h,'#ff6ad0',1)); oCell(g,C.jelly2,(g,x,y,w,h)=>seaJelly(g,x,y,w,h,'#5af0ff',2)); oCell(g,C.jelly3,(g,x,y,w,h)=>seaJelly(g,x,y,w,h,'#c8a0ff',3));
     oCell(g,C.lantern,(g,x,y,w,h)=>seaShoal(g,x,y,w,h,['#2a3a4a','#34485a','#4a6a80'],34,4,'#7af0ff')); oCell(g,C.hatchet,(g,x,y,w,h)=>seaShoal(g,x,y,w,h,['#8a9aa8','#a8b8c4','#5a6a78'],22,5,'#9aff8a'));
     oCell(g,C.whale,(g,x,y,w,h)=>seaWhale(g,x,y,w,h,['#06101a','#0c1a26','#1a2a38','#2a3a4a'])); oCell(g,C.squid,(g,x,y,w,h)=>seaSquid(g,x,y,w,h)); }); sc.texs.push(t);
   const r=rng(97);

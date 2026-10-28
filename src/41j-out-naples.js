@@ -10,7 +10,7 @@ const NAP_PASTEL=['#f2c8a0','#f6e0a8','#f0b0a8','#f8ece0','#e8a888','#f2d4b8','#
 function napHouseP(g,x,base,w,h,c,r){ vfill(g,x,base-h,w,h,[[0,mix(c,'#ffffff',.15)],[1,mix(c,'#000000',.15)]]); R(g,mix(c,'#ffffff',.35),x,base-h,w,.8);
   for(let fy=base-h+2;fy<base-2;fy+=3.6) for(let fx=x+1;fx<x+w-2;fx+=3){ R(g,'#2e6a4a',fx,fy,1.6,2.2); if(r()<.3) R(g,'#2a2a2e',fx+.4,fy+.3,.8,1.6); if(r()<.15) R(g,'#5a4a3a',fx-.3,fy+2.2,2.2,.3); }
   hfill(g,x+w-1.2,base-h,1.2,h,[[0,rgba('#000000',0)],[1,rgba('#000000',.25)]]); if(r()<.4){ R(g,'#c8643a',x-.3,base-h-.8,w+.6,.8); } }
-OK.naples={
+OUTK.naples={
   sky:()=>oSkyTex([[0,'#2276c4'],[.55,'#7cc0ea'],[.85,'#c8e4f2'],[1,'#eef4ee']],{clouds:8,seed:51,cloudShade:'#a8c0d8'}),
   pos:{ midSpec:{yb:-.5}, backSpec:{yb:-.5}, groundK:.5,
     far(g,w,h,r){ const base=89;
@@ -30,7 +30,7 @@ OK.naples={
       for(let row=0;row<2;row++) for(let x=6+row*8;x<w;x+=16){ const c=[['#2a5aa8','#f2f2ec'],['#e2802a','#f2f2ec'],['#2a8a6a','#f6e8c8']][(x/16|0)%3], y=sb-2-row*2.4;
         R(g,'#5a4a3a',x,y-9,.5,9); for(let k=0;k<6;k++) poly(g,[[x,y-12],[x-6+k*2,y-9],[x-4+k*2,y-9]],k%2?c[0]:c[1]); R(g,c[0],x-5,y-1.4,4,1); R(g,'#f2f2ec',x+1,y-1.4,4,1); }
       for(const [x,c] of [[40,'#2a5aa8'],[200,'#c8402a'],[360,'#2a8a6a'],[470,'#f2c230']]){ poly(g,[[x,sb-4],[x+12,sb-4.6],[x+10,sb-1],[x+2,sb-1]],c); R(g,'#f2f2ec',x+1,sb-4.4,10,.6); } },
-    verge:()=>PX(256,64,4,(g,w,h)=>{ const r=rng(101);
+    verge:()=>outPX(256,64,4,(g,w,h)=>{ const r=rng(101);
       /* the lungomare: a basalt-paved walk, a pale stone kerb, then the road edge and gravel */
       for(let y=0;y<26;y+=3.2) for(let x=((y/3.2)%2)*3;x<w;x+=6){ const c=mix('#6a6a6e','#5a5a60',r()); vfill(g,x+.15,y+.15,5.7,2.9,[[0,mix(c,'#ffffff',.08)],[1,c]]); }
       R(g,'#d8d2c4',0,26,w,2); vfill(g,0,28,w,22,[[0,'#5a5a5e'],[1,'#4e4e52']]); for(let i=0;i<1600;i++) R(g,rgba(r()<.5?'#ffffff':'#000000',.07),r()*w,28+r()*22,.6,.4); R(g,'#f2f2ec',0,30,w,.5); for(let x=0;x<w;x+=12) R(g,'#f2f2ec',x,39,6,.5);
@@ -38,27 +38,27 @@ OK.naples={
     vergeW:8, vergeTile:32,
     ground:()=>P2(128,128,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#2a86b0'],[.5,'#2280aa'],[1,'#2a86b0']]); const r=rng(103); for(let i=0;i<280;i++){ const x=r()*w, y=r()*h, L=2+r()*6; ell(g,x,y,L,.35,rgba('#bfeaf8',.4)); ell(g,x+1,y+.8,L*.8,.3,rgba('#145a80',.4)); } },0,103), groundTile:14 },
   neg:{
-    far(g,w,h,r){ const base=91; oRange(g,w,h,base,x=>24+opn(x,w,601,2)*12+Math.abs(opn(x,w,602,6))*7,{shade:'#7a9088',lit:'#a8b8a4',haze:'#e2ece8',dark:'#687e76'},{seed:23,hazeH:30,hazeA:.75,gullies:80});
+    far(g,w,h,r){ const base=91; oRange(g,w,h,base,x=>24+outPN(x,w,601,2)*12+Math.abs(outPN(x,w,602,6))*7,{shade:'#7a9088',lit:'#a8b8a4',haze:'#e2ece8',dark:'#687e76'},{seed:23,hazeH:30,hazeA:.75,gullies:80});
       for(let i=0;i<40;i++){ const x=r()*w, y=base-6-r()*10; R(g,rgba(NAP_PASTEL[i%8],.8),x,y,1.6,1.2); } R(g,'#9aaa8a',0,base,w,h-base); },
-    back(g,w,h,r){ const base=94; const top=x=>base-22-opn(x,w,611,2)*10-Math.sin(x/w*Math.PI*2)*6;
+    back(g,w,h,r){ const base=94; const top=x=>base-22-outPN(x,w,611,2)*10-Math.sin(x/w*Math.PI*2)*6;
       g.fillStyle='#6a8a5a'; g.beginPath(); g.moveTo(0,h); for(let x=0;x<=w;x++) g.lineTo(x,top(x)); g.lineTo(w,h); g.fill();
       for(let y=0;y<30;y+=2.4) for(let x=0;x<w;x+=1){ const t=top(x); if(t+y<base) R(g,y%4.8<2.4?'#7a9a5a':'#5a7a46',x,t+y,1,.6); }
       for(let i=0;i<70;i++){ const x=r()*w, t=top(x), y=t+2+r()*(base-t-4); napHouseP(g,x,y,3+r()*3,2+r()*2,NAP_PASTEL[r()*8|0],r); }
       for(let i=0;i<30;i++){ const x=r()*w; oTree(g,x-1,top(x)-6+r()*10,2,7,'cypress',i); } oHaze(g,w,0,base,'#e2ece8',.3,.1); },
-    mid(g,w,h,r){ const base=95; const top=x=>base-40-opn(x,w,621,2)*10-Math.sin(x/w*Math.PI*2+1)*8;
-      g.fillStyle='#a8906a'; g.beginPath(); g.moveTo(0,h); for(let x=0;x<=w;x++) g.lineTo(x,top(x)); g.lineTo(w,h); g.fill(); for(let x=0;x<w;x++) R(g,'#5a8a3a',x,top(x),1,2+opn(x,w,622,9)*2);
+    mid(g,w,h,r){ const base=95; const top=x=>base-40-outPN(x,w,621,2)*10-Math.sin(x/w*Math.PI*2+1)*8;
+      g.fillStyle='#a8906a'; g.beginPath(); g.moveTo(0,h); for(let x=0;x<=w;x++) g.lineTo(x,top(x)); g.lineTo(w,h); g.fill(); for(let x=0;x<w;x++) R(g,'#5a8a3a',x,top(x),1,2+outPN(x,w,622,9)*2);
       /* houses stacked up the cliff, each row overlapping the one above */ for(let row=0;row<9;row++){ let x=-r()*6; while(x<w){ const bw=6+r()*7, t=top(Math.min(w-1,Math.max(0,x+bw/2)))+4+row*4.2, bh=6+r()*3; if(t+bh<base-1) napHouseP(g,x,t+bh,bw,bh,NAP_PASTEL[r()*8|0],r); x+=bw+(r()<.2?3:0); } }
       /* the church and its majolica dome, a bell tower */ const cx=330, b=base-12; vfill(g,cx-14,b-22,28,22,[[0,'#fbf2e2'],[1,'#d8ccb4']]); g.fillStyle=grad(g,cx-11,0,cx+11,0,[[0,'#2a8a6a'],[.4,'#4ab08a'],[1,'#1a5a46']]); g.beginPath(); g.ellipse(cx,b-22,11,10,0,Math.PI,0); g.fill();
       for(let k=-9;k<=9;k+=2.4) for(let j=0;j<4;j++) R(g,'#f2d23a',cx+k*(1-j*.18),b-24-j*2.2,.8,1); R(g,'#fbf2e2',cx-1.5,b-36,3,4); R(g,'#fbf2e2',cx+16,b-40,7,40); R(g,'#3a3a3e',cx+18,b-36,3,4); poly(g,[[cx+15,b-40],[cx+24,b-40],[cx+19.5,b-46]],'#c8643a');
       for(let i=0;i<14;i++){ const x=r()*w; oTree(g,x-2,top(x)+r()*20,4,14,'cypress',i+30); }
       R(g,'#efe6d4',0,base-4,w,4); R(g,'#c8643a',0,base-4.6,w,.8); },
-    verge:()=>PX(256,56,4,(g,w,h)=>{ const r=rng(107);
+    verge:()=>outPX(256,56,4,(g,w,h)=>{ const r=rng(107);
       /* the coast road: asphalt, a white edge line, a stone gutter, gravel */ R(g,'#b8a88a',0,0,w,4); vfill(g,0,4,w,30,[[0,'#56565a'],[1,'#4a4a4e']]); for(let i=0;i<1800;i++) R(g,rgba(r()<.5?'#ffffff':'#000000',.07),r()*w,4+r()*30,.6,.4); R(g,'#f2f2ec',0,6,w,.5); R(g,'#f2f2ec',0,31,w,.5); for(let x=0;x<w;x+=12) R(g,'#f2f2ec',x,18.5,6,.5);
       vfill(g,0,34,w,6,[[0,'#c8bea8'],[1,'#a89e88']]); vfill(g,0,h-16,w,16,[[0,'#9a8e78'],[1,'#8a7e6a']]); for(let i=0;i<2400;i++) R(g,['#b8ac94','#7a6e5a','#a89c84','#6a5e4a'][i%4],r()*w,h-16+r()*16,.6+r()*.6,.5+r()*.4); for(let i=0;i<40;i++) ell(g,r()*w,h-16+r()*16,1.4,.6,'#7a9a4a'); }),
     vergeW:7, vergeTile:32,
     ground:()=>P2(64,64,(g,w,h)=>{ R(g,'#7a8a52',0,0,w,h); const r=rng(109); for(let i=0;i<300;i++) R(g,['#6a7a46','#8a9a5a','#a89a6a'][i%3],r()*w,r()*h,1,1); },6,109), groundTile:8 }
 };
-OK.naples.kit={S:4, ah:256,
+OUTK.naples.kit={S:4, ah:256,
   cells:{villaY:[0,0,64,40],villaP:[64,0,64,40],villaE:[128,0,32,40],cotto:[160,0,32,16],coping:[160,16,32,6],stucco:[192,0,16,16],stoneWall:[192,16,64,16],soil:[208,0,48,16],
     pine:[0,40,64,48],cypress:[64,40,24,64],lemon:[88,40,48,48],oleander:[136,40,32,24],opuntia:[168,40,32,32],agave:[200,40,24,16],palmC:[200,56,48,48],
     vine:[0,88,64,16],vespa:[64,104,24,16],fiat:[88,104,32,14],fiatE:[120,104,12,12],fiatT:[132,104,12,8],stallN:[136,64,48,24],lampN:[144,104,16,32],pots:[160,104,24,12],edicola:[184,104,16,24],gozzo:[0,104,64,16],
@@ -119,4 +119,4 @@ OK.naples.kit={S:4, ah:256,
       for(let i=0;i<30;i++) E.card(r()*P,4.4+r()*1,.8,.45,'drygrass',{n:2,sb:.75});
       E.box(60,7,3,1.35,1.4,{f:'fiat',e:'fiatE',t:'fiatT'},{ao:.6}); E.card(150,8.6,1.6,1.1,'vespa',{n:1}); }
   } };
-OK.naples.kit.atlas=kitAtlas(OK.naples.kit);
+OUTK.naples.kit.atlas=outKitAtlas(OUTK.naples.kit);

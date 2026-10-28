@@ -9,12 +9,12 @@
 const VNEON=['#ff3fa4','#29e0e6','#f5c542','#7cf06a','#ff7a3a','#b06aff'];
 function vNeonText(g,s,x,y,c,sc){ for(const [dx,dy,a] of [[-.5,0,.35],[.5,0,.35],[0,-.5,.35],[0,.5,.35]]){ g.globalAlpha=a; text(g,s,x+dx,y+dy,c,sc); } g.globalAlpha=1; text(g,s,x,y,mix(c,'#ffffff',.55),sc); }
 function vGlow(g,x,y,r,c,a=.45){ radial(g,x,y,r,[[0,rgba(c,a)],[1,rgba(c,0)]]); }
-OK.vegas={
+OUTK.vegas={
   sky:()=>oSkyTex([[0,'#0a0820'],[.4,'#2a1a4e'],[.7,'#8a3a6a'],[.88,'#e86a5a'],[1,'#f8b070']],{stars:260,seed:81,glow:[.25,1,.55,'rgba(255,170,100,.55)'],cirrus:8,cirrusCol:'#ff9a8a'}),
   pos:{
-    far(g,w,h,r){ const base=91; oRange(g,w,h,base,x=>14+opn(x,w,701,3)*8+Math.abs(opn(x,w,702,7))*6,{shade:'#3a2450',lit:'#6a3a6a',haze:'#c86a7a',dark:'#2a1a40'},{seed:41,light:-1,hazeH:16,hazeA:.55,gullies:50});
+    far(g,w,h,r){ const base=91; oRange(g,w,h,base,x=>14+outPN(x,w,701,3)*8+Math.abs(outPN(x,w,702,7))*6,{shade:'#3a2450',lit:'#6a3a6a',haze:'#c86a7a',dark:'#2a1a40'},{seed:41,light:-1,hazeH:16,hazeA:.55,gullies:50});
       for(let x=0;x<w;x+=.5){ R(g,rgba('#ff9a7a',.0),x,0,.5,1); }
-      oRange(g,w,h,base,x=>6+opn(x,w,703,5)*4,{shade:'#2a1a3a',lit:'#4a2a4a',haze:'#8a4a6a'},{seed:42,light:-1,hazeH:6,hazeA:.4}); R(g,'#3a2434',0,base,w,h-base); },
+      oRange(g,w,h,base,x=>6+outPN(x,w,703,5)*4,{shade:'#2a1a3a',lit:'#4a2a4a',haze:'#8a4a6a'},{seed:42,light:-1,hazeH:6,hazeA:.4}); R(g,'#3a2434',0,base,w,h-base); },
     back(g,w,h,r){ const base=94; R(g,'#3a2836',0,base-2,w,h);
       /* pylons marching across the flats, a far town's lights */ for(let x=20;x<w;x+=90){ poly(g,[[x-3,base],[x+3,base],[x+1,base-24],[x-1,base-24]],'#1a1224'); R(g,'#1a1224',x-6,base-22,12,.8); R(g,'#1a1224',x-4,base-18,8,.6); }
       g.strokeStyle='#1a1224'; g.lineWidth=.3; for(let x=20;x<w;x+=90) for(const dy of [-22,-18]){ g.beginPath(); g.moveTo(x-6,base+dy); g.quadraticCurveTo(x+39,base+dy+4,x+84,base+dy); g.stroke(); }
@@ -25,7 +25,7 @@ OK.vegas={
       const cx=330; vfill(g,cx-14,base-20,28,17,[[0,'#f6eef2'],[1,'#b8a8b8']]); poly(g,[[cx-16,base-20],[cx+16,base-20],[cx,base-31]],'#f2a0b8'); R(g,'#f6eef2',cx-2.4,base-42,4.8,11); R(g,'#f5c542',cx-.6,base-49,1.2,7); R(g,'#f5c542',cx-3,base-47,6,1);
       vGlow(g,cx,base-25,18,'#ff7ab0',.35); R(g,'#0e0a14',cx-26,base-35,52,10); vNeonText(g,'CHAPEL',cx-13,base-32,'#ff7ab0',1.2); vfill(g,cx-4,base-12,8,9,[[0,'#ffe0a0'],[1,'#e09050']]);
       for(let i=0;i<14;i++){ const x=r()*w; if(Math.abs(x-cx)<30||(x>mx-10&&x<mx+125)) continue; oTree(g,x-5,base-3-16,10,16,'joshua',i+50); } },
-    verge:()=>PX(256,96,4,(g,w,h)=>{ const r=rng(151);
+    verge:()=>outPX(256,96,4,(g,w,h)=>{ const r=rng(151);
       vfill(g,0,0,w,h,[[0,'#8a5a4e'],[1,'#a06a56']]); for(let i=0;i<4000;i++) R(g,['#b07a62','#7a4a40','#c8906e','#6a4038'][i%4],r()*w,r()*h,.5+r()*.5,.4+r()*.4);
       for(let i=0;i<50;i++){ const x=r()*w, y=r()*h; ell(g,x,y,2+r()*3,1,rgba('#5a3a36',.5)); ell(g,x-.4,y-.5,1.6,.7,rgba('#7a8a5a',.6)); }
       /* a dirt track, tyre ruts */ vfill(g,0,30,w,16,[[0,'#a87a5e'],[1,'#b8886a']]); for(const y of [33,42]){ R(g,'#8a5e4a',0,y,w,1.4); }
@@ -46,7 +46,7 @@ OK.vegas={
       let x=240, i=0; while(x<w-30){ const bw=40+r()*24, bh=30+r()*30, top=base-bh, c=VNEON[i%6]; vfill(g,x,top,bw,bh,[[0,'#2a1e3e'],[1,'#141022']]); for(let y=top+3;y<base-12;y+=3) for(let xx=x+2;xx<x+bw-2;xx+=2.4) if(r()<.4) R(g,'#ffd890',xx,y,1.2,1.4);
         const s=['CASINO','HOTEL','SLOTS','BUFFET','SHOWS','POKER'][(i+2)%6]; vGlow(g,x+bw/2,top-2,30,c,.4); R(g,'#0a0814',x+bw/2-textW(s,1.4)/2-3,top-8,textW(s,1.4)+6,11); vNeonText(g,s,x+bw/2-textW(s,1.4)/2,top-5,c,1.4);
         for(let k=0;k<12;k++) ell(g,x+3+k*(bw-6)/11,base-11,.8,.8,k%2?'#f5c542':'#fff6d8'); R(g,c,x,base-9,bw,1); x+=bw+6; i++; } },
-    verge:()=>PX(256,96,4,(g,w,h)=>{ const r=rng(157);
+    verge:()=>outPX(256,96,4,(g,w,h)=>{ const r=rng(157);
       /* the boulevard: far pavement, six lanes, a planted median, near pavement, gravel */ R(g,'#3a3440',0,0,w,8); for(let i=0;i<300;i++) R(g,rgba('#ffffff',.06),r()*w,r()*8,.6,.6);
       vfill(g,0,8,w,64,[[0,'#24222c'],[.5,'#2c2a34'],[1,'#24222c']]); for(let i=0;i<3000;i++) R(g,rgba(r()<.5?'#ffffff':'#000000',.06),r()*w,8+r()*64,.6,.4);
       for(const y of [18,28,52,62]) for(let x=0;x<w;x+=10) R(g,'#c8c4d0',x,y,5,.5); vfill(g,0,36,w,8,[[0,'#3a4a32'],[1,'#2a3a26']]); R(g,'#c8c4b8',0,36,w,.6); R(g,'#c8c4b8',0,43.4,w,.6);
@@ -55,7 +55,7 @@ OK.vegas={
     vergeW:12, vergeTile:32,
     ground:()=>P2(64,64,(g,w,h)=>{ R(g,'#22202a',0,0,w,h); const r=rng(159); for(let i=0;i<60;i++) R(g,rgba(VNEON[i%6],.25),r()*w,r()*h,1,1); },6,159), groundTile:8 }
 };
-OK.vegas.kit={S:4, ah:288,
+OUTK.vegas.kit={S:4, ah:288,
   cells:{joshua:[0,0,48,64],creosote:[48,0,32,20],yucca:[80,0,24,24],barrel:[104,0,16,16],tumble:[120,0,16,16],billboard:[136,0,96,32],speed:[232,0,12,20],
     caddy:[48,24,48,14],caddyE:[96,24,16,14],caddyT:[112,24,16,8],motelF:[0,64,96,24],motelE:[96,64,24,24],flatroof:[120,64,16,16],motelSign:[136,32,32,64],chapelF:[168,32,48,40],chapelSign:[216,32,32,32],
     pyl1:[0,88,24,96],pyl2:[24,88,24,96],palmV:[48,88,48,64],limo:[96,88,64,14],limoE:[160,88,16,14],limoT:[176,88,16,8],lampV:[192,88,16,24],arrow:[208,88,48,24],cab:[96,104,40,14],cabE:[136,104,16,14],cabT:[152,104,16,8],
@@ -119,4 +119,4 @@ OK.vegas.kit={S:4, ah:288,
 function vPylon(g,x,y,w,h,k){ R(g,'#141020',x,y,w,h); const c=VNEON[k?1:0], c2=VNEON[k?2:4]; vGlow(g,x+w/2,y+h*.2,w,c,.35); R(g,c,x+1,y+1,w-2,.6); R(g,c,x+1,y+h-1.6,w-2,.6);
   const word=k?'SLOTS':'KING'; for(let i=0;i<word.length;i++) vNeonText(g,word[i],x+w/2-2.2,y+4+i*8,c,1.6); for(let i=0;i<10;i++) ell(g,x+2,y+3+i*(h-6)/9,.6,.6,c2), ell(g,x+w-2,y+3+i*(h-6)/9,.6,.6,c2);
   R(g,'#0a0814',x+2,y+h*.62,w-4,h*.3); vNeonText(g,k?'24H':'LIVE',x+3.4,y+h*.68,c2,.9); for(let j=0;j<3;j++) R(g,VNEON[(j+k)%6],x+3,y+h*.8+j*2.4,w-6,.8); }
-OK.vegas.kit.atlas=kitAtlas(OK.vegas.kit);
+OUTK.vegas.kit.atlas=outKitAtlas(OUTK.vegas.kit);

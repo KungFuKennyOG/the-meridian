@@ -5,7 +5,7 @@ A PS1-styled VR shooter for Meta Quest 3 (WebXR). The biggest bullet train ever 
 **Play:** https://kungfukennyog.github.io/the-meridian/ (open it in the Quest browser and press *Play in VR*; it also runs on a desktop).
 
 ## The run
-Tokyo station → Aquarium Lounge → Hong Kong → Golden Crane Dim Sum → Lake Baikal → Banya & Ice Bar → London → The Rusty Anchor → Naples → Trattoria Assunta → Rio → Copacabana Pool Deck → Las Vegas → The King's Casino → Tokyo by night → Capsule Hotel → The Locomotive.
+Tokyo station → Hong Kong → Golden Crane Dim Sum → Lake Baikal → Banya & Ice Bar → London → The Rusty Anchor → Naples → Trattoria Assunta → Aquarium Lounge (South Atlantic tunnel) → Rio → Copacabana Pool Deck → Las Vegas → The King's Casino → Tokyo by night → Capsule Hotel → The Locomotive.
 
 Every car's far door stays shut until nobody in it can still fight. Every station leaves you a weapon. Progress saves at each station.
 

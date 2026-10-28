@@ -1,15 +1,16 @@
 /* =====================================================================
    THE ROUTE: the whole game, one level after another.
-   You walk onto platform 0 in Tokyo, take the pistol from the locker and board at the back of the train.
+   You walk onto platform 0 in Tokyo, take the pistol from the locker and board; the train runs you straight to Hong Kong.
    Then it alternates: a car, taken over by the crew that boarded at the last stop, and the next underground
    station, where you get off, fight whoever is waiting on the platform, and pick up the weapon left for you.
+   Between Naples and Rio the train runs under the South Atlantic: the Espositos who are left fall back into the
+   glass observation car, with whales going past the windows.
    Every car's far door stays shut until nobody in it can still fight. Back in Tokyo at night, the
    Kagami-gumi hold the capsule hotel, and after that there is only the locomotive.
    Progress saves when you reach a station.
    ===================================================================== */
 const ROUTE=[
   {kind:'station',key:'tokyo',amb:'tokyo',title:'Tokyo · B5',sub:'Platform 0 · board the Meridian 24',first:true},
-  {kind:'car',key:'aquarium',scene:'japan',title:'Aquarium Lounge',sub:'Leaving Tokyo · nobody has boarded yet'},
   {kind:'station',key:'hongkong',amb:'hongkong',title:'Hong Kong',sub:'Meridian Central'},
   {kind:'car',key:'dimsum',scene:'hongkong',title:'Golden Crane Dim Sum',sub:'Madam Lau'},
   {kind:'station',key:'baikal',amb:'baikal',title:'Lake Baikal',sub:'Baikalskaya'},
@@ -18,6 +19,7 @@ const ROUTE=[
   {kind:'car',key:'pub',scene:'london',title:'The Rusty Anchor',sub:'The Gaffer'},
   {kind:'station',key:'naples',amb:'naples',title:'Naples',sub:'Napoli Meridiana'},
   {kind:'car',key:'trattoria',scene:'naples',title:'Trattoria Assunta',sub:'Nonna'},
+  {kind:'car',key:'aquarium',scene:'atlantic',title:'Aquarium Lounge',sub:'Under the South Atlantic · what is left of the Espositos'},
   {kind:'station',key:'rio',amb:'rio',title:'Rio de Janeiro',sub:'Meridiano Copacabana'},
   {kind:'car',key:'pool',scene:'rio',title:'Copacabana Pool Deck',sub:'DJ Tremor'},
   {kind:'station',key:'vegas',amb:'vegas',title:'Las Vegas',sub:'Meridian Strip'},

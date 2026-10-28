@@ -1753,16 +1753,16 @@ const WAGONS=[
     sub:'Boards in Las Vegas · the Kings',note:'Red carpet with gold diamonds, a mirrored ceiling, rows of slot machines, a roulette wheel, blackjack tables and a stage with a gold curtain. The King holds court on the stage.',sw:['#8a1424','#f5c542','#12101a','#ff3fa4','#2a8a4a']},
   {key:'pool',num:'04',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
     sub:'Boards in Rio · Tremor\'s crew',note:'The roof opens: a long turquoise pool, a wave-mosaic deck, striped loungers, potted palms, a bar under a thatch and a DJ booth stacked with speakers.',sw:['#2ac0d0','#f2ece0','#2a9a5a','#f2c230','#e0473a']},
-  {key:'trattoria',num:'05',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
+  {key:'aquarium',num:'05',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
+    sub:'The South Atlantic tunnel · the Espositos fall back here',note:'Floor-to-ceiling glass, a column tank of fish and blue velvet booths. Under the Atlantic the windows fill with whales; in the desert they fill with stars.',sw:['#0e3a52','#1a6a86','#bfefff','#2a2a5a','#d4ad5a']},
+  {key:'trattoria',num:'06',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
     sub:'Boards in Naples · the Esposito family',note:'Lemon-yellow walls, red-check tablecloths, hams and garlic hanging over a deli counter, a wood-fired oven and family photographs everywhere. Nonna eats here every day.',sw:['#f2d27a','#c8302a','#f4efe6','#2a7a4a','#8a5a36']},
-  {key:'pub',num:'06',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
+  {key:'pub',num:'07',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
     sub:'Boards in London · the Southside firm',note:'A proper pub: bottle-green tiles, dark wood, brass taps, red leather booths, a dartboard, scarves pinned over the bar and the match on every screen.',sw:['#1f4a36','#4a2a1a','#c8202a','#d4ad5a','#e8dcc0']},
-  {key:'banya',num:'07',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
+  {key:'banya',num:'08',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
     sub:'Boards in Siberia · the Volkov brotherhood',note:'Half pine sauna, half bar carved from ice: log walls, steam, birch switches and buckets on one end; a glowing blue ice bar and bottles in frost on the other.',sw:['#c89a62','#7a4a2a','#bfefff','#2a6ab0','#d8d0c4']},
-  {key:'dimsum',num:'08',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
-    sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']},
-  {key:'aquarium',num:'09',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
-    sub:'Observation car · no crew of its own',note:'Floor-to-ceiling glass, a column tank of fish and blue velvet booths. Under the Atlantic the windows fill with whales; in the desert they fill with stars.',sw:['#0e3a52','#1a6a86','#bfefff','#2a2a5a','#d4ad5a']}
+  {key:'dimsum',num:'09',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
+    sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']}
 ];
 const CAR_L=30, CAR_GAP=1.0, CAR_PITCH=CAR_L+CAR_GAP, CAR_HW=3.1+DW, WIDE=CAR_HW/3.1;
 const PROF=[[0,-.7],[2.9,-.7],[3.05,-.4],[3.1,.4],[3.1,3.5],[3.02,3.95],[2.75,4.28],[2.1,4.48],[1.0,4.56],[0,4.58]];
@@ -2155,7 +2155,7 @@ function widenCar(k){ const w=WG[k];
    lanes, waist-high cover, a chokepoint, a perch, places to hide. Sized for the 5.8 m car (WZ is the half width).
    And the crews: who stands where in each car (the art set places one boss and two; these fill the car).
    The order you meet them, back of the train to the front, is the order they get on:
-   aquarium (nobody yet) · dim sum (Hong Kong) · banya (Baikal) · pub (London) · trattoria (Naples) ·
+   dim sum (Hong Kong) · banya (Baikal) · pub (London) · trattoria (Naples) · aquarium (the Atlantic tunnel) ·
    pool (Rio) · casino (Las Vegas) · capsule hotel (Tokyo, the last night) · locomotive.
    ===================================================================================================== */
 const PLAY={
@@ -2167,7 +2167,7 @@ const PLAY={
   banya:'Two climates. The sauna end is close quarters between tiered benches and a cold plunge tub, half hidden in steam; through the one door, the ice bar end is bright and open.',
   dimsum:'One way through. Round tables fill both sides, the trolleys run the middle lane, and a lacquered moon gate is the only doorway into the half of the car where Lau waits.',
   capsule:'The stealth car. Two storeys of pods line both walls with a lounge in the middle: every pod is a place to hide, or a place for someone to be waiting.',
-  aquarium:'Where you board, at the back of the train. Nobody has got on yet: a quiet ride out of Tokyo past the column tanks and the paddy fields, to get your hands steady before Hong Kong.'};
+  aquarium:'The observation car, under the South Atlantic. Whales and shoals past the glass, column tanks and blue velvet booths. What is left of the Espositos has fallen back here from the trattoria.'};
 for(const W of WAGONS) W.play=PLAY[W.key];
 const NARROW=WZ<3.5;
 
@@ -2226,7 +2226,7 @@ CAR_POST.dimsum=function(){ const g=WG.dimsum.g, lac=C('#a81c1c'), gold=C('#d4ad
   const plaque=M(textTex(32,12,'#121014',[['GOLDEN CRANE','c',3,'#d4ad5a']]),{unlit:true}); for(const s of [-1,1]) mk(wplane(1.6,.5),plaque,g,X+s*.16,Math.min(WH-.5,cy+r+.35),0,0,s*Math.PI/2,0);
 };
 
-/* trattoria and the capsule hotel need nothing more: the art set's room is the fight. The aquarium is the quiet car. */
+/* trattoria and the capsule hotel need nothing more: the art set's room is the fight. */
 
 /* the crews in each car, in this car's coordinates; ry -PI/2 faces the back of the car, where you come in */
 function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k,o)=>{ if(k===key) Object.assign(WG[k].spots,o); };
@@ -2238,7 +2238,7 @@ function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k
   add('dimsum',{lau_c3:{x:-9.4,z:0,ry:B_},lau_c4:{x:-12.09,z:1.77,ry:1.9,pose:'sit'},lau_c5:{x:2.1,z:-1.06,ry:-1.87,pose:'sit'},lau_c6:{x:10.5,z:.6,ry:B_},lau_c7:{x:-4.2,z:-.3,ry:B_}});
   add('capsule',{ren_c3:{x:-10,z:-.8,ry:B_},ren_c4:{x:10,z:.8,ry:B_},ren_c5:{x:-1.6,z:1.5,ry:P,pose:'sit',y:-.08},ren_c6:{x:2.6,z:-1.4,ry:B_}});
   add('cab',{ren_c:{x:3.6,z:-1.2,ry:B_},ren_c2:{x:-7.5,z:1.2,ry:B_},ren_c3:{x:9.9,z:0,ry:B_}});
-  if(key==='aquarium') WG.aquarium.spots={}; /* nobody has boarded yet */
+  add('aquarium',{nonna_c3:{x:-2.5,z:2.1,ry:Math.PI,pose:'sit'},nonna_c4:{x:4.4,z:-1.3,ry:B_},nonna_c5:{x:9.4,z:.7,ry:B_},nonna_c6:{x:11,z:-2.1,ry:0,pose:'sit'},nonna_c7:{x:-3.6,z:-.9,ry:B_}});
 }
 
 
@@ -4485,16 +4485,17 @@ function clearEnemies(){ meleeClear(); for(const G of GRABS.slice()) endGrab(G);
 
 /* =====================================================================
    THE ROUTE: the whole game, one level after another.
-   You walk onto platform 0 in Tokyo, take the pistol from the locker and board at the back of the train.
+   You walk onto platform 0 in Tokyo, take the pistol from the locker and board; the train runs you straight to Hong Kong.
    Then it alternates: a car, taken over by the crew that boarded at the last stop, and the next underground
    station, where you get off, fight whoever is waiting on the platform, and pick up the weapon left for you.
+   Between Naples and Rio the train runs under the South Atlantic: the Espositos who are left fall back into the
+   glass observation car, with whales going past the windows.
    Every car's far door stays shut until nobody in it can still fight. Back in Tokyo at night, the
    Kagami-gumi hold the capsule hotel, and after that there is only the locomotive.
    Progress saves when you reach a station.
    ===================================================================== */
 const ROUTE=[
   {kind:'station',key:'tokyo',amb:'tokyo',title:'Tokyo · B5',sub:'Platform 0 · board the Meridian 24',first:true},
-  {kind:'car',key:'aquarium',scene:'japan',title:'Aquarium Lounge',sub:'Leaving Tokyo · nobody has boarded yet'},
   {kind:'station',key:'hongkong',amb:'hongkong',title:'Hong Kong',sub:'Meridian Central'},
   {kind:'car',key:'dimsum',scene:'hongkong',title:'Golden Crane Dim Sum',sub:'Madam Lau'},
   {kind:'station',key:'baikal',amb:'baikal',title:'Lake Baikal',sub:'Baikalskaya'},
@@ -4503,6 +4504,7 @@ const ROUTE=[
   {kind:'car',key:'pub',scene:'london',title:'The Rusty Anchor',sub:'The Gaffer'},
   {kind:'station',key:'naples',amb:'naples',title:'Naples',sub:'Napoli Meridiana'},
   {kind:'car',key:'trattoria',scene:'naples',title:'Trattoria Assunta',sub:'Nonna'},
+  {kind:'car',key:'aquarium',scene:'atlantic',title:'Aquarium Lounge',sub:'Under the South Atlantic · what is left of the Espositos'},
   {kind:'station',key:'rio',amb:'rio',title:'Rio de Janeiro',sub:'Meridiano Copacabana'},
   {kind:'car',key:'pool',scene:'rio',title:'Copacabana Pool Deck',sub:'DJ Tremor'},
   {kind:'station',key:'vegas',amb:'vegas',title:'Las Vegas',sub:'Meridian Strip'},

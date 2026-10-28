@@ -4,7 +4,7 @@
    lanes, waist-high cover, a chokepoint, a perch, places to hide. Sized for the 5.8 m car (WZ is the half width).
    And the crews: who stands where in each car (the art set places one boss and two; these fill the car).
    The order you meet them, back of the train to the front, is the order they get on:
-   aquarium (nobody yet) · dim sum (Hong Kong) · banya (Baikal) · pub (London) · trattoria (Naples) ·
+   dim sum (Hong Kong) · banya (Baikal) · pub (London) · trattoria (Naples) · aquarium (the Atlantic tunnel) ·
    pool (Rio) · casino (Las Vegas) · capsule hotel (Tokyo, the last night) · locomotive.
    ===================================================================================================== */
 const PLAY={
@@ -16,7 +16,7 @@ const PLAY={
   banya:'Two climates. The sauna end is close quarters between tiered benches and a cold plunge tub, half hidden in steam; through the one door, the ice bar end is bright and open.',
   dimsum:'One way through. Round tables fill both sides, the trolleys run the middle lane, and a lacquered moon gate is the only doorway into the half of the car where Lau waits.',
   capsule:'The stealth car. Two storeys of pods line both walls with a lounge in the middle: every pod is a place to hide, or a place for someone to be waiting.',
-  aquarium:'Where you board, at the back of the train. Nobody has got on yet: a quiet ride out of Tokyo past the column tanks and the paddy fields, to get your hands steady before Hong Kong.'};
+  aquarium:'The observation car, under the South Atlantic. Whales and shoals past the glass, column tanks and blue velvet booths. What is left of the Espositos has fallen back here from the trattoria.'};
 for(const W of WAGONS) W.play=PLAY[W.key];
 const NARROW=WZ<3.5;
 
@@ -75,7 +75,7 @@ CAR_POST.dimsum=function(){ const g=WG.dimsum.g, lac=C('#a81c1c'), gold=C('#d4ad
   const plaque=M(textTex(32,12,'#121014',[['GOLDEN CRANE','c',3,'#d4ad5a']]),{unlit:true}); for(const s of [-1,1]) mk(wplane(1.6,.5),plaque,g,X+s*.16,Math.min(WH-.5,cy+r+.35),0,0,s*Math.PI/2,0);
 };
 
-/* trattoria and the capsule hotel need nothing more: the art set's room is the fight. The aquarium is the quiet car. */
+/* trattoria and the capsule hotel need nothing more: the art set's room is the fight. */
 
 /* the crews in each car, in this car's coordinates; ry -PI/2 faces the back of the car, where you come in */
 function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k,o)=>{ if(k===key) Object.assign(WG[k].spots,o); };
@@ -87,5 +87,5 @@ function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k
   add('dimsum',{lau_c3:{x:-9.4,z:0,ry:B_},lau_c4:{x:-12.09,z:1.77,ry:1.9,pose:'sit'},lau_c5:{x:2.1,z:-1.06,ry:-1.87,pose:'sit'},lau_c6:{x:10.5,z:.6,ry:B_},lau_c7:{x:-4.2,z:-.3,ry:B_}});
   add('capsule',{ren_c3:{x:-10,z:-.8,ry:B_},ren_c4:{x:10,z:.8,ry:B_},ren_c5:{x:-1.6,z:1.5,ry:P,pose:'sit',y:-.08},ren_c6:{x:2.6,z:-1.4,ry:B_}});
   add('cab',{ren_c:{x:3.6,z:-1.2,ry:B_},ren_c2:{x:-7.5,z:1.2,ry:B_},ren_c3:{x:9.9,z:0,ry:B_}});
-  if(key==='aquarium') WG.aquarium.spots={}; /* nobody has boarded yet */
+  add('aquarium',{nonna_c3:{x:-2.5,z:2.1,ry:Math.PI,pose:'sit'},nonna_c4:{x:4.4,z:-1.3,ry:B_},nonna_c5:{x:9.4,z:.7,ry:B_},nonna_c6:{x:11,z:-2.1,ry:0,pose:'sit'},nonna_c7:{x:-3.6,z:-.9,ry:B_}});
 }

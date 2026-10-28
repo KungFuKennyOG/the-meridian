@@ -85,7 +85,7 @@ function mergeBoxes(list){ const g=new Geo();
   g.groups=[{start:0,count:g.I.length,mi:0}]; return g; }
 
 /* ================= textures ================= */
-function tex(w,h,base,fn){ const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); if(base){ g.fillStyle=base; g.fillRect(0,0,w,h); } if(fn) fn(g,w,h); return {c,glt:null,f:-1}; }
+function tex(w,h,base,fn){ const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d',{willReadFrequently:true}); /* painted on the CPU: grain reads pixels back, which is slow from a GPU canvas */ if(base){ g.fillStyle=base; g.fillRect(0,0,w,h); } if(fn) fn(g,w,h); return {c,glt:null,f:-1}; }
 function R(g,col,x,y,w,h){ g.fillStyle=col; g.fillRect(x,y,w,h); }
 function grain(g,amt,seed=1){ const w=g.canvas.width,h=g.canvas.height,d=g.getImageData(0,0,w,h),r=rng(seed); for(let i=0;i<d.data.length;i+=4){ if(!d.data[i+3]) continue; const n=(r()-.5)*amt; d.data[i]+=n; d.data[i+1]+=n; d.data[i+2]+=n; } g.putImageData(d,0,0); }
 function specks(g,col,n,seed,w,h,x0=0,y0=0){ const r=rng(seed); for(let i=0;i<n;i++) R(g,col,x0+(r()*w|0),y0+(r()*h|0),1,1); }
@@ -495,11 +495,12 @@ function program(vs,fs,attribs){ const p=gl.createProgram();
 let MAIN,POST;
 try{ MAIN=program(VS,FS,['position','normal','uv','vcol']); gl.vertexAttrib3f(3,1,1,1); /* no colour buffer = white: only baked level meshes carry per-vertex colour */ POST=program(PVS,PFS); } catch(e){ fail('The renderer could not start: '+e.message); return; }
 const emptyVAO=gl.createVertexArray();
-let texFilter=gl.NEAREST;
+let texFilter=gl.LINEAR; const ANISO=gl.getExtension('EXT_texture_filter_anisotropic'), ANISO_MAX=ANISO?Math.min(4,gl.getParameter(ANISO.MAX_TEXTURE_MAX_ANISOTROPY_EXT)):0;
 function glTex(t){
   if(!t.glt){ t.glt=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,t.c);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT); t.f=-1; }
-  if(t.f!==texFilter){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,texFilter); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,texFilter); t.f=texFilter; }
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT); t.f=-1;
+    if(!t.dyn){ gl.generateMipmap(gl.TEXTURE_2D); if(ANISO) gl.texParameterf(gl.TEXTURE_2D,ANISO.TEXTURE_MAX_ANISOTROPY_EXT,ANISO_MAX); } } /* mipmaps: no shimmer on far floors in a headset; textures redrawn every so often (labels, menus) skip them */
+  if(t.f!==texFilter){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,t.dyn?texFilter:texFilter===gl.NEAREST?gl.NEAREST_MIPMAP_LINEAR:gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,texFilter); t.f=texFilter; }
   return t.glt; }
 function upload(g){ g.vao=gl.createVertexArray(); gl.bindVertexArray(g.vao); g.bufs=[];
   [[g.P,3],[g.Nm,3],[g.T,2]].concat(g.C?[[g.C,3]]:[]).forEach(([arr,size],i)=>{ const b=gl.createBuffer(); g.bufs.push(b); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW); gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i,size,gl.FLOAT,false,0,0); });

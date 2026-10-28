@@ -21,7 +21,7 @@ const KIND_WPN={corner:'bottle',cutter:'machete',gunman:'pistol',doorman:'shotgu
 function newItem(key,ammo){ const w=WPN[key],a=w.gun?(ammo??w.mag):0; return {key,ammo:a,reload:0,uses:w.uses||0,cd:0,chambered:!w.pump||a>0,spent:false,pumpSt:'in',rev:false}; }
 
 /* ---------- hands ---------- */
-function ammoTexNew(){ return tex(16,8,'#0a0b0d'); }
+function ammoTexNew(){ const t=tex(16,8,'#0a0b0d'); t.dyn=true; return t; }
 const UPPER_ARM=.3,FOREARM=.27,WRIST=[0,-.04,-.05]; /* metres; the wrist sits just inside the back of the fist */
 function makeHand(side){ const n=N(world);
   mk(box(.072,.084,.094),M(side==='R'?tTape:tRayGlove),n,FIST[0],FIST[1],FIST[2]);
@@ -30,7 +30,7 @@ function makeHand(side){ const n=N(world);
   return {side,armN:arm,hand:side==='R'?'right':'left',node:n,item:null,itemNode:null,M:m4.make(),prevPts:null,cd:0,rec:0,ammoTex:ammoTexNew(),ammoShown:-9,ammoN:null,swingT:-1,swingDone:false,vel:[0,0,0],prevPos:null}; }
 const HANDS={L:makeHand('L'),R:makeHand('R')};
 /* frame rate on the inside of the left wrist (VR) */
-const fpsTex=tex(24,8,'#0a0b0d'); const fpsN=mk(plane(.045,.015),M(fpsTex,{unlit:true}),HANDS.L.armN,.046,0,-.05,0,Math.PI/2,0); fpsN.vis=false;
+const fpsTex=tex(24,8,'#0a0b0d'); fpsTex.dyn=true; const fpsN=mk(plane(.045,.015),M(fpsTex,{unlit:true}),HANDS.L.armN,.046,0,-.05,0,Math.PI/2,0); fpsN.vis=false;
 function drawFps(v){ fpsN.vis=XR.on&&GAME.fps!==false; const g=fpsTex.c.getContext('2d'); g.fillStyle='#0a0b0d'; g.fillRect(0,0,24,8); const s=String(v); text(g,s,(24-textW(s))>>1,1,v>=68?'#7ec27a':v>=55?'#e2a33d':'#ff3b30');
   if(fpsTex.glt){ gl.bindTexture(gl.TEXTURE_2D,fpsTex.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,fpsTex.c); } }
 function equip(h,item){

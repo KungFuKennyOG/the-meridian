@@ -6,7 +6,7 @@
    ===================================================================================================== */
 const OUT=N(world);
 /* DW: how much wider than a real bullet train each side of the Meridian is (it is 9.2 m across) */
-const GROUND_Y=-1.4, RAIL_Y=-1.1, DW=1.5, GAUGE=2.3;
+const GROUND_Y=-1.4, RAIL_Y=-1.1, DW=0, GAUGE=1.5+DW*.53; /* DW: extra width per side; the Meridian went back to a real bullet train's width */
 const scrollers=[];
 let travel=0;
 function planeUV(w,h,flipU){ const g=plane(w,h,1,1); if(flipU) for(let i=0;i<g.T.length;i+=2) g.T[i]=1-g.T[i]; return g; }

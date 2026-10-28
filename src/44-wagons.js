@@ -58,7 +58,7 @@ CAR_BUILD.cab=function cab(){
   for(let i=0;i<14;i++) B(g,i%4?G('#f5c542'):G('#c8302a'),11.5+(i%2)*.1,1.07,-1.2+i*.18,.06,.03,.06);
   for(const z of [-.9,.9]){ B(g,C('#2a2c30'),10.2,0,z,.14,.45,.14); B(g,leather,10.2,.45,z,.7,.14,.7); B(g,leather,9.85,.55,z,.14,1.0,.7,0,0,-.12); B(g,leather,9.78,1.55,z,.12,.24,.42,0,0,-.12); for(const s of [-1,1]) B(g,leather,10.2,.6,z+s*.37,.6,.2,.08); }
   /* a wall of route screens on the bulkhead behind the deck */
-  for(let k=0;k<4;k++) K(mk(wplane(1.1,.7),[route,speed,track,route][k],g,8.4,1.6,-2.7+k*1.8,0,Math.PI/2,0));
+  for(let k=0;k<4;k++) K(mk(wplane(1.1,.7),[route,speed,track,route][k],g,8.4,1.6,(k-1.5)*WZ*.41,0,Math.PI/2,0));
   K(B(g,panel,8.3,0,0,.1,1.1,WZ*2-1.8));
   /* crew mess: galley, table, bunks, lockers */
   const locker=M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8ccd2'],[1,'#a8aeb6']]); R(g,'#7e848c',0,0,1,h); for(let y=4;y<10;y+=2) R(g,'#7e848c',4,y,8,1); R(g,'#3a3c40',12,16,2,4); },4,6));
@@ -90,7 +90,7 @@ CAR_BUILD.casino=function casino(){
   for(const s of [-1,1]) B(g,curtain,13.6,.45,s*1.8,.1,2.9,2.0); B(g,curtain,13.6,2.9,0,.12,.5,WZ*2-.2); mk(wplane(1.8,2.4),C('#120a0a'),g,13.94,1.65,0,0,-Math.PI/2,0);
   mk(cyl(.015,.015,1.5,6),C('#c8ccd2'),g,11.9,1.2,0); B(g,black,11.9,1.95,0,.05,.12,.05);
   /* bar at the back */
-  B(g,wood,-12.5,0,0,.7,1.1,7); B(g,gold,-12.15,1.1,0,.14,.04,7); for(let k=0;k<12;k++) K(mk(cyl(.04,.05,.28,6),G(['#c8742a','#2a8a3a','#e8e0c8','#8a2a8a'][k%4]),g,-13.8,1.35+(k%2)*.45,-3+(k>>1)*1.2));
+  B(g,wood,-12.5,0,0,.7,1.1,WZ*2-1.6); B(g,gold,-12.15,1.1,0,.14,.04,WZ*2-1.6); for(let k=0;k<12;k++) K(mk(cyl(.04,.05,.28,6),G(['#c8742a','#2a8a3a','#e8e0c8','#8a2a8a'][k%4]),g,-13.8,1.35+(k%2)*.45,(WZ-1.4)*((k>>1)/2.5-1)));
   /* chandeliers */
   const crystal=U('#fff4d8'); for(const x of [-9,-2,5]){ mk(torus(.45,.03,4,16),gold,g,x,2.95,0,Math.PI/2); for(let k=0;k<14;k++){ const a=k/14*Math.PI*2; B(g,crystal,x+Math.cos(a)*.45,2.8,Math.sin(a)*.45,.05,.16,.05); } B(g,crystal,x,2.6,0,.12,.3,.12); }
   WG.casino.spots={king:{x:12.0,z:-.4,ry:-Math.PI/2,y:.45},king_c:{x:4.2,z:1.3,ry:-Math.PI/2},king_c2:{x:-6.8,z:-1.6,ry:Math.PI/2}};
@@ -116,8 +116,8 @@ CAR_BUILD.pool=function pool(){
   for(const x of [-8.5,8.5]) for(const s of [-1,1]){ mk(cyl(.3,.24,.6,10),C('#c8643a'),g,x,.3,s*2.4); B(g,C('#7a5a3e'),x,.6,s*2.4,.12,1.8,.12,0,0,.1); for(let k=0;k<7;k++) mk(box(.14,.05,1.1),C('#3f8a3e'),g,x,2.45,s*2.4,.0,k/7*Math.PI*2,.45); }
   /* tiki bar under thatch at the back */
   const thatch=M(P2(16,16,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8a060'],[1,'#a88048']]); for(let x=0;x<w;x+=2) R(g,'#8a6a38',x,0,1,h); },8,25),{double:true});
-  B(g,wood,-12.4,0,0,.8,1.1,6.4); B(g,C('#2a9a5a'),-12.05,1.1,0,.14,.05,6.4); mk(box(2.2,.15,8),thatch,g,-12.8,2.6,0,0,0,-.25); for(const z of [-1.9,1.9]) B(g,wood,-12.4,0,z,.12,2.6,.12);
-  for(let k=0;k<6;k++) K(mk(cyl(.05,.05,.18,6),G(['#f2c230','#e0473a','#2a9a5a'][k%3]),g,-12.4,1.2,-2.5+k*1.0));
+  B(g,wood,-12.4,0,0,.8,1.1,WZ*2-1.8); B(g,C('#2a9a5a'),-12.05,1.1,0,.14,.05,WZ*2-1.8); mk(box(2.2,.15,WZ*2-.4),thatch,g,-12.8,2.6,0,0,0,-.25); for(const z of [-1.9,1.9]) B(g,wood,-12.4,0,z,.12,2.6,.12);
+  for(let k=0;k<6;k++) K(mk(cyl(.05,.05,.18,6),G(['#f2c230','#e0473a','#2a9a5a'][k%3]),g,-12.4,1.2,(WZ-1.4)*(k/2.5-1)));
   /* the DJ booth and speaker stacks */
   B(g,C('#121214'),12,0,0,1.0,1.1,2.4); B(g,M(textTex(32,16,'#121214',[['TREMOR','c',5,'#ff3fa4']]),{unlit:true}),11.48,.5,0,.02,.4,1.6);
   for(const z of [-.6,.6]) mk(cyl(.26,.26,.04,14),C('#2a2a2e'),g,12,1.12,z);
@@ -228,13 +228,13 @@ CAR_BUILD.dimsum=function dimsum(){
   const g=shell('dimsum',{floor:carpet,floorTile:1.2,ceil,ceilTile:1.2,dado:M(woodT('#2a1414','#1a0c0c',64,true)),upper:lacquer,pier:lacquer,trim:gold,end:lacquer,door:dark,rail:gold,
     wins:winsEvery(4,1.8,-12,6),lamps:[lamp(-10,2.4,0,[1.4,.55,.35],6),lamp(-4,2.4,0,[1.4,.55,.35],6),lamp(2,2.4,0,[1.4,.55,.35],6),lamp(10,2.6,0,[.9,.95,1.0],6),lamp(11,1.0,-2,[1.5,.5,.1],3.5)],ambK:.8});
   /* round tables with lazy susans and steamer stacks */
-  for(const x of [-11,-7,-3,1,5]) for(const s of [-1,1]){ const t=K(N(g,x,0,s*2.85)); mk(cyl(.85,.85,.06,16),cloth,t,0,.74,0); mk(cyl(.86,.8,.3,16,{open:true}),M(null,{color:0xf2ece0,double:true}),t,0,.58,0); mk(cyl(.36,.36,.04,14),gold,t,0,.8,0);
+  for(const x of [-11,-7,-3,1,5]) for(const s of [-1,1]){ const t=K(N(g,x,0,s*(WZ-1.5))); mk(cyl(.85,.85,.06,16),cloth,t,0,.74,0); mk(cyl(.86,.8,.3,16,{open:true}),M(null,{color:0xf2ece0,double:true}),t,0,.58,0); mk(cyl(.36,.36,.04,14),gold,t,0,.8,0);
     for(let k=0;k<3;k++) mk(cyl(.12,.12,.08,10),bamboo,t,Math.cos(k*2.1)*.22,.86+(k%2)*.08,Math.sin(k*2.1)*.22);
     for(let k=0;k<5;k++){ const a=k/5*Math.PI*2+.3, cx=Math.cos(a)*1.15, cz=Math.sin(a)*1.15; B(t,dark,cx,0,cz,.4,.45,.4); B(t,M(fabT('#b82020',65)),cx,.45,cz,.42,.06,.42); } }
   /* trolleys */
   for(const x of [-9,3]){ B(g,C('#c8ccd2'),x,0,0,.9,.85,.6); for(let k=0;k<6;k++) mk(cyl(.15,.15,.09,10),bamboo,g,x-.25+(k%3)*.25,.9+(k>>1&1)*.1+(k>2?.0:0),-.12+(k>2?.24:0)); }
   /* red lanterns */
-  const lan=U('#ff4030'); for(let k=0;k<9;k++){ const x=-12+k*2.4; for(const z of [-2.85,2.85]){ K(mk(lathe([[0,.08,.08],[.08,.24,.24],[.34,.24,.24],[.42,.08,.08]],10),lan,g,x,2.5,z)); K(B(g,gold,x,2.5,z,.2,.03,.2)); K(B(g,gold,x,2.92,z,.03,.48,.03)); K(B(g,U('#f2c230'),x,2.38,z,.03,.14,.03)); } }
+  const lan=U('#ff4030'); for(let k=0;k<9;k++){ const x=-12+k*2.4; for(const z of [-(WZ-1.7),WZ-1.7]){ K(mk(lathe([[0,.08,.08],[.08,.24,.24],[.34,.24,.24],[.42,.08,.08]],10),lan,g,x,2.5,z)); K(B(g,gold,x,2.5,z,.2,.03,.2)); K(B(g,gold,x,2.92,z,.03,.48,.03)); K(B(g,U('#f2c230'),x,2.38,z,.03,.14,.03)); } }
   /* the gold crane mural on the rear wall */
   const crane=M(P2(64,48,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#a81c1c'],[1,'#7a1010']]); g.fillStyle='#e8c050'; g.beginPath(); g.moveTo(10,36); g.quadraticCurveTo(26,20,40,22); g.lineTo(56,6); g.lineTo(44,26); g.quadraticCurveTo(48,34,30,38); g.closePath(); g.fill(); g.strokeStyle='#e8c050'; g.lineWidth=2; g.beginPath(); g.moveTo(26,36); g.lineTo(22,46); g.moveTo(32,36); g.lineTo(34,46); g.stroke(); ell(g,52,10,3,2,'#e8c050'); R(g,'#c8202a',54,8,2,2); ell(g,14,12,6,6,'#e8c050'); }));
   mk(wplane(3.6,2.4),crane,g,-WL/2+.04,1.85,-1.4,0,Math.PI/2,0);
@@ -284,7 +284,7 @@ CAR_BUILD.aquarium=function aquarium(){
     for(let k=0;k<4;k++){ const n=mk(plane(.8,.4),fish,g,x,1+k*.6,0); const ph=k*1.7; WG.aquarium.anim.push(t=>{ const a=t*.5+ph; n.p=[x+Math.cos(a)*.45,1+k*.6+Math.sin(t+ph)*.1,Math.sin(a)*.45]; n.r=[0,-a,0]; }); } }
   /* blue velvet booths */
   for(const x of [-11,-2.5,2.5,11]) for(const s of [-1,1]){ B(g,velvet,x,0,s*2.2,2.4,.45,1.0); B(g,velvet,x,.45,s*2.65,2.4,.7,.2); Wz(mk(cyl(.4,.4,.04,12),C('#f2ece0'),g,x,.68,s*1.3)); Wz(mk(cyl(.04,.04,.68,6),gold,g,x,.34,s*1.3)); }
-  B(g,C('#14203a'),13,0,0,.8,1.05,6); B(g,gold,12.65,1.05,0,.1,.04,6); for(let k=0;k<5;k++) K(mk(cyl(.04,.05,.24,6),G(['#29e0e6','#f5c542','#ff3fa4'][k%3]),g,13.2,1.2,-2+k*1));
+  B(g,C('#14203a'),13,0,0,.8,1.05,WZ*2-2.8); B(g,gold,12.65,1.05,0,.1,.04,WZ*2-2.8); for(let k=0;k<5;k++) K(mk(cyl(.04,.05,.24,6),G(['#29e0e6','#f5c542','#ff3fa4'][k%3]),g,13.2,1.2,(WZ-1.9)*(k/2-1)));
 };
 
 

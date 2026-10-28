@@ -6,7 +6,8 @@
 for(const k in groups) groups[k].vis=false;
 
 /* ---------- canvas painting helpers: smooth gradients first, the PS1 pass quantises them ---------- */
-function P2(w,h,fn,gr=0,seed=1){ return tex(w,h,null,g=>{ fn(g,w,h); if(gr) grain(g,gr,seed); }); }
+/* painted at 2-4x the size they are drawn at (the painters still work in their own units), so walls, cloth and signs are crisp up close */
+function P2(w,h,fn,gr=0,seed=1){ const S=w*h<=4096?4:w*h<=40000?2:1; return tex(w*S,h*S,null,g=>{ g.scale(S,S); fn(g,w,h); g.setTransform(1,0,0,1,0,0); if(gr) grain(g,gr*.8,seed); }); }
 function grad(g,x0,y0,x1,y1,stops){ const q=g.createLinearGradient(x0,y0,x1,y1); for(const [t,c] of stops) q.addColorStop(t,c); return q; }
 function vfill(g,x,y,w,h,stops){ g.fillStyle=grad(g,0,y,0,y+h,stops); g.fillRect(x,y,w,h); }
 function hfill(g,x,y,w,h,stops){ g.fillStyle=grad(g,x,0,x+w,0,stops); g.fillRect(x,y,w,h); }

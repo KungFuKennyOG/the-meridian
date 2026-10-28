@@ -9,7 +9,7 @@
    ===================================================================== */
 const ROUTE=[
   {kind:'station',key:'tokyo',amb:'tokyo',title:'Tokyo · B5',sub:'Platform 0 · board the Meridian 24',first:true},
-  {kind:'car',key:'aquarium',scene:'japan',title:'Aquarium Lounge',sub:'Leaving Tokyo'},
+  {kind:'car',key:'aquarium',scene:'japan',title:'Aquarium Lounge',sub:'Leaving Tokyo · nobody has boarded yet'},
   {kind:'station',key:'hongkong',amb:'hongkong',title:'Hong Kong',sub:'Meridian Central'},
   {kind:'car',key:'dimsum',scene:'hongkong',title:'Golden Crane Dim Sum',sub:'Madam Lau'},
   {kind:'station',key:'baikal',amb:'baikal',title:'Lake Baikal',sub:'Baikalskaya'},
@@ -56,11 +56,13 @@ function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
   /* the weapon left for you */
   if(!isCar){ const key=R_.night?'katana':ARSENAL_KEYS[R_.key]; const dropN=R_.night?ST.tokyo.drop2:ST[R_.key].drop; if(key&&dropN&&LEVEL.drops) placeGift(key,LEVEL.drops[R_.night?1:0]); }
   respawnPlayer();
-  if(typeof MUSIC!=='undefined'){ try{ if(isCar){ MUSIC.ambience(null); MUSIC.play(R_.key); MUSIC.rumble(true); } else { MUSIC.play(null); MUSIC.rumble(false); MUSIC.ambience(R_.amb); } }catch(_){} }
+  if(GAME.started) levelAudio();
   if(!isCar) saveProgress();
   $('floorTag').textContent=R_.title+' · '+R_.sub;
   if(XR.on){ vrRecenter(); vrToast(R_.title,2.4); }
   if(window.__onLeg) window.__onLeg(i); }
+/* each car has its own theme, each station its city; nothing plays until you have clicked or entered VR (browsers insist) */
+function levelAudio(){ if(typeof MUSIC==='undefined') return; const R_=legOf(FLOW.leg); try{ if(R_.kind==='car'){ MUSIC.ambience(null); MUSIC.play(R_.key); MUSIC.rumble(true); } else { MUSIC.play(null); MUSIC.rumble(false); MUSIC.ambience(R_.amb); } MUSIC.setVolumes(GAME.vol); }catch(_){} }
 function respawnPlayer(){ Object.assign(PL,{x:FLOOR.start.x,z:FLOOR.start.z,yaw:FLOOR.start.yaw,pitch:0,hp:100,hurtT:9,kickCd:0,dead:false}); GAME.clear=false; $('msg').hidden=true; $('sblood').innerHTML=''; if(XR.on) vrRecenter(); }
 /* restart the level you are in (after dying, or from the menu): same level, same arsenal you came in with */
 function restartLevel(){ const keep=FLOW.armed||{}; enterLeg(FLOW.leg); if(keep.R) equip(HANDS.R,newItem(keep.R)); if(keep.L) equip(HANDS.L,newItem(keep.L)); }

@@ -4,8 +4,8 @@
    it toward an animated pose. Standing = strong muscles anchored in the world. Hurt = weaker, relative to the
    body. Dead = no muscles. Damage is per body part: legs drop them, arms go limp, arteries spurt with the heartbeat.
    ===================================================================== */
-const state={ps1:true,res:480,snap:true,affine:true,dither:true};
-const XR={laser:false,wobble:0,on:false,session:null,space:null,origin:[0,0,3.2],yaw:0,head:null,hands:{},flash:0,snapHeld:false,btn:{},clearT:0,knifeTip:null,stabCd:0,res:1080,toast:'',toastT:0,resetHold:0,panelP:null};
+const state={ps1:true,res:720,snap:true,affine:true,dither:true};
+const XR={laser:false,wobble:0,on:false,session:null,space:null,origin:[0,0,3.2],yaw:0,head:null,hands:{},flash:0,snapHeld:false,btn:{},clearT:0,knifeTip:null,stabCd:0,res:1680,toast:'',toastT:0,resetHold:0,panelP:null};
 
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -815,7 +815,7 @@ addEventListener('keydown',e=>{ KEYS[e.code]=true; if(!GAME.started) return;
   else if(e.code==='KeyQ'&&HANDS.R.item){ HANDS.R.vel=v3.sc(camBasis().f,4); grabOrDrop(HANDS.R); } });
 addEventListener('mousedown',e=>{ if(e.button===0) KEYS.Mouse0=true; }); addEventListener('mouseup',e=>{ if(e.button===0) KEYS.Mouse0=false; });
 addEventListener('keyup',e=>{ KEYS[e.code]=false; });
-function toggleSlow(){ GAME.slow=!GAME.slow; sfx(GAME.slow?'slowin':'slowout'); $('bSlow').setAttribute('aria-pressed',String(GAME.slow)); $('bSlowT').setAttribute('aria-pressed',String(GAME.slow)); }
+function toggleSlow(){ GAME.slow=!GAME.slow; sfx(GAME.slow?'slowin':'slowout'); if(typeof MUSIC!=='undefined') try{ MUSIC.setSlow(GAME.slow); }catch(_){} $('bSlow').setAttribute('aria-pressed',String(GAME.slow)); $('bSlowT').setAttribute('aria-pressed',String(GAME.slow)); }
 let drag=null;
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{ if(!GAME.started) return; audio();
@@ -931,13 +931,13 @@ function frame(now){
    Left stick moves where you look, right stick snap-turns 30 degrees, B or Y kicks, X toggles bullet time. */
 function buzz(hand,v,ms){ const h=XR.hands[hand]; try{ h&&h.src.gamepad&&h.src.gamepad.hapticActuators&&h.src.gamepad.hapticActuators[0].pulse(v,ms); }catch(_){} }
 const worldFromLocal=()=>{ const c=Math.cos(XR.yaw),s=Math.sin(XR.yaw),m=m4.make(); m.set([c,0,-s,0, 0,1,0,0, s,0,c,0, XR.origin[0],XR.origin[1],XR.origin[2],1]); return m; };
-function labelTex(){ const c=document.createElement('canvas'); c.width=256; c.height=48; return {c,glt:null,f:-1,text:''}; }
+function labelTex(){ const c=document.createElement('canvas'); c.width=256; c.height=48; return {c,glt:null,f:-1,text:'',dyn:true}; }
 function setLabel(E,text){ const t=E.labelTex; if(t.text===text) return; t.text=text; const g=t.c.getContext('2d'); g.clearRect(0,0,256,48);
   g.font='600 17px "IBM Plex Mono",monospace'; const w=Math.min(250,g.measureText(text).width+16); g.fillStyle='rgba(12,20,42,.86)'; g.fillRect(128-w/2,8,w,32); g.fillStyle='#ff6a3a'; g.fillRect(128-w/2,8,3,32);
   g.fillStyle='#f2ede2'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,128,25,240);
   if(t.glt){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,t.c); } }
 /* a floating panel in VR for 'you died', 'floor clear', the reset countdown and setting changes */
-const panelTex={c:(()=>{ const c=document.createElement('canvas'); c.width=512; c.height=160; return c; })(),glt:null,f:-1,text:''};
+const panelTex={c:(()=>{ const c=document.createElement('canvas'); c.width=512; c.height=160; return c; })(),glt:null,f:-1,text:'',dyn:true};
 const panelN=mk(plane(.72,.225),M(panelTex,{unlit:true,cut:true,double:true}),world); panelN.vis=false;
 function vrToast(t,sec){ XR.toast=t; XR.toastT=sec; }
 function drawPanel(h,p,bar){ const key=h+'|'+p+'|'+(bar<0?-1:Math.round(bar*40)); if(panelTex.text===key) return; panelTex.text=key; const g=panelTex.c.getContext('2d');
@@ -956,7 +956,7 @@ async function enterVR(){
     audio(); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing');
     const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']});
     await gl.makeXRCompatible();
-    session.updateRenderState({baseLayer:new XRWebGLLayer(session,gl,{antialias:false,depth:false}),depthNear:.04,depthFar:60});
+    session.updateRenderState({baseLayer:new XRWebGLLayer(session,gl,{antialias:false,depth:false}),depthNear:.04,depthFar:300});
     let space; try{ space=await session.requestReferenceSpace('local-floor'); XR.floor=true; }catch(_){ space=await session.requestReferenceSpace('local'); XR.floor=false; }
     XR.session=session; XR.space=space; XR.on=true; equip(HANDS.R,null); equip(HANDS.L,null); startRun(true); XR.origin=[PL.x,XR.floor?0:1.62,PL.z]; XR.yaw=PL.yaw; XR.last=0;
     session.addEventListener('end',()=>{ XR.on=false; XR.session=null; XR.head=null; closeMenu(); for(const E of enemies) E.label.vis=false; last=performance.now(); requestAnimationFrame(frame); });
@@ -993,7 +993,7 @@ function xrFrame(t,xf){
       menuStick(pressed(3),dt); }
     else { const sx=ax[2]||0; if(XR.smoothTurn){ if(Math.abs(sx)>.2) turnBy(-sx*2.4*dt,eye); } else if(Math.abs(sx)>.7&&!XR.snapHeld){ XR.snapHeld=true; const a=-Math.sign(sx)*(XR.snapA||Math.PI/6),c=Math.cos(a),s=Math.sin(a),dx=XR.origin[0]-eye[0],dz=XR.origin[2]-eye[2];
         XR.origin[0]=eye[0]+dx*c+dz*s; XR.origin[2]=eye[2]-dx*s+dz*c; XR.yaw+=a; } else if(Math.abs(sx)<.3) XR.snapHeld=false;
-      if(stickC){ const L=[720,1080,1440],i=(L.indexOf(XR.res)+1)%L.length; XR.res=L[i]; vrToast(['Sharpness: low (more PS1)','Sharpness: medium','Sharpness: high'][i],1.6); } }
+      if(stickC){ const L=[1080,1440,1680,2064],i=(L.indexOf(XR.res)+1)%L.length; XR.res=L[i]; vrToast(['Sharpness: low','Sharpness: medium','Sharpness: high','Sharpness: native'][i],1.6); } }
     meleeTick(h,dt); if(!h.supportOf) vrMelee(h,dt); else h.prevPts=null; pokeWrist(fp,h,dt); updateAmmoLabel(h); }
   applySupport(HANDS.R); applySupport(HANDS.L); updateArms(f,u,eye); updateSights(eye);
   /* keep the head out of walls and furniture by sliding the play space */

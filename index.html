@@ -216,7 +216,7 @@ function mergeBoxes(list){ const g=new Geo();
   g.groups=[{start:0,count:g.I.length,mi:0}]; return g; }
 
 /* ================= textures ================= */
-function tex(w,h,base,fn){ const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); if(base){ g.fillStyle=base; g.fillRect(0,0,w,h); } if(fn) fn(g,w,h); return {c,glt:null,f:-1}; }
+function tex(w,h,base,fn){ const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d',{willReadFrequently:true}); /* painted on the CPU: grain reads pixels back, which is slow from a GPU canvas */ if(base){ g.fillStyle=base; g.fillRect(0,0,w,h); } if(fn) fn(g,w,h); return {c,glt:null,f:-1}; }
 function R(g,col,x,y,w,h){ g.fillStyle=col; g.fillRect(x,y,w,h); }
 function grain(g,amt,seed=1){ const w=g.canvas.width,h=g.canvas.height,d=g.getImageData(0,0,w,h),r=rng(seed); for(let i=0;i<d.data.length;i+=4){ if(!d.data[i+3]) continue; const n=(r()-.5)*amt; d.data[i]+=n; d.data[i+1]+=n; d.data[i+2]+=n; } g.putImageData(d,0,0); }
 function specks(g,col,n,seed,w,h,x0=0,y0=0){ const r=rng(seed); for(let i=0;i<n;i++) R(g,col,x0+(r()*w|0),y0+(r()*h|0),1,1); }
@@ -626,11 +626,12 @@ function program(vs,fs,attribs){ const p=gl.createProgram();
 let MAIN,POST;
 try{ MAIN=program(VS,FS,['position','normal','uv','vcol']); gl.vertexAttrib3f(3,1,1,1); /* no colour buffer = white: only baked level meshes carry per-vertex colour */ POST=program(PVS,PFS); } catch(e){ fail('The renderer could not start: '+e.message); return; }
 const emptyVAO=gl.createVertexArray();
-let texFilter=gl.NEAREST;
+let texFilter=gl.LINEAR; const ANISO=gl.getExtension('EXT_texture_filter_anisotropic'), ANISO_MAX=ANISO?Math.min(4,gl.getParameter(ANISO.MAX_TEXTURE_MAX_ANISOTROPY_EXT)):0;
 function glTex(t){
   if(!t.glt){ t.glt=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,t.c);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT); t.f=-1; }
-  if(t.f!==texFilter){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,texFilter); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,texFilter); t.f=texFilter; }
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT); t.f=-1;
+    if(!t.dyn){ gl.generateMipmap(gl.TEXTURE_2D); if(ANISO) gl.texParameterf(gl.TEXTURE_2D,ANISO.TEXTURE_MAX_ANISOTROPY_EXT,ANISO_MAX); } } /* mipmaps: no shimmer on far floors in a headset; textures redrawn every so often (labels, menus) skip them */
+  if(t.f!==texFilter){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,t.dyn?texFilter:texFilter===gl.NEAREST?gl.NEAREST_MIPMAP_LINEAR:gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,texFilter); t.f=texFilter; }
   return t.glt; }
 function upload(g){ g.vao=gl.createVertexArray(); gl.bindVertexArray(g.vao); g.bufs=[];
   [[g.P,3],[g.Nm,3],[g.T,2]].concat(g.C?[[g.C,3]]:[]).forEach(([arr,size],i)=>{ const b=gl.createBuffer(); g.bufs.push(b); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW); gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i,size,gl.FLOAT,false,0,0); });
@@ -1205,7 +1206,8 @@ const PLAT_Z0=-1.55; /* the platform edge in station coordinates; the track side
 for(const k in groups) groups[k].vis=false;
 
 /* ---------- canvas painting helpers: smooth gradients first, the PS1 pass quantises them ---------- */
-function P2(w,h,fn,gr=0,seed=1){ return tex(w,h,null,g=>{ fn(g,w,h); if(gr) grain(g,gr,seed); }); }
+/* painted at 2-4x the size they are drawn at (the painters still work in their own units), so walls, cloth and signs are crisp up close */
+function P2(w,h,fn,gr=0,seed=1){ const S=w*h<=4096?4:w*h<=40000?2:1; return tex(w*S,h*S,null,g=>{ g.scale(S,S); fn(g,w,h); g.setTransform(1,0,0,1,0,0); if(gr) grain(g,gr*.8,seed); }); }
 function grad(g,x0,y0,x1,y1,stops){ const q=g.createLinearGradient(x0,y0,x1,y1); for(const [t,c] of stops) q.addColorStop(t,c); return q; }
 function vfill(g,x,y,w,h,stops){ g.fillStyle=grad(g,0,y,0,y+h,stops); g.fillRect(x,y,w,h); }
 function hfill(g,x,y,w,h,stops){ g.fillStyle=grad(g,x,0,x+w,0,stops); g.fillRect(x,y,w,h); }
@@ -1645,7 +1647,7 @@ SCENE_ORDER.splice(0,SCENE_ORDER.length,'japan','hongkong','siberia','london','n
    ===================================================================================================== */
 const OUT=N(world);
 /* DW: how much wider than a real bullet train each side of the Meridian is (it is 9.2 m across) */
-const GROUND_Y=-1.4, RAIL_Y=-1.1, DW=1.5, GAUGE=2.3;
+const GROUND_Y=-1.4, RAIL_Y=-1.1, DW=0, GAUGE=1.5+DW*.53; /* DW: extra width per side; the Meridian went back to a real bullet train's width */
 const scrollers=[];
 let travel=0;
 function planeUV(w,h,flipU){ const g=plane(w,h,1,1); if(flipU) for(let i=0;i<g.T.length;i+=2) g.T[i]=1-g.T[i]; return g; }
@@ -1745,22 +1747,22 @@ function updateOut(dt,speed,eye,camX){
 const WAGONS=[
   {key:'cab',num:'01',name:'The Locomotive',label:'THE MERIDIAN',crew:null,wins:[[.62,.7],[.74,.82]],glow:0xfff0d0,color:'#d4ad5a',
     sub:'Crew only · the front of the train',note:'A flight deck more than a cab: a horseshoe of consoles, two captain\'s chairs, a wall of route screens and a windscreen full of oncoming track. Reach it and the trip ends where you say.',sw:['#e8e4dc','#14203a','#d4ad5a','#5ab8e8','#c8302a']},
-  {key:'casino',num:'02',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
+  {key:'capsule',num:'02',name:'Capsule Hotel',label:'CAPSULES',crew:'ren',wins:[[.42,.5],[.56,.64]],glow:0xe8f4ff,color:'#29e0e6',
+    sub:'Boards in Tokyo, last stop · the Kagami-gumi',note:'Two storeys of glowing white sleep pods down both walls, a strip of lockers, vending machines and a neon-lit lounge in the middle. Clean, bright and very narrow to fight in.',sw:['#eeeee8','#29e0e6','#2a2a34','#ff4fae','#f5c542']},
+  {key:'casino',num:'03',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
     sub:'Boards in Las Vegas · the Kings',note:'Red carpet with gold diamonds, a mirrored ceiling, rows of slot machines, a roulette wheel, blackjack tables and a stage with a gold curtain. The King holds court on the stage.',sw:['#8a1424','#f5c542','#12101a','#ff3fa4','#2a8a4a']},
-  {key:'pool',num:'03',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
+  {key:'pool',num:'04',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
     sub:'Boards in Rio · Tremor\'s crew',note:'The roof opens: a long turquoise pool, a wave-mosaic deck, striped loungers, potted palms, a bar under a thatch and a DJ booth stacked with speakers.',sw:['#2ac0d0','#f2ece0','#2a9a5a','#f2c230','#e0473a']},
-  {key:'pub',num:'04',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
-    sub:'Boards in London · the Southside firm',note:'A proper pub: bottle-green tiles, dark wood, brass taps, red leather booths, a dartboard, scarves pinned over the bar and the match on every screen.',sw:['#1f4a36','#4a2a1a','#c8202a','#d4ad5a','#e8dcc0']},
   {key:'trattoria',num:'05',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
     sub:'Boards in Naples · the Esposito family',note:'Lemon-yellow walls, red-check tablecloths, hams and garlic hanging over a deli counter, a wood-fired oven and family photographs everywhere. Nonna eats here every day.',sw:['#f2d27a','#c8302a','#f4efe6','#2a7a4a','#8a5a36']},
-  {key:'banya',num:'06',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
+  {key:'pub',num:'06',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
+    sub:'Boards in London · the Southside firm',note:'A proper pub: bottle-green tiles, dark wood, brass taps, red leather booths, a dartboard, scarves pinned over the bar and the match on every screen.',sw:['#1f4a36','#4a2a1a','#c8202a','#d4ad5a','#e8dcc0']},
+  {key:'banya',num:'07',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
     sub:'Boards in Siberia · the Volkov brotherhood',note:'Half pine sauna, half bar carved from ice: log walls, steam, birch switches and buckets on one end; a glowing blue ice bar and bottles in frost on the other.',sw:['#c89a62','#7a4a2a','#bfefff','#2a6ab0','#d8d0c4']},
-  {key:'dimsum',num:'07',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
+  {key:'dimsum',num:'08',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
     sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']},
-  {key:'capsule',num:'08',name:'Capsule Hotel',label:'CAPSULES',crew:'ren',wins:[[.42,.5],[.56,.64]],glow:0xe8f4ff,color:'#29e0e6',
-    sub:'Boards in Tokyo, last stop · the Kagami-gumi',note:'Two storeys of glowing white sleep pods down both walls, a strip of lockers, vending machines and a neon-lit lounge in the middle. Clean, bright and very narrow to fight in.',sw:['#eeeee8','#29e0e6','#2a2a34','#ff4fae','#f5c542']},
   {key:'aquarium',num:'09',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
-    sub:'Observation car · no crew of its own',note:'Floor-to-ceiling glass, a column tank of fish and blue velvet booths. Under the Atlantic the windows fill with whales; in the desert they fill with stars.',sw:['#0e3a52','#1a6a86','#bfefff','#2a2a5a','#d4ad5a']},
+    sub:'Observation car · no crew of its own',note:'Floor-to-ceiling glass, a column tank of fish and blue velvet booths. Under the Atlantic the windows fill with whales; in the desert they fill with stars.',sw:['#0e3a52','#1a6a86','#bfefff','#2a2a5a','#d4ad5a']}
 ];
 const CAR_L=30, CAR_GAP=1.0, CAR_PITCH=CAR_L+CAR_GAP, CAR_HW=3.1+DW, WIDE=CAR_HW/3.1;
 const PROF=[[0,-.7],[2.9,-.7],[3.05,-.4],[3.1,.4],[3.1,3.5],[3.02,3.95],[2.75,4.28],[2.1,4.48],[1.0,4.56],[0,4.58]];
@@ -1907,7 +1909,7 @@ CAR_BUILD.cab=function cab(){
   for(let i=0;i<14;i++) B(g,i%4?G('#f5c542'):G('#c8302a'),11.5+(i%2)*.1,1.07,-1.2+i*.18,.06,.03,.06);
   for(const z of [-.9,.9]){ B(g,C('#2a2c30'),10.2,0,z,.14,.45,.14); B(g,leather,10.2,.45,z,.7,.14,.7); B(g,leather,9.85,.55,z,.14,1.0,.7,0,0,-.12); B(g,leather,9.78,1.55,z,.12,.24,.42,0,0,-.12); for(const s of [-1,1]) B(g,leather,10.2,.6,z+s*.37,.6,.2,.08); }
   /* a wall of route screens on the bulkhead behind the deck */
-  for(let k=0;k<4;k++) K(mk(wplane(1.1,.7),[route,speed,track,route][k],g,8.4,1.6,-2.7+k*1.8,0,Math.PI/2,0));
+  for(let k=0;k<4;k++) K(mk(wplane(1.1,.7),[route,speed,track,route][k],g,8.4,1.6,(k-1.5)*WZ*.41,0,Math.PI/2,0));
   K(B(g,panel,8.3,0,0,.1,1.1,WZ*2-1.8));
   /* crew mess: galley, table, bunks, lockers */
   const locker=M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8ccd2'],[1,'#a8aeb6']]); R(g,'#7e848c',0,0,1,h); for(let y=4;y<10;y+=2) R(g,'#7e848c',4,y,8,1); R(g,'#3a3c40',12,16,2,4); },4,6));
@@ -1939,7 +1941,7 @@ CAR_BUILD.casino=function casino(){
   for(const s of [-1,1]) B(g,curtain,13.6,.45,s*1.8,.1,2.9,2.0); B(g,curtain,13.6,2.9,0,.12,.5,WZ*2-.2); mk(wplane(1.8,2.4),C('#120a0a'),g,13.94,1.65,0,0,-Math.PI/2,0);
   mk(cyl(.015,.015,1.5,6),C('#c8ccd2'),g,11.9,1.2,0); B(g,black,11.9,1.95,0,.05,.12,.05);
   /* bar at the back */
-  B(g,wood,-12.5,0,0,.7,1.1,7); B(g,gold,-12.15,1.1,0,.14,.04,7); for(let k=0;k<12;k++) K(mk(cyl(.04,.05,.28,6),G(['#c8742a','#2a8a3a','#e8e0c8','#8a2a8a'][k%4]),g,-13.8,1.35+(k%2)*.45,-3+(k>>1)*1.2));
+  B(g,wood,-12.5,0,0,.7,1.1,WZ*2-1.6); B(g,gold,-12.15,1.1,0,.14,.04,WZ*2-1.6); for(let k=0;k<12;k++) K(mk(cyl(.04,.05,.28,6),G(['#c8742a','#2a8a3a','#e8e0c8','#8a2a8a'][k%4]),g,-13.8,1.35+(k%2)*.45,(WZ-1.4)*((k>>1)/2.5-1)));
   /* chandeliers */
   const crystal=U('#fff4d8'); for(const x of [-9,-2,5]){ mk(torus(.45,.03,4,16),gold,g,x,2.95,0,Math.PI/2); for(let k=0;k<14;k++){ const a=k/14*Math.PI*2; B(g,crystal,x+Math.cos(a)*.45,2.8,Math.sin(a)*.45,.05,.16,.05); } B(g,crystal,x,2.6,0,.12,.3,.12); }
   WG.casino.spots={king:{x:12.0,z:-.4,ry:-Math.PI/2,y:.45},king_c:{x:4.2,z:1.3,ry:-Math.PI/2},king_c2:{x:-6.8,z:-1.6,ry:Math.PI/2}};
@@ -1965,8 +1967,8 @@ CAR_BUILD.pool=function pool(){
   for(const x of [-8.5,8.5]) for(const s of [-1,1]){ mk(cyl(.3,.24,.6,10),C('#c8643a'),g,x,.3,s*2.4); B(g,C('#7a5a3e'),x,.6,s*2.4,.12,1.8,.12,0,0,.1); for(let k=0;k<7;k++) mk(box(.14,.05,1.1),C('#3f8a3e'),g,x,2.45,s*2.4,.0,k/7*Math.PI*2,.45); }
   /* tiki bar under thatch at the back */
   const thatch=M(P2(16,16,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#c8a060'],[1,'#a88048']]); for(let x=0;x<w;x+=2) R(g,'#8a6a38',x,0,1,h); },8,25),{double:true});
-  B(g,wood,-12.4,0,0,.8,1.1,6.4); B(g,C('#2a9a5a'),-12.05,1.1,0,.14,.05,6.4); mk(box(2.2,.15,8),thatch,g,-12.8,2.6,0,0,0,-.25); for(const z of [-1.9,1.9]) B(g,wood,-12.4,0,z,.12,2.6,.12);
-  for(let k=0;k<6;k++) K(mk(cyl(.05,.05,.18,6),G(['#f2c230','#e0473a','#2a9a5a'][k%3]),g,-12.4,1.2,-2.5+k*1.0));
+  B(g,wood,-12.4,0,0,.8,1.1,WZ*2-1.8); B(g,C('#2a9a5a'),-12.05,1.1,0,.14,.05,WZ*2-1.8); mk(box(2.2,.15,WZ*2-.4),thatch,g,-12.8,2.6,0,0,0,-.25); for(const z of [-1.9,1.9]) B(g,wood,-12.4,0,z,.12,2.6,.12);
+  for(let k=0;k<6;k++) K(mk(cyl(.05,.05,.18,6),G(['#f2c230','#e0473a','#2a9a5a'][k%3]),g,-12.4,1.2,(WZ-1.4)*(k/2.5-1)));
   /* the DJ booth and speaker stacks */
   B(g,C('#121214'),12,0,0,1.0,1.1,2.4); B(g,M(textTex(32,16,'#121214',[['TREMOR','c',5,'#ff3fa4']]),{unlit:true}),11.48,.5,0,.02,.4,1.6);
   for(const z of [-.6,.6]) mk(cyl(.26,.26,.04,14),C('#2a2a2e'),g,12,1.12,z);
@@ -2077,13 +2079,13 @@ CAR_BUILD.dimsum=function dimsum(){
   const g=shell('dimsum',{floor:carpet,floorTile:1.2,ceil,ceilTile:1.2,dado:M(woodT('#2a1414','#1a0c0c',64,true)),upper:lacquer,pier:lacquer,trim:gold,end:lacquer,door:dark,rail:gold,
     wins:winsEvery(4,1.8,-12,6),lamps:[lamp(-10,2.4,0,[1.4,.55,.35],6),lamp(-4,2.4,0,[1.4,.55,.35],6),lamp(2,2.4,0,[1.4,.55,.35],6),lamp(10,2.6,0,[.9,.95,1.0],6),lamp(11,1.0,-2,[1.5,.5,.1],3.5)],ambK:.8});
   /* round tables with lazy susans and steamer stacks */
-  for(const x of [-11,-7,-3,1,5]) for(const s of [-1,1]){ const t=K(N(g,x,0,s*2.85)); mk(cyl(.85,.85,.06,16),cloth,t,0,.74,0); mk(cyl(.86,.8,.3,16,{open:true}),M(null,{color:0xf2ece0,double:true}),t,0,.58,0); mk(cyl(.36,.36,.04,14),gold,t,0,.8,0);
+  for(const x of [-11,-7,-3,1,5]) for(const s of [-1,1]){ const t=K(N(g,x,0,s*(WZ-1.5))); mk(cyl(.85,.85,.06,16),cloth,t,0,.74,0); mk(cyl(.86,.8,.3,16,{open:true}),M(null,{color:0xf2ece0,double:true}),t,0,.58,0); mk(cyl(.36,.36,.04,14),gold,t,0,.8,0);
     for(let k=0;k<3;k++) mk(cyl(.12,.12,.08,10),bamboo,t,Math.cos(k*2.1)*.22,.86+(k%2)*.08,Math.sin(k*2.1)*.22);
     for(let k=0;k<5;k++){ const a=k/5*Math.PI*2+.3, cx=Math.cos(a)*1.15, cz=Math.sin(a)*1.15; B(t,dark,cx,0,cz,.4,.45,.4); B(t,M(fabT('#b82020',65)),cx,.45,cz,.42,.06,.42); } }
   /* trolleys */
   for(const x of [-9,3]){ B(g,C('#c8ccd2'),x,0,0,.9,.85,.6); for(let k=0;k<6;k++) mk(cyl(.15,.15,.09,10),bamboo,g,x-.25+(k%3)*.25,.9+(k>>1&1)*.1+(k>2?.0:0),-.12+(k>2?.24:0)); }
   /* red lanterns */
-  const lan=U('#ff4030'); for(let k=0;k<9;k++){ const x=-12+k*2.4; for(const z of [-2.85,2.85]){ K(mk(lathe([[0,.08,.08],[.08,.24,.24],[.34,.24,.24],[.42,.08,.08]],10),lan,g,x,2.5,z)); K(B(g,gold,x,2.5,z,.2,.03,.2)); K(B(g,gold,x,2.92,z,.03,.48,.03)); K(B(g,U('#f2c230'),x,2.38,z,.03,.14,.03)); } }
+  const lan=U('#ff4030'); for(let k=0;k<9;k++){ const x=-12+k*2.4; for(const z of [-(WZ-1.7),WZ-1.7]){ K(mk(lathe([[0,.08,.08],[.08,.24,.24],[.34,.24,.24],[.42,.08,.08]],10),lan,g,x,2.5,z)); K(B(g,gold,x,2.5,z,.2,.03,.2)); K(B(g,gold,x,2.92,z,.03,.48,.03)); K(B(g,U('#f2c230'),x,2.38,z,.03,.14,.03)); } }
   /* the gold crane mural on the rear wall */
   const crane=M(P2(64,48,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#a81c1c'],[1,'#7a1010']]); g.fillStyle='#e8c050'; g.beginPath(); g.moveTo(10,36); g.quadraticCurveTo(26,20,40,22); g.lineTo(56,6); g.lineTo(44,26); g.quadraticCurveTo(48,34,30,38); g.closePath(); g.fill(); g.strokeStyle='#e8c050'; g.lineWidth=2; g.beginPath(); g.moveTo(26,36); g.lineTo(22,46); g.moveTo(32,36); g.lineTo(34,46); g.stroke(); ell(g,52,10,3,2,'#e8c050'); R(g,'#c8202a',54,8,2,2); ell(g,14,12,6,6,'#e8c050'); }));
   mk(wplane(3.6,2.4),crane,g,-WL/2+.04,1.85,-1.4,0,Math.PI/2,0);
@@ -2133,7 +2135,7 @@ CAR_BUILD.aquarium=function aquarium(){
     for(let k=0;k<4;k++){ const n=mk(plane(.8,.4),fish,g,x,1+k*.6,0); const ph=k*1.7; WG.aquarium.anim.push(t=>{ const a=t*.5+ph; n.p=[x+Math.cos(a)*.45,1+k*.6+Math.sin(t+ph)*.1,Math.sin(a)*.45]; n.r=[0,-a,0]; }); } }
   /* blue velvet booths */
   for(const x of [-11,-2.5,2.5,11]) for(const s of [-1,1]){ B(g,velvet,x,0,s*2.2,2.4,.45,1.0); B(g,velvet,x,.45,s*2.65,2.4,.7,.2); Wz(mk(cyl(.4,.4,.04,12),C('#f2ece0'),g,x,.68,s*1.3)); Wz(mk(cyl(.04,.04,.68,6),gold,g,x,.34,s*1.3)); }
-  B(g,C('#14203a'),13,0,0,.8,1.05,6); B(g,gold,12.65,1.05,0,.1,.04,6); for(let k=0;k<5;k++) K(mk(cyl(.04,.05,.24,6),G(['#29e0e6','#f5c542','#ff3fa4'][k%3]),g,13.2,1.2,-2+k*1));
+  B(g,C('#14203a'),13,0,0,.8,1.05,WZ*2-2.8); B(g,gold,12.65,1.05,0,.1,.04,WZ*2-2.8); for(let k=0;k<5;k++) K(mk(cyl(.04,.05,.24,6),G(['#29e0e6','#f5c542','#ff3fa4'][k%3]),g,13.2,1.2,(WZ-1.9)*(k/2-1)));
 };
 
 
@@ -2149,125 +2151,94 @@ function widenCar(k){ const w=WG[k];
 
 
 /* =====================================================================================================
-   WHAT THE WIDTH IS FOR. At 8.8 m inside, every car gets a set piece down the middle that turns it into
-   a room you fight in: lanes to flank down, cover at waist height, a chokepoint, a perch, places to hide.
-   Built in final (widened) coordinates, so nothing here moves.
+   EACH CAR AS A ROOM YOU FIGHT IN. On top of the art set's dressing, every car gets what makes it play:
+   lanes, waist-high cover, a chokepoint, a perch, places to hide. Sized for the 5.8 m car (WZ is the half width).
+   And the crews: who stands where in each car (the art set places one boss and two; these fill the car).
+   The order you meet them, back of the train to the front, is the order they get on:
+   aquarium (nobody yet) · dim sum (Hong Kong) · banya (Baikal) · pub (London) · trattoria (Naples) ·
+   pool (Rio) · casino (Las Vegas) · capsule hotel (Tokyo, the last night) · locomotive.
    ===================================================================================================== */
 const PLAY={
-  cab:'The last room. The flight deck is a horseshoe you fight round; behind the bulkhead a waist-high spine of traction cabinets splits the crew mess into two lanes, with lockers and bunks to hide in.',
-  casino:'Laid out like a real floor. You come in by the bar, cross a raised pit of tables round the pit boss\'s podium (waist-high cover, one step up), then a slot floor of two islands: a centre aisle and a lane down each wall, cross aisles between. The King watches it all from the stage.',
-  pool:'Open ground. The pool is a 14 m moat down the middle: wade it slowly or go round. The lifeguard chair is a perch, the hot tub and the bar are the only hard cover.',
-  pub:'A brawler\'s room. A long bar to vault and fight behind, booths to pin people in, high tables and stools to throw, and an etched-glass snug screen at the front to break line of sight.',
-  trattoria:'Lunch service. Nonna\'s long Sunday table runs down the middle as cover, family tables line both walls, and the kitchen end is a dead end with an oven in it.',
-  banya:'Two climates. The sauna end is close quarters round tiered benches and a cold plunge tub, half hidden in steam; through the one door, the ice bar end is bright and open.',
-  dimsum:'One way through. Tables fill both sides, the trolleys run the middle lane, and a lacquered moon gate is the only doorway into the half of the car where Lau waits.',
-  capsule:'The stealth car. Two storeys of pods line both walls and a pod island runs down the middle, leaving two dim corridors: every pod is a place to hide, or a place for someone to be waiting.',
-  aquarium:'Glass everywhere. Column tanks and a long reef tank break the room up; velvet booths along both walls face the middle.',};
+  cab:'The last room. The flight deck is a horseshoe you fight round; behind the bulkhead a waist-high row of traction cabinets splits the crew mess into two lanes, with lockers and bunks to hide by.',
+  casino:'You come in at the bar. Down the middle runs the table pit, a raised row of roulette, craps and blackjack, waist-high cover with a lane down each side between it and the slot machines. The King watches it all from the stage at the far end.',
+  pool:'Open ground. The pool is a 14 m moat down the middle: step down into it or go round. The lifeguard chair is a perch, the hot tub and the bar are the only hard cover.',
+  pub:'A brawler\'s room. A long bar to fight along, booths to pin people in, high tables and stools to throw, and an etched-glass snug screen at the front to break line of sight.',
+  trattoria:'Lunch service. Family tables down both walls with a narrow aisle between, hams hanging overhead, and the kitchen end is a dead end with an oven in it. Nonna sits in the middle of it all.',
+  banya:'Two climates. The sauna end is close quarters between tiered benches and a cold plunge tub, half hidden in steam; through the one door, the ice bar end is bright and open.',
+  dimsum:'One way through. Round tables fill both sides, the trolleys run the middle lane, and a lacquered moon gate is the only doorway into the half of the car where Lau waits.',
+  capsule:'The stealth car. Two storeys of pods line both walls with a lounge in the middle: every pod is a place to hide, or a place for someone to be waiting.',
+  aquarium:'Where you board, at the back of the train. Nobody has got on yet: a quiet ride out of Tokyo past the column tanks and the paddy fields, to get your hands steady before Hong Kong.'};
 for(const W of WAGONS) W.play=PLAY[W.key];
+const NARROW=WZ<3.5;
 
-/* 01 · cab: a spine of traction cabinets down the crew mess, cable trays overhead */
+/* cab: a row of traction cabinets down the crew mess, cable trays overhead */
 CAR_POST.cab=function(){ const g=WG.cab.g, cab=C('#c8ccd2'), dark=C('#2a2e36');
   const rack=M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#d8dcde'],[1,'#b8bcc0']]); R(g,'#8a8e94',0,0,1,h); for(let y=4;y<h-4;y+=4){ R(g,'#2a2e36',3,y,10,2); R(g,(y/4)%3?'#7cf06a':'#f5c542',4,y,1,1); } },4,301));
-  for(const [x0,x1] of [[-11.2,-8.4],[-6.6,-3.8]]){ B(g,F(cab,rack,rack),(x0+x1)/2,0,0,x1-x0,1.25,1.0); B(g,dark,(x0+x1)/2,1.25,0,x1-x0+.06,.05,1.06); }
-  for(const s of [-1,1]) B(g,dark,-5,WH-.25,s*1.4,18,.08,.4);
+  for(const [x0,x1] of [[-11.2,-8.4],[-6.6,-3.8]]){ B(g,F(cab,rack,rack),(x0+x1)/2,0,0,x1-x0,1.25,.9); B(g,dark,(x0+x1)/2,1.25,0,x1-x0+.06,.05,.96); }
+  for(const s of [-1,1]) B(g,dark,-5,WH-.25,s*1.2,18,.08,.4);
 };
 
-/* 02 · casino: laid out like a real floor. Back to front: the bar, a raised pit of table games round a
-   pit boss's podium, a slot floor of two back-to-back islands (centre aisle plus a lane down each wall),
-   then the stage apron and the King's stage. */
+/* casino: back to front, the bar with stools, the table pit down the middle (a raised row of tables with a
+   lane each side to the slot machines on the walls), a blackjack table, the stage apron, the King's stage */
 CAR_POST.casino=function(){ const g=WG.casino.g, wood=M(woodT('#3a1e14','#24120c',314,true)), felt=M(fabT('#1f6a3a',315)), gold=C('#d4ad5a'), stool=C('#8a1424');
-  const pitC=M(P2(16,16,(g,w,h)=>{ R(g,'#1a3a2a',0,0,w,h); for(let y=0;y<h;y+=8) for(let x=0;x<w;x+=8){ ell(g,x+4,y+4,1.6,1.6,'#d4ad5a'); } },6,316));
-  /* the bar: stools along it */ for(let k=0;k<5;k++){ const z=-2.4+k*1.2; mk(cyl(.2,.2,.07,10),stool,g,-11.5,.75,z); mk(cyl(.035,.035,.75,6),gold,g,-11.5,.37,z); }
-  /* the pit: a raised green dais with a gold edge */
-  const PX=-6, PY=.14; B(g,pitC,PX,0,0,8.6,PY,5.8); for(const s of [-1,1]){ B(g,gold,PX,PY-.02,s*2.9,8.64,.04,.06); B(g,gold,PX+s*4.3,PY-.02,0,.06,.04,5.84); }
-  /* the pit boss's podium */ B(g,wood,PX,PY,0,.9,1.05,.6); B(g,gold,PX,PY+1.05,0,.96,.04,.66); B(g,U('#8ad8ff'),PX+.2,PY+1.1,0,.04,.28,.4); mk(cyl(.02,.02,.4,6),gold,g,PX-.3,PY+1.25,.2); B(g,U('#fff0c0'),PX-.3,PY+1.42,.2,.1,.06,.1);
-  /* roulette */ { const x=PX-2.3, z=-1.5; B(g,wood,x,PY,z,2.8,.8,1.3); B(g,felt,x,PY+.8,z,2.6,.04,1.1); const wh=mk(cyl(.42,.42,.08,20),[wood,WG.casino.wheel,WG.casino.wheel],g,x-1.0,PY+.88,z); WG.casino.anim.push(t=>{ wh.r[1]=t*1.4; });
-    for(let k=0;k<4;k++){ const sx=x-.6+k*.5; mk(cyl(.2,.2,.07,10),stool,g,sx,PY+.55,z-.95); mk(cyl(.035,.035,.55,6),gold,g,sx,PY+.27,z-.95); } }
-  /* craps */ { const x=PX+2.3, z=-1.5; B(g,wood,x,PY,z,2.8,.9,1.4); B(g,felt,x,PY+.9,z,2.5,.03,1.1); for(const s of [-1,1]) B(g,gold,x,PY+.93,z+s*.62,2.8,.05,.06); for(const [dx,dz] of [[-.4,.1],[-.25,-.05]]) B(g,C('#f2ece0'),x+dx,PY+.93,z+dz,.08,.08,.08,.4); }
-  /* two blackjack tables, players on the wall side, dealers facing the podium */
-  for(const x of [PX-2.3,PX+2.3]){ const z=1.3; mk(cyl(1.0,1.0,.08,16),[wood,felt,wood],g,x,PY+.8,z); B(g,wood,x,PY,z,.4,.8,.4); for(let k=0;k<5;k++){ const a=-.9+k*.45, cx=x+Math.sin(a)*1.35, cz=z+Math.cos(a)*1.35; mk(cyl(.2,.2,.07,10),stool,g,cx,PY+.5,cz); mk(cyl(.035,.035,.5,6),gold,g,cx,PY+.25,cz); } }
-  /* the slot floor: two islands, each two runs of back-to-back machines with a cross aisle */
-  const scr=(seed)=>M(P2(16,24,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#2a1a4a'],[1,'#120a22']]); const r=rng(seed); for(let k=0;k<3;k++){ R(g,'#f2ece0',1+k*5,6,4,8); text(g,r()<.5?'7':'0',2+k*5,7,['#f5c542','#d63a2c','#29e0e6'][k],1); } R(g,'#ff3fa4',0,0,w,3); R(g,'#f5c542',2,18,12,2); }),{unlit:true});
-  const sign=M(textTex(48,12,'#121014',[['JACKPOT','c',3,'#f5c542']]),{unlit:true});
-  for(const zi of [-1.8,1.8]) for(const x0 of [-.6,4.6]){ for(let i=0;i<4;i++) for(const s of [-1,1]){ const n=N(g,x0+i*.95,0,zi+s*.32,0,s>0?0:Math.PI,0);
-      B(n,C(['#2a2a5a','#5a1a3a','#1a4a5a'][(i+s+2)%3]),0,0,0,.8,1.2,.62); mk(wplane(.6,.7),scr(400+i*3+s+(x0>0?20:0)+(zi>0?40:0)),n,0,1.55,.32); B(n,C('#2a2a30'),0,1.2,0,.8,.72,.58); B(n,G('#f5c542'),0,1.92,.05,.82,.12,.66); }
-    const xc=x0+1.425; B(g,C('#121014'),xc,2.04,zi,3.0,.4,.08); for(const s of [-1,1]) mk(wplane(2.8,.36),sign,g,xc,2.24,zi+s*.05,0,s>0?0:Math.PI,0); }
-  /* stage apron: a gold-edged runway carpet up to the stage */ B(g,M(P2(16,16,(g,w,h)=>{ R(g,'#3a0a14',0,0,w,h); R(g,'#d4ad5a',0,0,w,1); },4,317)),9.4,0,0,2.4,.02,3.2);
+  const pitC=M(P2(16,16,(g,w,h)=>{ R(g,'#1a3a2a',0,0,w,h); for(let y=0;y<h;y+=8) for(let x=0;x<w;x+=8) ell(g,x+4,y+4,1.6,1.6,'#d4ad5a'); },6,316));
+  for(let k=0;k<3;k++){ const z=-1.1+k*1.1; mk(cyl(.2,.2,.07,10),stool,g,-11.5,.75,z); mk(cyl(.035,.035,.75,6),gold,g,-11.5,.37,z); }
+  const PY=.14, X0=-9.6, X1=1.4, PZ=1.12; B(g,pitC,(X0+X1)/2,0,0,X1-X0,PY,PZ*2); for(const s of [-1,1]) B(g,gold,(X0+X1)/2,PY-.02,s*PZ,X1-X0+.04,.04,.06); for(const x of [X0,X1]) B(g,gold,x,PY-.02,0,.06,.04,PZ*2+.04);
+  const stools=(x,len)=>{ for(const s of [-1,1]) for(let k=0;k<3;k++){ const sx=x-len/2+.35+k*(len-.7)/2; mk(cyl(.18,.18,.07,10),stool,g,sx,PY+.5,s*.85); mk(cyl(.03,.03,.5,6),gold,g,sx,PY+.25,s*.85); } };
+  { const x=-7.6; B(g,wood,x,PY,0,2.6,.8,1.1); B(g,felt,x,PY+.8,0,2.4,.04,.9); const wh=mk(cyl(.38,.38,.08,20),[wood,WG.casino.wheel,WG.casino.wheel],g,x-.9,PY+.88,0); WG.casino.anim.push(t=>{ wh.r[1]=t*1.4; }); stools(x,2.6); }
+  { const x=-4.0; B(g,wood,x,PY,0,2.6,.9,1.1); B(g,felt,x,PY+.9,0,2.3,.03,.85); for(const s of [-1,1]) B(g,gold,x,PY+.93,s*.5,2.6,.05,.06); for(const [dx,dz] of [[-.4,.1],[-.25,-.05]]) B(g,C('#f2ece0'),x+dx,PY+.93,dz,.08,.08,.08,.4); stools(x,2.6); }
+  { const x=-.5; mk(cyl(.95,.95,.08,16),[wood,felt,wood],g,x,PY+.8,0); B(g,wood,x,PY,0,.4,.8,.4); for(let k=0;k<4;k++){ const a=-1.1+k*.73, cx=x+Math.sin(a)*1.0, cz=Math.cos(a)*.75; mk(cyl(.18,.18,.07,10),stool,g,cx,PY+.5,cz); mk(cyl(.03,.03,.5,6),gold,g,cx,PY+.25,cz); } }
+  { const x=4.0; mk(cyl(.95,.95,.08,16),[wood,felt,wood],g,x,.8,-.5); B(g,wood,x,0,-.5,.4,.8,.4); for(let k=0;k<4;k++){ const a=-1.1+k*.73, cx=x+Math.sin(a)*1.25, cz=-.5+Math.cos(a)*1.25; mk(cyl(.2,.2,.07,10),stool,g,cx,.5,cz); mk(cyl(.035,.035,.5,6),gold,g,cx,.25,cz); } }
+  B(g,M(P2(16,16,(g,w,h)=>{ R(g,'#3a0a14',0,0,w,h); R(g,'#d4ad5a',0,0,w,1); },4,317)),9.4,0,0,2.4,.02,2.6);
 };
 
-/* 03 · pool: a hot tub, a lifeguard chair to perch on, a flamingo in the pool */
+/* pool: a hot tub by the bar, a lifeguard chair at the deep end to perch on, a flamingo in the pool */
 CAR_POST.pool=function(){ const g=WG.pool.g, white=C('#f4f2ec'), wood=M(woodT('#c8a070','#a88050',321));
-  mk(cyl(1.3,1.3,.75,16),wood,g,-9.5,.375,0); mk(cyl(1.15,1.15,.02,16),U('#5ae0f0'),g,-9.5,.66,0);
-  for(let k=0;k<8;k++){ const b=mk(cyl(.05,.05,.02,6),U('#e8ffff'),g,-9.5,.68,0), a=k*.8, r0=.2+(k%4)*.22; WG.pool.anim.push(t=>{ b.p=[-9.5+Math.cos(a+t*.6)*r0,.68,Math.sin(a+t*.6)*r0]; }); }
-  const lc=N(g,1.5,0,2.7,0,Math.PI,0); for(const [dx,dz] of [[-.4,-.35],[.4,-.35],[-.4,.35],[.4,.35]]) B(lc,white,dx,0,dz,.08,1.8,.08,0,dz*.25,-dx*.15);
+  mk(cyl(1.15,1.15,.75,16),wood,g,-9.6,.375,0); mk(cyl(1.0,1.0,.02,16),U('#5ae0f0'),g,-9.6,.66,0);
+  for(let k=0;k<8;k++){ const b=mk(cyl(.05,.05,.02,6),U('#e8ffff'),g,-9.6,.68,0), a=k*.8, r0=.2+(k%4)*.2; WG.pool.anim.push(t=>{ b.p=[-9.6+Math.cos(a+t*.6)*r0,.68,Math.sin(a+t*.6)*r0]; }); }
+  const lc=N(g,7.75,0,0,0,-Math.PI/2,0); for(const [dx,dz] of [[-.4,-.35],[.4,-.35],[-.4,.35],[.4,.35]]) B(lc,white,dx,0,dz,.08,1.8,.08,0,dz*.25,-dx*.15);
   B(lc,C('#e0473a'),0,1.8,0,.9,.1,.7); B(lc,C('#e0473a'),0,1.9,-.33,.9,.7,.08); for(let k=0;k<4;k++) B(lc,white,0,.3+k*.4,.38,.8,.05,.06);
-  mk(cyl(.025,.025,1.4,6),white,lc,.35,2.6,-.3); mk(lathe([[0,.9,.9],[.35,.05,.05]],10,{capB:false}),M(stripes('#e0473a','#f2ece0',2),{double:true}),lc,.35,3.25,-.3);
   const fl=N(g,3,.47,.4), pink=C('#ff7ab0'); mk(torus(.42,.16,8,14),pink,fl,0,0,0,Math.PI/2); mk(cyl(.07,.07,.7,8),pink,fl,.4,.35,0,0,0,-.2); B(fl,pink,.48,.66,0,.24,.14,.14); B(fl,C('#2a2a2e'),.62,.66,0,.08,.06,.06);
   WG.pool.anim.push(t=>{ fl.p[1]=.47+Math.sin(t*1.3)*.03; fl.r[1]=Math.sin(t*.2)*.6; });
 };
 
-/* 04 · pub: high tables down the middle and an etched-glass snug screen at the front */
+/* pub: high tables down the middle, an etched-glass snug screen at the front */
 CAR_POST.pub=function(){ const g=WG.pub.g, oak=M(woodT('#5a3420','#3a2014',341,true)), brass=C('#d4ad5a');
-  for(const x of [-9,-5.5,-2]){ mk(cyl(.06,.06,1.0,6),brass,g,x,.5,.2); mk(cyl(.3,.3,.04,10),C('#2a1408'),g,x,.02,.2); mk(cyl(.45,.45,.05,12),oak,g,x,1.03,.2);
-    for(const dz of [-.15,.18]) mk(cyl(.05,.045,.16,8),G('#d8a040'),g,x+dz,1.14,.2+dz*.6); }
+  for(const x of [-9,-5.5,-2]){ mk(cyl(.06,.06,1.0,6),brass,g,x,.5,.25); mk(cyl(.3,.3,.04,10),C('#2a1408'),g,x,.02,.25); mk(cyl(.4,.4,.05,12),oak,g,x,1.03,.25);
+    for(const dz of [-.15,.18]) mk(cyl(.05,.045,.16,8),G('#d8a040'),g,x+dz,1.14,.25+dz*.6); }
   const glass=M(P2(16,32,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#e8d8a8'],[1,'#c8b078']]); g.strokeStyle='#f8f0d8'; for(let y=4;y<h;y+=8){ g.beginPath(); g.arc(8,y,4,0,Math.PI*2); g.stroke(); } R(g,'#5a3420',0,0,w,1); }),{emissive:0x2a2010});
-  for(const [z0,z1] of [[-3.6,-.9],[.9,3.6]]){ const zc=(z0+z1)/2, wd=z1-z0; B(g,oak,8.6,0,zc,.12,1.0,wd); B(g,glass,8.6,1.0,zc,.05,.9,wd-.1); B(g,oak,8.6,1.9,zc,.14,.08,wd+.04); for(const z of [z0,z1]) B(g,oak,8.6,0,z,.14,1.98,.14); }
+  const zs=NARROW?[[-2.4,-.8],[.8,2.4]]:[[-3.6,-.9],[.9,3.6]];
+  for(const [z0,z1] of zs){ const zc=(z0+z1)/2, wd=z1-z0; B(g,oak,8.6,0,zc,.12,1.0,wd); B(g,glass,8.6,1.0,zc,.05,.9,wd-.1); B(g,oak,8.6,1.9,zc,.14,.08,wd+.04); for(const z of [z0,z1]) B(g,oak,8.6,0,z,.14,1.98,.14); }
 };
 
-/* 05 · trattoria: Nonna's long Sunday table down the middle */
-CAR_POST.trattoria=function(){ const g=WG.trattoria.g, check=M(P2(16,16,(g,w,h)=>{ for(let y=0;y<h;y+=4) for(let x=0;x<w;x+=4) R(g,((x+y)>>2)%2?'#f4efe6':'#c8302a',x,y,4,4); },4,351)), wood=M(woodT('#8a5a34','#6a4426',352));
-  B(g,wood,-7,0,0,9,.72,1.1); B(g,check,-7,.72,0,9.2,.04,1.25); for(const s of [-1,1]) B(g,check,-7,.42,s*.63,9.2,.32,.02);
-  for(const s of [-1,1]){ B(g,wood,-7,0,s*.98,8.6,.45,.38); }
-  for(let k=0;k<8;k++) for(const s of [-1,1]){ const x=-10.6+k*1.05; mk(cyl(.17,.17,.02,12),C('#f8f6f0'),g,x,.765,s*.36); mk(cyl(.1,.1,.03,10),C(['#c8502a','#e8c460','#6a8a3a'][(k+s+2)%3]),g,x,.78,s*.36); }
-  for(let k=0;k<4;k++){ const x=-10+k*2.1; mk(cyl(.05,.06,.3,8),C('#2a5a2a'),g,x,.9,0); B(g,C('#d8a868'),x+.9,.76,0,.5,.12,.2,.3); }
-  for(let k=0;k<3;k++){ const x=-9+k*2.6; mk(cyl(.04,.04,.25,6),C('#f2ece0'),g,x,.88,0); B(g,U('#ffd890'),x,1.0,0,.025,.05,.025); }
-};
-
-/* 06 · banya: a cold plunge tub in the sauna, an ice bear on the ice side */
+/* banya: a cold plunge tub in the sauna, an ice bear on the ice side */
 CAR_POST.banya=function(){ const g=WG.banya.g, wood=M(woodT('#a87a46','#8a5a30',361)), ice=U('#bfefff'), hoop=C('#3a2a1a');
-  B(g,wood,-7.5,0,0,3.2,.95,1.8); mk(wplane(3.0,1.6),U('#7ad0f0'),g,-7.5,.88,0,-Math.PI/2); for(const dx of [-1.2,0,1.2]) B(g,hoop,-7.5+dx,.2,0,.06,.06,1.84); B(g,hoop,-7.5,.7,0,3.24,.06,1.84);
-  for(let k=0;k<3;k++) B(g,wood,-5.75,.0+k*.3,0,.3,.06,.6);
-  const bear=N(g,12.2,0,2.8,0,-.6,0); B(bear,ice,0,0,0,1.4,.5,1.0); B(bear,ice,0,.5,0,1.0,.8,.8); B(bear,ice,.55,.6,0,.5,.45,.6); B(bear,ice,.85,.75,0,.3,.22,.32); for(const s of [-1,1]) B(bear,ice,.5,1.0,s*.2,.1,.12,.1);
-  for(const [dx,dz] of [[-.3,-.25],[-.3,.25],[.3,-.25],[.3,.25]]) B(bear,ice,dx,.5,dz,.22,.0001+.01,.22);
+  const tl=NARROW?2.4:3.2, tw=NARROW?1.1:1.8;
+  B(g,wood,-7.5,0,0,tl,.9,tw); mk(wplane(tl-.2,tw-.2),U('#7ad0f0'),g,-7.5,.84,0,-Math.PI/2); for(const dx of [-tl*.38,0,tl*.38]) B(g,hoop,-7.5+dx,.2,0,.06,.06,tw+.04); B(g,hoop,-7.5,.66,0,tl+.04,.06,tw+.04);
+  const bear=N(g,12.2,0,WZ-1.0,0,-.6,0); B(bear,ice,0,0,0,1.3,.45,.9); B(bear,ice,0,.45,0,.95,.75,.75); B(bear,ice,.52,.55,0,.48,.42,.56); B(bear,ice,.8,.68,0,.28,.2,.3); for(const s of [-1,1]) B(bear,ice,.48,.93,s*.19,.1,.12,.1);
 };
 
-/* 07 · dim sum: the moon gate, the only way through to the kitchen half */
-CAR_POST.dimsum=function(){ const g=WG.dimsum.g, lac=C('#a81c1c'), gold=C('#d4ad5a'), r=1.45, cy=1.45, X=-5;
+/* dim sum: the moon gate, the only way through to the kitchen half */
+CAR_POST.dimsum=function(){ const g=WG.dimsum.g, lac=C('#a81c1c'), gold=C('#d4ad5a'), r=1.4, cy=1.4, X=-5;
   for(let y=0;y<WH-.001;y+=.1){ const dy=y+.05-cy, hw=Math.abs(dy)<r?Math.sqrt(r*r-dy*dy):0; for(const s of [-1,1]) if(WZ-hw>.01) B(g,lac,X,y,s*(hw+WZ)/2,.3,.1,WZ-hw); }
   for(let k=0;k<32;k++){ const a=k/32*Math.PI*2, y=cy+Math.sin(a)*r; if(y<.05) continue; B(g,gold,X,y-.05,Math.cos(a)*r,.34,.1,.3,0,-a); }
   for(const y of [.1,WH-.3]) B(g,gold,X,y,0,.34,.06,WZ*2);
-  const plaque=M(textTex(32,12,'#121014',[['GOLDEN CRANE','c',3,'#d4ad5a']]),{unlit:true}); for(const s of [-1,1]) mk(wplane(1.6,.5),plaque,g,X+s*.16,cy+r+.4,0,0,s*Math.PI/2,0);
+  const plaque=M(textTex(32,12,'#121014',[['GOLDEN CRANE','c',3,'#d4ad5a']]),{unlit:true}); for(const s of [-1,1]) mk(wplane(1.6,.5),plaque,g,X+s*.16,Math.min(WH-.5,cy+r+.35),0,0,s*Math.PI/2,0);
 };
 
-/* 08 · capsule: a two-storey island of pods down the middle, two dim corridors either side */
-CAR_POST.capsule=function(){ const g=WG.capsule.g, pod=C('#f4f4ee'), podIn=[U('#ffe8c0'),U('#c8e8ff'),U('#1a1a22')];
-  for(const x0 of [-10.4,4.65]) for(let i=0;i<6;i++) for(let lv=0;lv<2;lv++) for(const s of [-1,1]){ const n=N(g,x0+i*1.15,lv*1.25,s*.64);
-    B(n,pod,0,0,0,1.1,1.2,1.25); mk(wplane(.9,.85),podIn[(i+lv+(s>0?0:1))%3],n,0,.6,s*.63,0,s>0?0:Math.PI,0); B(n,C('#2a2a34'),0,.05,s*.63,.95,.06,.02); }
-  for(const x0 of [-10.4,4.65]){ B(g,C('#c8ccd2'),x0+2.875,2.5,0,6.95,.06,1.3); for(const s of [-1,1]) for(let x=x0;x<x0+6.5;x+=2) B(g,U('#29e0e6'),x+.5,.005,s*2.2,1.2,.01,.04); }
-  WG.capsule.spots.ren_c={x:-6,z:2.2,ry:-Math.PI/2}; WG.capsule.spots.ren_c2={x:7,z:-2.2,ry:Math.PI/2};
-};
+/* trattoria and the capsule hotel need nothing more: the art set's room is the fight. The aquarium is the quiet car. */
 
-/* 09 · aquarium: a long reef tank down the middle between the column tanks */
-CAR_POST.aquarium=function(){ const g=WG.aquarium.g, gold=C('#d4ad5a');
-  const reef=M(P2(64,16,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#3ad0e8'],[1,'#1a6a9a']]); const r=rng(391); for(let i=0;i<14;i++){ const x=r()*w|0, hh=3+(r()*7|0); R(g,['#ff6a8a','#ffb040','#c86aff','#5af0a0'][i%4],x,h-hh,2+(r()*3|0),hh); } for(let i=0;i<12;i++) R(g,rgba('#e8ffff',.6),r()*w|0,r()*h*.6|0,1,1); }),{unlit:true});
-  B(g,C('#14203a'),0,0,0,6.8,.5,1.1); B(g,F(M(reef.tex,{unlit:true}),reef,reef),0,.5,0,6.6,.9,.95); B(g,gold,0,1.4,0,6.8,.05,1.1); B(g,gold,0,.48,0,6.86,.04,1.14);
-  const fish=M(fishTex('gold'),{unlit:true,cut:true,double:true});
-  for(let k=0;k<6;k++){ const s=k%2?1:-1, n=mk(plane(.5,.25),fish,g,0,0,0), ph=k*1.3; WG.aquarium.anim.push(t=>{ const u=((t*.15+k/6)%1)*2-1; n.p=[u*3.0*s,.75+(k%3)*.2+Math.sin(t+ph)*.04,s*.5]; n.r=[0,s>0?0:Math.PI,0]; }); }
-};
-
-
-/* the crews: more of them in every car, placed where they would be (at the bar, at a table, on watch).
-   Final coordinates; ry -PI/2 faces the rear, where you come in. */
+/* the crews in each car, in this car's coordinates; ry -PI/2 faces the back of the car, where you come in */
 function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k,o)=>{ if(k===key) Object.assign(WG[k].spots,o); };
-  add('casino',{king_c:{x:2.0,z:0,ry:B_},king_c2:{x:-6,z:-.75,ry:B_,y:.14},king_c3:{x:-11,z:1.4,ry:B_},king_c4:{x:6,z:3.15,ry:0},king_c5:{x:3,z:-3.15,ry:B_},king_c6:{x:9.3,z:1.4,ry:B_},king_c7:{x:9.3,z:-1.4,ry:B_},king_c8:{x:-3.2,z:2.75,ry:P,y:.14}});
-  add('pool',{tremor_c3:{x:-9.6,z:1.9,ry:B_},tremor_c4:{x:1.5,z:2.62,ry:P,y:1.38,pose:'sit'},tremor_c5:{x:8.6,z:-2.5,ry:B_},tremor_c6:{x:-7.6,z:-2.4,ry:B_},tremor_c7:{x:-11.2,z:-2.2,ry:B_}});
-  add('pub',{gaffer_c3:{x:-6.75,z:-2.0,ry:P},gaffer_c4:{x:-9,z:.95,ry:B_},gaffer_c5:{x:-5.5,z:-.55,ry:B_},gaffer_c6:{x:-10.95,z:3.75,ry:F_,pose:'sit'},gaffer_c7:{x:10.6,z:1.4,ry:B_},gaffer_c8:{x:.5,z:2.4,ry:B_}});
-  add('trattoria',{nonna_c3:{x:-9.5,z:1.05,ry:P,pose:'sit',y:-.04},nonna_c4:{x:-6,z:-1.05,ry:0,pose:'sit',y:-.04},nonna_c5:{x:9,z:-2.5,ry:B_},nonna_c6:{x:5.6,z:2.2,ry:B_},nonna_c7:{x:-12.6,z:1.6,ry:F_}});
-  add('banya',{volkov_c2:{x:-9,z:3.15,ry:P,pose:'sit'},volkov_c3:{x:-4,z:-3.15,ry:0,pose:'sit'},volkov_c4:{x:-7.5,z:1.45,ry:B_},volkov_c5:{x:5.4,z:-1.9,ry:P},volkov_c6:{x:11.4,z:.6,ry:B_},volkov_c7:{x:2.2,z:2.6,ry:B_}});
-  add('dimsum',{lau_c3:{x:-9.4,z:0,ry:B_},lau_c4:{x:-12.09,z:3.22,ry:1.9,pose:'sit'},lau_c5:{x:2.1,z:-2.51,ry:-1.87,pose:'sit'},lau_c6:{x:10.5,z:1.2,ry:B_},lau_c7:{x:-3,z:-1.1,ry:B_}});
-  add('capsule',{ren_c3:{x:-10,z:-2.2,ry:B_},ren_c4:{x:10,z:2.2,ry:B_},ren_c5:{x:-1.6,z:1.5,ry:P,pose:'sit',y:-.08},ren_c6:{x:2.6,z:-2.7,ry:B_}});
-  add('aquarium',{lau_c:{x:-8.6,z:1.3,ry:B_},volkov_c:{x:8.6,z:-1.2,ry:B_},gaffer_c:{x:.4,z:2.2,ry:B_}});
-  add('cab',{ren_c:{x:3.6,z:-1.6,ry:B_},ren_c2:{x:-8.5,z:2.4,ry:B_},ren_c3:{x:9.9,z:2.4,ry:B_}});
+  add('casino',{king_c:{x:5.6,z:1.55,ry:B_},king_c2:{x:-5.8,z:-1.55,ry:B_},king_c3:{x:-11,z:1.3,ry:B_},king_c4:{x:7,z:-1.6,ry:P},king_c5:{x:-2.2,z:1.55,ry:B_},king_c6:{x:9.3,z:1.1,ry:B_},king_c7:{x:9.3,z:-1.1,ry:B_},king_c8:{x:2.4,z:.6,ry:B_}});
+  add('pool',{tremor_c3:{x:-9.6,z:1.55,ry:B_},tremor_c4:{x:7.75,z:0,ry:B_,y:1.38,pose:'sit'},tremor_c5:{x:8.6,z:-1.9,ry:B_},tremor_c6:{x:-7.6,z:-1.9,ry:B_},tremor_c7:{x:-11.2,z:-1.4,ry:B_}});
+  add('pub',{gaffer_c3:{x:-6.75,z:-.95,ry:P},gaffer_c4:{x:-9,z:.95,ry:B_},gaffer_c5:{x:-5.5,z:.95,ry:P},gaffer_c6:{x:-10.95,z:2.25,ry:F_,pose:'sit'},gaffer_c7:{x:10.6,z:.6,ry:B_},gaffer_c8:{x:.5,z:1.2,ry:B_}});
+  add('trattoria',{nonna_c3:{x:-11.75,z:1.7,ry:F_,pose:'sit',y:-.04},nonna_c4:{x:-6.65,z:-1.7,ry:B_,pose:'sit',y:-.04},nonna_c5:{x:9,z:-1.05,ry:B_},nonna_c6:{x:5.6,z:1.1,ry:B_},nonna_c7:{x:-12.6,z:.8,ry:F_}});
+  add('banya',{volkov_c2:{x:-9,z:1.65,ry:P,pose:'sit'},volkov_c3:{x:-4,z:-1.65,ry:0,pose:'sit'},volkov_c4:{x:-5.2,z:.3,ry:B_},volkov_c5:{x:5.2,z:-.85,ry:P},volkov_c6:{x:11.4,z:.6,ry:B_},volkov_c7:{x:2.2,z:1.5,ry:B_}});
+  add('dimsum',{lau_c3:{x:-9.4,z:0,ry:B_},lau_c4:{x:-12.09,z:1.77,ry:1.9,pose:'sit'},lau_c5:{x:2.1,z:-1.06,ry:-1.87,pose:'sit'},lau_c6:{x:10.5,z:.6,ry:B_},lau_c7:{x:-4.2,z:-.3,ry:B_}});
+  add('capsule',{ren_c3:{x:-10,z:-.8,ry:B_},ren_c4:{x:10,z:.8,ry:B_},ren_c5:{x:-1.6,z:1.5,ry:P,pose:'sit',y:-.08},ren_c6:{x:2.6,z:-1.4,ry:B_}});
+  add('cab',{ren_c:{x:3.6,z:-1.2,ry:B_},ren_c2:{x:-7.5,z:1.2,ry:B_},ren_c3:{x:9.9,z:0,ry:B_}});
+  if(key==='aquarium') WG.aquarium.spots={}; /* nobody has boarded yet */
 }
 
 
@@ -2769,8 +2740,8 @@ function addWallMap(k){ const st=ST[k]; if(!st||MAP_WALL[k]==null) return; const
    it toward an animated pose. Standing = strong muscles anchored in the world. Hurt = weaker, relative to the
    body. Dead = no muscles. Damage is per body part: legs drop them, arms go limp, arteries spurt with the heartbeat.
    ===================================================================== */
-const state={ps1:true,res:480,snap:true,affine:true,dither:true};
-const XR={laser:false,wobble:0,on:false,session:null,space:null,origin:[0,0,3.2],yaw:0,head:null,hands:{},flash:0,snapHeld:false,btn:{},clearT:0,knifeTip:null,stabCd:0,res:1080,toast:'',toastT:0,resetHold:0,panelP:null};
+const state={ps1:true,res:720,snap:true,affine:true,dither:true};
+const XR={laser:false,wobble:0,on:false,session:null,space:null,origin:[0,0,3.2],yaw:0,head:null,hands:{},flash:0,snapHeld:false,btn:{},clearT:0,knifeTip:null,stabCd:0,res:1680,toast:'',toastT:0,resetHold:0,panelP:null};
 
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -3580,7 +3551,7 @@ addEventListener('keydown',e=>{ KEYS[e.code]=true; if(!GAME.started) return;
   else if(e.code==='KeyQ'&&HANDS.R.item){ HANDS.R.vel=v3.sc(camBasis().f,4); grabOrDrop(HANDS.R); } });
 addEventListener('mousedown',e=>{ if(e.button===0) KEYS.Mouse0=true; }); addEventListener('mouseup',e=>{ if(e.button===0) KEYS.Mouse0=false; });
 addEventListener('keyup',e=>{ KEYS[e.code]=false; });
-function toggleSlow(){ GAME.slow=!GAME.slow; sfx(GAME.slow?'slowin':'slowout'); $('bSlow').setAttribute('aria-pressed',String(GAME.slow)); $('bSlowT').setAttribute('aria-pressed',String(GAME.slow)); }
+function toggleSlow(){ GAME.slow=!GAME.slow; sfx(GAME.slow?'slowin':'slowout'); if(typeof MUSIC!=='undefined') try{ MUSIC.setSlow(GAME.slow); }catch(_){} $('bSlow').setAttribute('aria-pressed',String(GAME.slow)); $('bSlowT').setAttribute('aria-pressed',String(GAME.slow)); }
 let drag=null;
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{ if(!GAME.started) return; audio();
@@ -3696,13 +3667,13 @@ function frame(now){
    Left stick moves where you look, right stick snap-turns 30 degrees, B or Y kicks, X toggles bullet time. */
 function buzz(hand,v,ms){ const h=XR.hands[hand]; try{ h&&h.src.gamepad&&h.src.gamepad.hapticActuators&&h.src.gamepad.hapticActuators[0].pulse(v,ms); }catch(_){} }
 const worldFromLocal=()=>{ const c=Math.cos(XR.yaw),s=Math.sin(XR.yaw),m=m4.make(); m.set([c,0,-s,0, 0,1,0,0, s,0,c,0, XR.origin[0],XR.origin[1],XR.origin[2],1]); return m; };
-function labelTex(){ const c=document.createElement('canvas'); c.width=256; c.height=48; return {c,glt:null,f:-1,text:''}; }
+function labelTex(){ const c=document.createElement('canvas'); c.width=256; c.height=48; return {c,glt:null,f:-1,text:'',dyn:true}; }
 function setLabel(E,text){ const t=E.labelTex; if(t.text===text) return; t.text=text; const g=t.c.getContext('2d'); g.clearRect(0,0,256,48);
   g.font='600 17px "IBM Plex Mono",monospace'; const w=Math.min(250,g.measureText(text).width+16); g.fillStyle='rgba(12,20,42,.86)'; g.fillRect(128-w/2,8,w,32); g.fillStyle='#ff6a3a'; g.fillRect(128-w/2,8,3,32);
   g.fillStyle='#f2ede2'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,128,25,240);
   if(t.glt){ gl.bindTexture(gl.TEXTURE_2D,t.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,t.c); } }
 /* a floating panel in VR for 'you died', 'floor clear', the reset countdown and setting changes */
-const panelTex={c:(()=>{ const c=document.createElement('canvas'); c.width=512; c.height=160; return c; })(),glt:null,f:-1,text:''};
+const panelTex={c:(()=>{ const c=document.createElement('canvas'); c.width=512; c.height=160; return c; })(),glt:null,f:-1,text:'',dyn:true};
 const panelN=mk(plane(.72,.225),M(panelTex,{unlit:true,cut:true,double:true}),world); panelN.vis=false;
 function vrToast(t,sec){ XR.toast=t; XR.toastT=sec; }
 function drawPanel(h,p,bar){ const key=h+'|'+p+'|'+(bar<0?-1:Math.round(bar*40)); if(panelTex.text===key) return; panelTex.text=key; const g=panelTex.c.getContext('2d');
@@ -3721,7 +3692,7 @@ async function enterVR(){
     audio(); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing');
     const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']});
     await gl.makeXRCompatible();
-    session.updateRenderState({baseLayer:new XRWebGLLayer(session,gl,{antialias:false,depth:false}),depthNear:.04,depthFar:60});
+    session.updateRenderState({baseLayer:new XRWebGLLayer(session,gl,{antialias:false,depth:false}),depthNear:.04,depthFar:300});
     let space; try{ space=await session.requestReferenceSpace('local-floor'); XR.floor=true; }catch(_){ space=await session.requestReferenceSpace('local'); XR.floor=false; }
     XR.session=session; XR.space=space; XR.on=true; equip(HANDS.R,null); equip(HANDS.L,null); startRun(true); XR.origin=[PL.x,XR.floor?0:1.62,PL.z]; XR.yaw=PL.yaw; XR.last=0;
     session.addEventListener('end',()=>{ XR.on=false; XR.session=null; XR.head=null; closeMenu(); for(const E of enemies) E.label.vis=false; last=performance.now(); requestAnimationFrame(frame); });
@@ -3758,7 +3729,7 @@ function xrFrame(t,xf){
       menuStick(pressed(3),dt); }
     else { const sx=ax[2]||0; if(XR.smoothTurn){ if(Math.abs(sx)>.2) turnBy(-sx*2.4*dt,eye); } else if(Math.abs(sx)>.7&&!XR.snapHeld){ XR.snapHeld=true; const a=-Math.sign(sx)*(XR.snapA||Math.PI/6),c=Math.cos(a),s=Math.sin(a),dx=XR.origin[0]-eye[0],dz=XR.origin[2]-eye[2];
         XR.origin[0]=eye[0]+dx*c+dz*s; XR.origin[2]=eye[2]-dx*s+dz*c; XR.yaw+=a; } else if(Math.abs(sx)<.3) XR.snapHeld=false;
-      if(stickC){ const L=[720,1080,1440],i=(L.indexOf(XR.res)+1)%L.length; XR.res=L[i]; vrToast(['Sharpness: low (more PS1)','Sharpness: medium','Sharpness: high'][i],1.6); } }
+      if(stickC){ const L=[1080,1440,1680,2064],i=(L.indexOf(XR.res)+1)%L.length; XR.res=L[i]; vrToast(['Sharpness: low','Sharpness: medium','Sharpness: high','Sharpness: native'][i],1.6); } }
     meleeTick(h,dt); if(!h.supportOf) vrMelee(h,dt); else h.prevPts=null; pokeWrist(fp,h,dt); updateAmmoLabel(h); }
   applySupport(HANDS.R); applySupport(HANDS.L); updateArms(f,u,eye); updateSights(eye);
   /* keep the head out of walls and furniture by sliding the play space */
@@ -3908,7 +3879,7 @@ const KIND_WPN={corner:'bottle',cutter:'machete',gunman:'pistol',doorman:'shotgu
 function newItem(key,ammo){ const w=WPN[key],a=w.gun?(ammo??w.mag):0; return {key,ammo:a,reload:0,uses:w.uses||0,cd:0,chambered:!w.pump||a>0,spent:false,pumpSt:'in',rev:false}; }
 
 /* ---------- hands ---------- */
-function ammoTexNew(){ return tex(16,8,'#0a0b0d'); }
+function ammoTexNew(){ const t=tex(16,8,'#0a0b0d'); t.dyn=true; return t; }
 const UPPER_ARM=.3,FOREARM=.27,WRIST=[0,-.04,-.05]; /* metres; the wrist sits just inside the back of the fist */
 function makeHand(side){ const n=N(world);
   mk(box(.072,.084,.094),M(side==='R'?tTape:tRayGlove),n,FIST[0],FIST[1],FIST[2]);
@@ -3917,7 +3888,7 @@ function makeHand(side){ const n=N(world);
   return {side,armN:arm,hand:side==='R'?'right':'left',node:n,item:null,itemNode:null,M:m4.make(),prevPts:null,cd:0,rec:0,ammoTex:ammoTexNew(),ammoShown:-9,ammoN:null,swingT:-1,swingDone:false,vel:[0,0,0],prevPos:null}; }
 const HANDS={L:makeHand('L'),R:makeHand('R')};
 /* frame rate on the inside of the left wrist (VR) */
-const fpsTex=tex(24,8,'#0a0b0d'); const fpsN=mk(plane(.045,.015),M(fpsTex,{unlit:true}),HANDS.L.armN,.046,0,-.05,0,Math.PI/2,0); fpsN.vis=false;
+const fpsTex=tex(24,8,'#0a0b0d'); fpsTex.dyn=true; const fpsN=mk(plane(.045,.015),M(fpsTex,{unlit:true}),HANDS.L.armN,.046,0,-.05,0,Math.PI/2,0); fpsN.vis=false;
 function drawFps(v){ fpsN.vis=XR.on&&GAME.fps!==false; const g=fpsTex.c.getContext('2d'); g.fillStyle='#0a0b0d'; g.fillRect(0,0,24,8); const s=String(v); text(g,s,(24-textW(s))>>1,1,v>=68?'#7ec27a':v>=55?'#e2a33d':'#ff3b30');
   if(fpsTex.glt){ gl.bindTexture(gl.TEXTURE_2D,fpsTex.glt); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,fpsTex.c); } }
 function equip(h,item){
@@ -4523,7 +4494,7 @@ function clearEnemies(){ meleeClear(); for(const G of GRABS.slice()) endGrab(G);
    ===================================================================== */
 const ROUTE=[
   {kind:'station',key:'tokyo',amb:'tokyo',title:'Tokyo · B5',sub:'Platform 0 · board the Meridian 24',first:true},
-  {kind:'car',key:'aquarium',scene:'japan',title:'Aquarium Lounge',sub:'Leaving Tokyo'},
+  {kind:'car',key:'aquarium',scene:'japan',title:'Aquarium Lounge',sub:'Leaving Tokyo · nobody has boarded yet'},
   {kind:'station',key:'hongkong',amb:'hongkong',title:'Hong Kong',sub:'Meridian Central'},
   {kind:'car',key:'dimsum',scene:'hongkong',title:'Golden Crane Dim Sum',sub:'Madam Lau'},
   {kind:'station',key:'baikal',amb:'baikal',title:'Lake Baikal',sub:'Baikalskaya'},
@@ -4570,11 +4541,13 @@ function enterLeg(i){ FLOW.leg=i; const R_=legOf(i);
   /* the weapon left for you */
   if(!isCar){ const key=R_.night?'katana':ARSENAL_KEYS[R_.key]; const dropN=R_.night?ST.tokyo.drop2:ST[R_.key].drop; if(key&&dropN&&LEVEL.drops) placeGift(key,LEVEL.drops[R_.night?1:0]); }
   respawnPlayer();
-  if(typeof MUSIC!=='undefined'){ try{ if(isCar){ MUSIC.ambience(null); MUSIC.play(R_.key); MUSIC.rumble(true); } else { MUSIC.play(null); MUSIC.rumble(false); MUSIC.ambience(R_.amb); } }catch(_){} }
+  if(GAME.started) levelAudio();
   if(!isCar) saveProgress();
   $('floorTag').textContent=R_.title+' · '+R_.sub;
   if(XR.on){ vrRecenter(); vrToast(R_.title,2.4); }
   if(window.__onLeg) window.__onLeg(i); }
+/* each car has its own theme, each station its city; nothing plays until you have clicked or entered VR (browsers insist) */
+function levelAudio(){ if(typeof MUSIC==='undefined') return; const R_=legOf(FLOW.leg); try{ if(R_.kind==='car'){ MUSIC.ambience(null); MUSIC.play(R_.key); MUSIC.rumble(true); } else { MUSIC.play(null); MUSIC.rumble(false); MUSIC.ambience(R_.amb); } MUSIC.setVolumes(GAME.vol); }catch(_){} }
 function respawnPlayer(){ Object.assign(PL,{x:FLOOR.start.x,z:FLOOR.start.z,yaw:FLOOR.start.yaw,pitch:0,hp:100,hurtT:9,kickCd:0,dead:false}); GAME.clear=false; $('msg').hidden=true; $('sblood').innerHTML=''; if(XR.on) vrRecenter(); }
 /* restart the level you are in (after dying, or from the menu): same level, same arsenal you came in with */
 function restartLevel(){ const keep=FLOW.armed||{}; enterLeg(FLOW.leg); if(keep.R) equip(HANDS.R,newItem(keep.R)); if(keep.L) equip(HANDS.L,newItem(keep.L)); }
@@ -4688,8 +4661,9 @@ opt('GORE',()=>'LIMBS: '+({1:'NORMAL',6:'COME OFF EASY',0:'NEVER'}[GAME.severK??
 opt('GORE',()=>'BLEEDING OUT: '+({1:'NORMAL',2:'FAST',.5:'SLOW'}[GAME.bleedK||1]),()=>{ GAME.bleedK=cyc(GAME.bleedK||1,[1,2,.5]); });
 opt('GORE','MOP UP THE BLOOD',()=>{ BP.length=0; for(const k in DEC){ DEC[k].length=0; DEC[k].ver=(DEC[k].ver||0)+1; } });
 /* VIDEO */
-opt('VIDEO',()=>'VR SHARPNESS: '+({720:'LOW',1080:'MEDIUM',1440:'HIGH'}[XR.res]),()=>{ XR.res=cyc(XR.res,[720,1080,1440]); });
-opt('VIDEO',()=>'SCREEN RES: '+state.res+'P',()=>{ state.res=cyc(state.res,[360,480,720]); });
+opt('VIDEO',()=>'VR SHARPNESS: '+({1080:'LOW',1440:'MEDIUM',1680:'HIGH',2064:'NATIVE'}[XR.res]),()=>{ XR.res=cyc(XR.res,[1680,2064,1080,1440]); });
+opt('VIDEO',()=>'TEXTURES: '+(texFilter===gl.LINEAR?'SMOOTH':'PIXEL'),()=>{ texFilter=texFilter===gl.LINEAR?gl.NEAREST:gl.LINEAR; });
+opt('VIDEO',()=>'SCREEN RES: '+state.res+'P',()=>{ state.res=cyc(state.res,[720,1080,480]); });
 opt('VIDEO',()=>'SCENERY: '+onoff(GAME.scenery!==false),()=>{ GAME.scenery=GAME.scenery===false; OUT.vis=GAME.scenery&&LEVEL.kind==='car'; });
 opt('VIDEO',()=>'FOG: '+({0:'NORMAL',1:'THICK'}[GAME.fogMode||0]),()=>{ GAME.fogMode=(GAME.fogMode||0)?0:1; GAME.fogNear=GAME.fogMode?6:0; GAME.fogFar=GAME.fogMode?26:0; applyLevelLight(legOf(FLOW.leg)); });
 opt('VIDEO',()=>'LASER SIGHTS: '+onoff(XR.laser),()=>{ XR.laser=!XR.laser; });
@@ -4704,6 +4678,7 @@ const setVol=()=>{ if(typeof MUSIC!=='undefined') try{ MUSIC.setVolumes(GAME.vol
 for(const k of ['music','ambience','rumble']) opt('AUDIO',()=>k.toUpperCase()+': '+volL(GAME.vol[k]),()=>{ GAME.vol[k]=cyc(GAME.vol[k],VOL); setVol(); });
 opt('AUDIO',()=>'VOICES: '+onoff(GAME.voices!==false),()=>{ GAME.voices=GAME.voices===false; });
 opt('AUDIO',()=>'EVERYTHING: '+(GAME.muted?'MUTED':'ON'),()=>{ GAME.muted=!GAME.muted; if(AC){ GAME.muted?AC.suspend():AC.resume(); } });
+opt('AUDIO',()=>'NOW PLAYING: '+((typeof MUSIC!=='undefined'&&MUSIC.stats().track)||(typeof MUSIC!=='undefined'&&MUSIC.stats().ambience)||'-').toUpperCase(),()=>levelAudio());
 /* COMFORT */
 opt('COMFORT',()=>'TURNING: '+(XR.smoothTurn?'SMOOTH':'SNAP '+Math.round((XR.snapA||Math.PI/6)*57.3)+'°'),()=>{ if(XR.smoothTurn){ XR.smoothTurn=false; XR.snapA=Math.PI/6; } else if((XR.snapA||Math.PI/6)<.6) XR.snapA=Math.PI/4; else if(XR.snapA<1) XR.snapA=Math.PI/2; else XR.smoothTurn=true; });
 opt('COMFORT',()=>'WALK SPEED: '+({1:'NORMAL',.7:'SLOW',1.4:'FAST'}[XR.moveK||1]),()=>{ XR.moveK=cyc(XR.moveK||1,[1,1.4,.7]); });
@@ -4716,7 +4691,7 @@ function spawnNear(id){ let f=null; for(let t=0;t<40&&!f;t++){ const a=rnd(-.6,.
 
 /* ---------- the panel ---------- */
 const MW=1024,MH=704,PW=.84,PH=PW*MH/MW,COLS=3,ROWS=6;
-const menuTex={c:(()=>{ const c=document.createElement('canvas'); c.width=MW; c.height=MH; return c; })(),glt:null,f:-1};
+const menuTex={c:(()=>{ const c=document.createElement('canvas'); c.width=MW; c.height=MH; return c; })(),glt:null,f:-1,dyn:true};
 function pageOpts(){ return OPTS.filter(o=>o.page===MENU.page); }
 function btnRect(i){ const c=i%COLS,r=Math.floor(i/COLS); return [12+c*336,86+r*102,326,92]; }
 function tabRect(i){ return [8+i*126,8,120,62]; }
@@ -4768,6 +4743,656 @@ function renderHtmlMenu(){ const P=$('menu'); P.innerHTML='';
   P.append(tabs,grid,close); }
 addEventListener('keydown',e=>{ if(!GAME.started) return; if(e.code==='Escape'||e.code==='KeyM'){ e.preventDefault(); toggleMenu(); } });
 
+/* =====================================================================
+   MUSIC. Every car has its own tune, every station its own air, and the train hums underneath.
+   All of it is synthesized live with WebAudio: no samples, no files. One lookahead scheduler
+   (25 ms timer, 0.15 s ahead) drives note patterns written out by hand per track.
+   Layers: music (per car), ambience (per station), rumble (inside cars). Each has its own gain,
+   a bullet-time low-pass and (music/ambience) a generated-impulse reverb; all three meet in one
+   master gain and a safety compressor before the shared context's destination.
+   Every voice builder takes the context (via its player P) as a parameter, so the same code
+   renders offline for tests: MUSIC._renderOffline(kind,key,seconds).
+   ===================================================================== */
+const MUSIC=(()=>{
+const NOTE={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const midi=s=>{ const m=/^([A-G])(#|b)?(-?\d)$/.exec(s); if(!m) throw new Error('MUSIC: bad note '+s); return NOTE[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0)+12*(+m[3]+1); };
+const hz=m=>440*Math.pow(2,(m-69)/12);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[(Math.random()*a.length)|0];
+const VOL={music:1,ambience:1,rumble:1};
+let muted=false;
+const SLOW_RATE=.6, SLOW_CENTS=-500, SLOW_RAMP=.4, CAP=22;
+
+/* ---------- per-context rig: master, compressor, three layers ---------- */
+const RIGS=new WeakMap();
+function noiseBuf(ac){ const n=ac.sampleRate*4|0,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; }
+function impulse(ac,secs,decay,damp,er){ /* stereo noise tail that darkens as it dies, plus early reflections */
+  const sr=ac.sampleRate,n=sr*secs|0,b=ac.createBuffer(2,n,sr);
+  for(let c=0;c<2;c++){ const d=b.getChannelData(c); let lp=0;
+    for(let i=0;i<n;i++){ const x=i/n,k=Math.max(.04,1-damp*x); lp+=((Math.random()*2-1)-lp)*k; d[i]=lp*Math.pow(1-x,decay)*(i<sr*.004?i/(sr*.004):1); }
+    for(let r=0;r<er;r++){ const at=(sr*rnd(.006,.11))|0; if(at<n) d[at]+=rnd(-.9,.9)*(1-r/er); } }
+  return b; }
+function rig(ac,offline){ let s=RIGS.get(ac); if(s) return s;
+  const comp=ac.createDynamicsCompressor(); comp.threshold.value=-9; comp.knee.value=4; comp.ratio.value=10; comp.attack.value=.003; comp.release.value=.18;
+  const master=ac.createGain(); master.gain.value=(muted&&!offline)?0:1; master.connect(comp); comp.connect(ac.destination);
+  const L={};
+  for(const k of ['music','ambience','rumble']){ const inp=ac.createGain(),lp=ac.createBiquadFilter(),vol=ac.createGain();
+    lp.type='lowpass'; lp.frequency.value=20000; lp.Q.value=.6; vol.gain.value=offline?1:VOL[k];
+    inp.connect(lp); lp.connect(vol); vol.connect(master);
+    let rev=null; if(k!=='rumble'){ rev=ac.createConvolver(); rev.buffer=k==='music'?impulse(ac,1.6,3.2,.85,6):impulse(ac,3.2,2.1,.55,14); rev.connect(inp); }
+    L[k]={inp,lp,vol,rev}; }
+  s={ac,master,comp,L,noise:noiseBuf(ac),offline:!!offline,curves:{}}; RIGS.set(ac,s); return s; }
+function curve(s,amt){ const k=amt.toFixed(2); if(s.curves[k]) return s.curves[k]; const n=1024,c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=Math.tanh(x*amt)/Math.tanh(amt); } return s.curves[k]=c; }
+
+/* ---------- bullet time: one shared state, read per player ---------- */
+const SL={on:false,t:-1e9,from:0};
+function slowAmt(P,t){ if(P.s.offline) return 0; const k=Math.min(1,Math.max(0,(t-SL.t)/SLOW_RAMP)); return SL.on?SL.from+(1-SL.from)*k:SL.from*(1-k); }
+const rate=(P,t)=>1-(1-SLOW_RATE)*slowAmt(P,t);
+const pitch=(P,t)=>Math.pow(2,SLOW_CENTS/1200*slowAmt(P,t));
+
+/* ---------- node helpers ---------- */
+const G=(ac,v)=>{ const g=ac.createGain(); g.gain.value=v; return g; };
+const F=(ac,type,f,q)=>{ const b=ac.createBiquadFilter(); b.type=type; b.frequency.value=f; if(q!=null) b.Q.value=q; return b; };
+const O=(ac,type,f)=>{ const o=ac.createOscillator(); o.type=type; o.frequency.value=f; return o; };
+const NZ=P=>{ const b=P.ac.createBufferSource(); b.buffer=P.s.noise; b.loop=true; return b; };
+const PAN=(ac,p)=>{ const n=ac.createStereoPanner(); n.pan.value=p; return n; };
+function chain(...n){ for(let i=0;i<n.length-1;i++) n[i].connect(n[i+1]); return n[n.length-1]; }
+/* register a voice: stops every source at `end`, disconnects everything when the first ends */
+function V(P,srcs,nodes,end){ const n=srcs.length+nodes.length; P.live++; P.nodes+=n;
+  for(const o of srcs) o.stop(end);
+  srcs[0].onended=()=>{ P.live--; P.nodes-=n; for(const x of srcs) x.disconnect(); for(const x of nodes) x.disconnect(); }; }
+function startNoise(P,src,t,end){ src.start(t,Math.random()*3); }
+/* percussive gain: 2 ms attack then exponential decay (tau = dec/5) */
+function perc(g,t,peak,dec){ g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+.002); g.gain.setTargetAtTime(0,t+.002,dec/5); }
+/* continuous (bed) sources: their detune follows bullet time */
+function cont(P,param){ if(!P.s.offline&&SL.on) param.value=SLOW_CENTS; P.cont.push(param); }
+/* persistent per-player sources (LFOs, beds): stopped on dispose */
+function keep(P,src,...nodes){ P.keepSrc.push(src); P.keep.push(...nodes); P.nodes+=1+nodes.length; return src; }
+
+/* ---------- per-player buses: channels, chorus, echo, shared vibrato LFO ---------- */
+function vibLFO(P){ if(!P.vib){ P.vib=O(P.ac,'sine',P.spec&&P.spec.vibHz||5.4); keep(P,P.vib); P.vib.start(P.ac.currentTime); } return P.vib; }
+function chan(P,name){ const c=P.ch[name]; if(c) return c; const ac=P.ac,ps=(P.parts&&P.parts[name])||{};
+  const g=G(ac,ps.g==null?.5:ps.g); g.connect(P.out); let inp=g; const nodes=[g];
+  if(ps.pan){ const p=PAN(ac,ps.pan); p.connect(g); inp=p; nodes.push(p); }
+  if(ps.chorus){ const i=G(ac,1),dl=ac.createDelay(.05),wet=G(ac,.7),lfo=O(ac,'sine',ps.chorus),dep=G(ac,.0032);
+    dl.delayTime.value=.014; i.connect(inp); i.connect(dl); dl.connect(wet); wet.connect(inp); lfo.connect(dep); dep.connect(dl.delayTime); lfo.start(ac.currentTime);
+    keep(P,lfo,dep); nodes.push(i,dl,wet); inp=i; }
+  if(ps.rv&&P.rv){ const s=G(ac,ps.rv); g.connect(s); s.connect(P.rv); nodes.push(s); }
+  if(ps.dl&&P.dly){ const s=G(ac,ps.dl); g.connect(s); s.connect(P.dly); nodes.push(s); }
+  P.keep.push(...nodes); P.nodes+=nodes.length; return P.ch[name]=inp; }
+function echoBus(P,time,fb,cut){ const ac=P.ac,i=G(ac,1),d=ac.createDelay(2),f=G(ac,fb),lp=F(ac,'lowpass',cut||2600,.5);
+  d.delayTime.value=time; chain(i,d,lp,f,d); lp.connect(P.out); if(P.rv){ const s=G(ac,.35); lp.connect(s); s.connect(P.rv); P.keep.push(s); }
+  P.keep.push(i,d,f,lp); P.nodes+=4; P.dly=i; }
+
+/* ---------- melodic voices. Signature: (P, dst, t, freqHz, durSec, vel, opts, partName) ---------- */
+const INST={
+  /* generic subtractive voice: oscillator stack -> (drive) -> filter -> amp. Most instruments are presets of this. */
+  sv(P,dst,t,f,d,v,o,part){ const ac=P.ac,w=o.w||[['sawtooth',1,0,1]],mix=G(ac,1),srcs=[],nodes=[mix];
+    let f0=f; if(o.glide){ const pf=P.lastF[part]; if(pf&&P.lastT[part]>t-.6) f0=pf; } P.lastF[part]=f; P.lastT[part]=t+d;
+    let vg=null; if(o.vib){ vg=G(ac,0); vg.gain.setValueAtTime(0,t); vg.gain.setValueAtTime(0,t+(o.vdel||.18)); vg.gain.linearRampToValueAtTime(o.vib,t+(o.vdel||.18)+.25); vibLFO(P).connect(vg); nodes.push(vg); }
+    for(const [type,mul,det,g] of w){ const os=O(ac,type,f*mul),fp=os.frequency; if(det) os.detune.value=det;
+      if(o.drop){ fp.setValueAtTime(f*mul*o.drop,t); fp.exponentialRampToValueAtTime(f*mul,t+(o.dropT||.05)); }
+      else if(o.slide){ fp.setValueAtTime(f*mul*o.slide,t); fp.setTargetAtTime(f*mul,t,o.slideT||.035); }
+      else if(f0!==f){ fp.setValueAtTime(f0*mul,t); fp.exponentialRampToValueAtTime(f*mul,t+o.glide); }
+      if(o.bend){ fp.setValueAtTime(f*mul,t+d*.5); fp.exponentialRampToValueAtTime(f*mul*o.bend,t+d); }
+      if(vg) vg.connect(os.detune);
+      if(g===1) os.connect(mix); else { const gg=G(ac,g); os.connect(gg); gg.connect(mix); nodes.push(gg); } srcs.push(os); }
+    if(o.nz){ const n=NZ(P),nf=F(ac,'bandpass',Math.min(f*(o.nzf||3),9000),.8),ng=G(ac,0); perc(ng,t,v*o.nz,o.nzd||.05); chain(n,nf,ng,mix); startNoise(P,n,t); srcs.push(n); nodes.push(nf,ng); }
+    let x=mix; if(o.drive){ const sh=ac.createWaveShaper(); sh.curve=curve(P.s,o.drive); x.connect(sh); x=sh; nodes.push(sh); }
+    if(o.cut){ const base=Math.min(o.cabs?o.cut:f*o.cut,15000),fl=F(ac,o.ft||'lowpass',base,o.q||.7);
+      if(o.env){ fl.frequency.setValueAtTime(Math.min(base*o.env,15000),t); fl.frequency.setTargetAtTime(base,t+(o.fa||0),o.ftau||.08); }
+      x.connect(fl); x=fl; nodes.push(fl); }
+    const a=G(ac,0),A=o.a||.005,dec=o.dec||.3,sus=o.sus==null?.7:o.sus,r=o.r||.1,pk=v*(o.amp||.3);
+    a.gain.setValueAtTime(0,t); a.gain.linearRampToValueAtTime(pk,t+A); a.gain.setTargetAtTime(pk*sus,t+A,dec);
+    const end=sus>0?t+Math.max(d,A+.02):t+Math.min(Math.max(d+(o.ring||0),A+.02),A+dec*5);
+    a.gain.setTargetAtTime(0,end,r/4); x.connect(a); a.connect(dst); nodes.push(a);
+    if(o.trem&&d>(o.tmin||.2)){ const l=O(ac,'triangle',o.trem),tg=G(ac,0); tg.gain.setValueAtTime(pk*(o.td||.45),t+.06); tg.gain.setTargetAtTime(0,end,r/4); chain(l,tg,a.gain); srcs.push(l); nodes.push(tg); }
+    for(const s of srcs) if(s.start&&s!==srcs.find(q=>q.buffer)) s.start(t);
+    V(P,srcs,nodes,end+r); },
+  /* 2-op FM electric piano: modulation index decays fast -> bark on attack, round tail */
+  ep(P,dst,t,f,d,v,o){ const ac=P.ac,c=O(ac,'sine',f),m=O(ac,'sine',f*(o.ratio||1)),mg=G(ac,0),a=G(ac,0),t2=O(ac,'sine',f*(o.tine||14)),tg=G(ac,0);
+    mg.gain.setValueAtTime(f*(o.idx||1.8)*v,t); mg.gain.setTargetAtTime(f*.18,t,o.itau||.22);
+    chain(m,mg,c.frequency); chain(c,a,dst); chain(t2,tg,dst); perc(tg,t,v*(o.tg||.04),.12);
+    const pk=v*(o.amp||.32),end=t+Math.max(d,.05),r=o.r||.25;
+    a.gain.setValueAtTime(0,t); a.gain.linearRampToValueAtTime(pk,t+.004); a.gain.setTargetAtTime(pk*.35,t+.004,o.dec||.7); a.gain.setTargetAtTime(0,end,r/4);
+    c.start(t); m.start(t); t2.start(t); V(P,[c,m,t2],[mg,a,tg],end+r); },
+  /* FM bell / vibraphone / chime */
+  bell(P,dst,t,f,d,v,o){ const ac=P.ac,c=O(ac,'sine',f),m=O(ac,'sine',f*(o.ratio||3.5)),mg=G(ac,0),a=G(ac,0),dec=o.dec||1.2;
+    mg.gain.setValueAtTime(f*(o.idx||2.5)*v,t); mg.gain.setTargetAtTime(f*(o.idx2||.2),t,o.itau||.12);
+    chain(m,mg,c.frequency); chain(c,a,dst); perc(a,t,v*(o.amp||.3),dec);
+    if(o.trem){ const l=O(ac,'sine',o.trem),tg=G(ac,v*(o.amp||.3)*.3); chain(l,tg,a.gain); l.start(t); c.start(t); m.start(t); V(P,[c,m,l],[mg,a,tg],t+dec); return; }
+    c.start(t); m.start(t); V(P,[c,m],[mg,a],t+dec); }
+};
+
+/* ---------- drums. Signature: (P, dst, t, vel, opts) ---------- */
+function nzHit(P,dst,t,type,f,q,peak,dec,extra){ const ac=P.ac,n=NZ(P),fl=F(ac,type,f,q),g=G(ac,0); perc(g,t,peak,dec); chain(n,fl,g,dst); startNoise(P,n,t); return [n,fl,g]; }
+const DR={
+  kick(P,d,t,v,o){ const ac=P.ac,f=o.f||50,b=O(ac,'sine',f),g=G(ac,0),c=O(ac,'triangle',1400),cg=G(ac,0),dec=o.dec||.45,nodes=[g,cg];
+    b.frequency.setValueAtTime(f*(o.sweep||3.6),t); b.frequency.exponentialRampToValueAtTime(f,t+(o.st||.055));
+    c.frequency.setValueAtTime(1600,t); c.frequency.exponentialRampToValueAtTime(110,t+.022);
+    perc(g,t,v,dec); perc(cg,t,v*(o.click==null?.4:o.click),.03);
+    if(o.drive){ const sh=ac.createWaveShaper(); sh.curve=curve(P.s,o.drive); chain(b,sh,g); nodes.push(sh); } else b.connect(g);
+    g.connect(d); chain(c,cg,d); b.start(t); c.start(t); V(P,[b,c],nodes,t+dec); },
+  snare(P,d,t,v,o){ const ac=P.ac,[n,fl,g]=nzHit(P,d,t,'bandpass',o.f||1900,.7,v*.9,o.dec||.2),tn=O(ac,'triangle',o.tone||200),tg=G(ac,0);
+    if(o.gate){ g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.003); g.gain.setTargetAtTime(v*.55,t+.003,.05); g.gain.setValueAtTime(v*.5,t+o.gate); g.gain.linearRampToValueAtTime(0,t+o.gate+.012); }
+    tn.frequency.setValueAtTime((o.tone||200)*1.3,t); tn.frequency.exponentialRampToValueAtTime(o.tone||200,t+.03); perc(tg,t,v*.55,.1); chain(tn,tg,d);
+    tn.start(t); V(P,[n,tn],[fl,g,tg],t+Math.max(o.dec||.2,(o.gate||0)+.02)); },
+  clap(P,d,t,v,o){ const ac=P.ac,n=NZ(P),fl=F(ac,'bandpass',o.f||1200,1.1),g=G(ac,0);
+    g.gain.setValueAtTime(0,t); for(let i=0;i<3;i++){ g.gain.linearRampToValueAtTime(v,t+i*.011+.001); g.gain.linearRampToValueAtTime(v*.15,t+i*.011+.009); }
+    g.gain.linearRampToValueAtTime(v*.8,t+.035); g.gain.setTargetAtTime(0,t+.036,(o.dec||.16)/5); chain(n,fl,g,d); startNoise(P,n,t); V(P,[n],[fl,g],t+.04+(o.dec||.16)); },
+  hat(P,d,t,v,o){ const [n,fl,g]=nzHit(P,d,t,'highpass',o.f||7500,.7,v*.7,o.dec||.05); V(P,[n],[fl,g],t+(o.dec||.05)); },
+  metal(P,d,t,v,o){ const ac=P.ac,a=O(ac,'square',o.f||3150),b=O(ac,'square',(o.f||3150)*1.52),hp=F(ac,'highpass',6500,1.2),g=G(ac,0),dec=o.dec||.07;
+    const [n,fl,ng]=nzHit(P,d,t,'highpass',8000,.7,v*.4,dec); a.connect(hp); b.connect(hp); chain(hp,g,d); perc(g,t,v*.35,dec);
+    a.start(t); b.start(t); V(P,[a,b,n],[hp,g,fl,ng],t+dec); },
+  shaker(P,d,t,v,o){ const ac=P.ac,n=NZ(P),fl=F(ac,'bandpass',o.f||6500,.9),g=G(ac,0); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v*.5,t+.018); g.gain.setTargetAtTime(0,t+.02,.02); chain(n,fl,g,d); startNoise(P,n,t); V(P,[n],[fl,g],t+.12); },
+  brush(P,d,t,v,o){ const ac=P.ac,n=NZ(P),fl=F(ac,'bandpass',o.f||2800,.6),g=G(ac,0),dec=o.dec||.22; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v*.6,t+(o.a||.012)); g.gain.setTargetAtTime(0,t+(o.a||.012),dec/5); chain(n,fl,g,d); startNoise(P,n,t); V(P,[n],[fl,g],t+dec+.03); },
+  tamb(P,d,t,v,o){ const ac=P.ac,n=NZ(P),hp=F(ac,'highpass',5200,.7),bp=F(ac,'peaking',9000,2),g=G(ac,0); bp.gain.value=8;
+    g.gain.setValueAtTime(0,t); for(let i=0;i<3;i++){ g.gain.linearRampToValueAtTime(v*(.6-i*.15),t+i*.014+.002); g.gain.setTargetAtTime(v*.08,t+i*.014+.003,.006); } g.gain.setTargetAtTime(0,t+.045,(o.dec||.12)/5);
+    chain(n,hp,bp,g,d); startNoise(P,n,t); V(P,[n],[hp,bp,g],t+.05+(o.dec||.12)); },
+  rim(P,d,t,v,o){ const ac=P.ac,a=O(ac,'triangle',o.f||1700),g=G(ac,0); perc(g,t,v*.5,.035); chain(a,g,d); const [n,fl,ng]=nzHit(P,d,t,'bandpass',3200,1.5,v*.4,.02); a.start(t); V(P,[a,n],[g,fl,ng],t+.05); },
+  wood(P,d,t,v,o){ const ac=P.ac,f=o.f||1000,a=O(ac,'sine',f),b=O(ac,'sine',f*2.76),g=G(ac,0),bg=G(ac,.25); perc(g,t,v*.55,o.dec||.08); a.connect(g); chain(b,bg,g); g.connect(d); a.start(t); b.start(t); V(P,[a,b],[g,bg],t+(o.dec||.08)); },
+  tom(P,d,t,v,o){ const ac=P.ac,f=o.f||150,a=O(ac,'sine',f),h=O(ac,'triangle',f*1.6),g=G(ac,0),hg=G(ac,.25),dec=o.dec||.35;
+    a.frequency.setValueAtTime(f*(o.sweep||1.5),t); a.frequency.exponentialRampToValueAtTime(f,t+(o.st||.06)); h.frequency.setValueAtTime(f*2.2,t); h.frequency.exponentialRampToValueAtTime(f*1.6,t+.05);
+    perc(g,t,v*.85,dec); a.connect(g); chain(h,hg,g); g.connect(d); const nn=o.nz?nzHit(P,d,t,'bandpass',o.nzf||f*6,.8,v*o.nz,.05):null;
+    a.start(t); h.start(t); V(P,nn?[a,h,nn[0]]:[a,h],nn?[g,hg,nn[1],nn[2]]:[g,hg],t+dec); },
+  crash(P,d,t,v,o){ const ac=P.ac,dec=o.dec||1.6,[n,fl,g]=nzHit(P,d,t,'highpass',o.f||4800,.6,v*.5,dec),pk=F(ac,'peaking',7500,1.5); pk.gain.value=6; fl.disconnect(); chain(fl,pk,g); V(P,[n],[fl,pk,g],t+dec); },
+  gong(P,d,t,v,o){ const ac=P.ac,f=o.f||78,c=O(ac,'sine',f),m=O(ac,'sine',f*1.414),mg=G(ac,0),a=G(ac,0),dec=o.dec||3.5;
+    mg.gain.setValueAtTime(f*.4,t); mg.gain.linearRampToValueAtTime(f*2.2,t+.6); mg.gain.setTargetAtTime(f*.3,t+.6,.8);
+    a.gain.setValueAtTime(0,t); a.gain.linearRampToValueAtTime(v*.5,t+.02); a.gain.setTargetAtTime(0,t+.05,dec/5); chain(m,mg,c.frequency); chain(c,a,d); c.start(t); m.start(t); V(P,[c,m],[mg,a],t+dec); },
+  whistle(P,d,t,v,o){ const ac=P.ac,f=o.f||2650,a=O(ac,'sine',f),l=O(ac,'square',o.trill||22),lg=G(ac,f*.045),g=G(ac,0),len=v>.85?.32:.09;
+    chain(l,lg,a.frequency); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v*.22,t+.01); g.gain.setValueAtTime(v*.22,t+len); g.gain.linearRampToValueAtTime(0,t+len+.02);
+    const [n,fl,ng]=nzHit(P,d,t,'bandpass',f,2,v*.06,len); chain(a,g,d); a.start(t); l.start(t); V(P,[a,l,n],[lg,g,fl,ng],t+len+.03); },
+  stomp(P,d,t,v,o){ DR.kick(P,d,t,v,{f:46,sweep:2.2,dec:.32,click:.15}); const [n,fl,g]=nzHit(P,d,t,'lowpass',420,.8,v*.7,.12); V(P,[n],[fl,g],t+.14); },
+  cowbell(P,d,t,v,o){ const ac=P.ac,a=O(ac,'square',560),b=O(ac,'square',845),bp=F(ac,'bandpass',800,2.5),g=G(ac,0); a.connect(bp); b.connect(bp); chain(bp,g,d); perc(g,t,v*.4,o.dec||.22); a.start(t); b.start(t); V(P,[a,b],[bp,g],t+(o.dec||.22)); }
+};
+
+/* ---------- pattern language ----------
+   Melodic part: whitespace tokens, '|' is a bar line (ignored). token = head[:steps]
+     head: note 'C#5' | stack 'E4+G#4' | '.' rest | 'x' whole chord | chord tone '2', "0'" ('=+oct) |
+           'r' bass root of chord, 'r7' root+7 semitones, 'r-2' ... ; suffix '!' accent, '_' soft.
+     'x' notes are re-struck automatically where the chord changes under them.
+   Drum part: one char per step. X accent, x normal, g ghost, '.' rest; spaces and '|' ignored.
+   Chords per section: bars split by '|', a bar with two names splits evenly.
+   Chord dictionary entries: 'G1|D4 G4 Bb4' = bass root | voicing.
+   Section keys: bars, ch, p (parts), first / last (override the first / last bar), from (copy a
+   section), mute (drop parts). A part key 'lead@1' plays only on odd loops, '@0' even loops. */
+const WARN=[];
+const toks=s=>s.replace(/\|/g,' ').trim().split(/\s+/).filter(Boolean);
+function parseMel(s){ let at=0; const ev=[]; for(const tk of toks(s)){ const i=tk.lastIndexOf(':'),h=i>0?tk.slice(0,i):tk,len=i>0?+tk.slice(i+1):1; if(!(len>0)) throw new Error('MUSIC: bad token '+tk); if(h!=='.') ev.push({at,len,h}); at+=len; } return {ev,len:at}; }
+const DV={X:1,x:.72,g:.38,o:.85};
+function parseDr(s){ return s.replace(/[\s|]/g,'').split('').map(c=>DV[c]||0); }
+function chordDict(spec){ const D={}; for(const [k,v] of Object.entries(spec.chords||{})){ const [b,n]=v.split('|'); D[k]={bass:midi(b.trim()),notes:toks(n).map(midi)}; } return D; }
+function build(spec,key){ if(spec._b) return spec._b; const bs=spec.bar,CD=chordDict(spec),secs={};
+  const W=m=>WARN.push(key+': '+m);
+  for(const name of Object.keys(spec.sec)){ const s0=spec.sec[name],b=s0.from?spec.sec[s0.from]:{};
+    const bars=s0.bars||b.bars,steps=bars*bs,chs=s0.ch||b.ch||'';
+    const p=Object.assign({},b.p,s0.p),first=Object.assign({},b.first,s0.first),last=Object.assign({},b.last,s0.last);
+    for(const m of s0.mute||[]){ delete p[m]; delete first[m]; delete last[m]; }
+    /* chord per step */
+    const cAt=new Array(steps).fill(null); const cb=chs?chs.split('|').map(x=>toks(x)):[];
+    if(chs&&cb.length!==bars) W(`section ${name}: ${cb.length} chord bars for ${bars} bars`);
+    cb.forEach((names,bi)=>{ names.forEach((n,j)=>{ if(!CD[n]) W(`unknown chord ${n}`); const a=bi*bs+Math.round(j*bs/names.length),e=bi*bs+Math.round((j+1)*bs/names.length); for(let q=a;q<e&&q<steps;q++) cAt[q]=CD[n]; }); });
+    for(let q=1;q<steps;q++) if(!cAt[q]) cAt[q]=cAt[q-1];
+    const ev=Array.from({length:steps},()=>[]);
+    const resolve=(h,at)=>{ let v=1; if(h.endsWith('!')){ v=1.2; h=h.slice(0,-1); } else if(h.endsWith('_')){ v=.6; h=h.slice(0,-1); }
+      const c=cAt[at]; if(h==='x') return {n:c?c.notes.slice():[],v,chord:true};
+      if(/^\d/.test(h)){ if(!c) return {n:[],v}; const idx=parseInt(h,10),oc=(h.match(/'/g)||[]).length*12,L=c.notes.length; return {n:[c.notes[idx%L]+12*Math.floor(idx/L)+oc],v}; }
+      if(h[0]==='r'){ if(!c) return {n:[],v}; return {n:[c.bass+(h.length>1?+h.slice(1):0)],v}; }
+      return {n:h.split('+').map(midi),v}; };
+    for(const pk of new Set([...Object.keys(p),...Object.keys(first),...Object.keys(last)])){
+      const [pn,parS]=pk.split('@'),par=parS==null?-1:+parS,ps=spec.parts[pn]; if(!ps){ W('no part '+pn); continue; }
+      if(ps.d){ let arr=p[pk]?parseDr(p[pk]):[]; if(arr.length&&(bs%arr.length)&&(arr.length%bs)) W(`${name}.${pk}: drum length ${arr.length} vs bar ${bs}`);
+        const full=new Array(steps).fill(0); if(arr.length) for(let q=0;q<steps;q++) full[q]=arr[q%arr.length];
+        if(first[pk]){ const f=parseDr(first[pk]); for(let q=0;q<bs;q++) full[q]=f[q]||0; }
+        if(last[pk]){ const f=parseDr(last[pk]); if(f.length>bs&&f.length%bs===0){ const o=steps-f.length; for(let q=0;q<f.length;q++) full[o+q]=f[q]; } else for(let q=0;q<bs;q++) full[steps-bs+q]=f[q]||0; }
+        full.forEach((v,q)=>{ if(v) ev[q].push({pn,par,v}); }); continue; }
+      const put=(m,off,lim)=>{ for(let o=off;o<lim;o+=m.len){ for(const e of m.ev){ const at=o+e.at; if(at>=lim) break;
+          let len=Math.min(e.len,steps-at); const r=resolve(e.h,at);
+          if(r.chord){ let a=at; while(len>0){ let k=a+1; while(k<a+len&&cAt[k]===cAt[a]) k++; const seg=k-a; ev[a].push({pn,par,n:cAt[a]?cAt[a].notes:[],len:seg,v:r.v}); len-=seg; a=k; } }
+          else ev[at].push({pn,par,n:r.n,len,v:r.v}); } if(m.len<=0) break; } };
+      const clear=(a,e)=>{ for(let q=a;q<e;q++) ev[q]=ev[q].filter(x=>x.pn!==pn||x.par!==par); };
+      if(p[pk]){ const m=parseMel(p[pk]); if((m.len%bs)&&(bs%m.len)) W(`${name}.${pk}: ${m.len} steps, bar is ${bs}`); else if(m.len>steps) W(`${name}.${pk}: ${m.len} steps > section ${steps}`); else if(m.len>bs&&steps%m.len) W(`${name}.${pk}: ${m.len} steps does not divide section ${steps}`); put(m,0,steps); }
+      if(first[pk]){ const m=parseMel(first[pk]); clear(0,m.len); put(m,0,m.len); }
+      if(last[pk]){ const m=parseMel(last[pk]); if(m.len%bs) W(`${name}.last.${pk}: ${m.len} steps`); clear(steps-m.len,steps); put(m,steps-m.len,steps); } }
+    secs[name]={steps,ev}; }
+  let loopSteps=0; for(const n of spec.loop){ if(!secs[n]) W('loop has unknown section '+n); else loopSteps+=secs[n].steps; }
+  spec._b={secs,loopSec:loopSteps*60/spec.bpm/spec.spb}; return spec._b; }
+
+/* ---------- players ---------- */
+function newPlayer(s,kind,key,fade,lvl){ const ac=s.ac,Lr=s.L[kind],now=ac.currentTime;
+  const P={ac,s,kind,key,live:0,nodes:0,keep:[],keepSrc:[],cont:[],ch:{},lastF:{},lastT:{},ev:[],later:[],nt:now+.06,stopAt:Infinity,dead:false};
+  P.out=G(ac,0); const lv=G(ac,lvl==null?1:lvl); chain(P.out,lv,Lr.inp); P.keep.push(lv); P.fades=[P.out.gain];
+  if(Lr.rev){ P.rv=G(ac,0); const rl=G(ac,lvl==null?1:lvl); chain(P.rv,rl,Lr.rev); P.keep.push(rl); P.fades.push(P.rv.gain); }
+  for(const g of P.fades){ g.setValueAtTime(0,now); g.linearRampToValueAtTime(1,now+Math.max(.01,fade)); }
+  return P; }
+function musicPlayer(s,key,fade){ const spec=TRACKS[key]; if(!spec) return null; const P=newPlayer(s,'music',key,fade,spec.vol||.5);
+  build(spec,key); P.spec=spec; P.parts=spec.parts;
+  P.sd=60/spec.bpm/spec.spb; P.seq=spec.intro&&spec.intro.length?spec.intro:spec.loop; P.si=0; P.st=0; P.loop=0;
+  if(spec.echo) echoBus(P,spec.echo[0]*(spec.echo[2]?1:60/spec.bpm),spec.echo[1],spec.echo[3]);
+  return P; }
+function stepMusic(P,t){ const sp=P.spec,sec=P.spec._b.secs[P.seq[P.si]],evs=sec.ev[P.st];
+  if(evs.length){ const sd=P.sd/rate(P,t),pf=pitch(P,t);
+    for(const e of evs){ if(e.par>=0&&e.par!==(P.loop&1)) continue; const ps=sp.parts[e.pn],dst=chan(P,e.pn);
+      const vel=e.v*(ps.v||.8)*(1+rnd(-.07,.07));
+      if(ps.d){ DR[ps.d](P,dst,t,Math.min(1.2,vel),ps.o||{}); continue; }
+      if(P.live>=CAP&&!ps.pri) continue;
+      const fn=INST[ps.i||'sv'],o=ps.o||{},tt=t+(ps.hum==null?.004:ps.hum)*Math.random(),dur=e.len*sd*(ps.leg||1)-(ps.gap||0);
+      (ps.dbl?e.n.concat(e.n.map(m=>m+ps.dbl)):e.n).forEach((m,i)=>fn(P,dst,tt+(ps.strum||0)*i,hz(m+(ps.tr||0))*pf,dur,vel,o,e.pn)); } }
+  if(++P.st>=sec.steps){ P.st=0; if(++P.si>=P.seq.length){ P.si=0; P.loop++; P.seq=sp.loop; } } }
+function tickPlayer(P,hor){ if(P.dead) return;
+  if(P.spec) while(P.nt<hor&&P.nt<P.stopAt){ stepMusic(P,P.nt); P.nt+=P.sd/rate(P,P.nt); }
+  if(P.later.length){ const due=P.later.filter(x=>x.t<hor); if(due.length){ P.later=P.later.filter(x=>x.t>=hor); for(const x of due) if(x.t<P.stopAt+.05) try{ x.fn(P,Math.max(x.t,P.ac.currentTime)); }catch(err){ console.warn('MUSIC later',err); } } }
+  for(const e of P.ev) while(e.next<hor&&e.next<P.stopAt){ try{ e.fn(P,e.next); }catch(err){ console.warn('MUSIC event',err); } e.next+=rnd(e.min,e.max)/rate(P,e.next); } }
+/* random one-shot generator for ambience: first fire `first` seconds in, then every min..max s */
+function every(P,first,min,max,fn){ P.ev.push({next:P.ac.currentTime+first,min,max,fn}); }
+
+/* =====================================================================
+   TRACKS. One per car. bpm, spb = steps per beat, bar = steps per bar.
+   Melodies, harmony and bass lines are written out note by note.
+   ===================================================================== */
+const TRACKS={};
+/* shared timbres */
+const T_FLUTE={w:[['triangle',1,0,1],['sine',2,0,.16]],a:.045,dec:.5,sus:.82,r:.28,vib:16,vdel:.28,cut:6,amp:.34};
+const T_ACC={w:[['sawtooth',1,-9,.45],['sawtooth',1,9,.45],['square',1,0,.22]],cut:4,q:1,a:.03,dec:.5,sus:.85,r:.1,trem:5.5,td:.1,tmin:.4,amp:.12};
+
+/* ---- AQUARIUM: blue velvet lounge, D major, 80 bpm. FM e-piano 9ths through chorus, flute lead,
+   bubble arpeggio through a dotted-8th echo, brushes. A = hook (question / answer), B = lift, T = turnaround. */
+TRACKS.aquarium={bpm:80,spb:4,bar:16,vol:0.287,echo:[.75,.34,0,2400],
+  chords:{'Dmaj9':'D2|F#3 A3 C#4 E4','Bm9':'B1|F#3 A3 C#4 D4','Gmaj9':'G2|F#3 A3 B3 D4','A7sus':'A1|G3 B3 D4 E4','A7':'A1|G3 B3 C#4 E4',
+    'Em9':'E2|G3 B3 D4 F#4','A7b9':'A1|G3 Bb3 C#4 E4','F#m7':'F#2|F#3 A3 C#4 E4','F#7':'F#2|F#3 A#3 C#4 E4','Bm7':'B1|F#3 A3 B3 D4',
+    'E9':'E2|G#3 B3 D4 F#4','D/F#':'F#2|F#3 A3 C#4 E4','Em7':'E2|G3 B3 D4 E4'},
+  parts:{ ep:{i:'ep',g:.5,rv:.35,chorus:.65,v:.62,o:{idx:1.5,dec:.9,r:.35}},
+    lead:{i:'sv',g:.46,rv:.42,dl:.26,v:.8,o:T_FLUTE},
+    arp:{i:'bell',g:.15,rv:.5,dl:.5,pan:.3,v:.55,hum:0,o:{ratio:2,idx:1.1,dec:.55,amp:.25}},
+    bass:{i:'sv',g:.62,rv:.04,v:.85,o:{w:[['sine',1,0,1],['triangle',2,0,.28]],a:.008,dec:.6,sus:.55,r:.08,amp:.5}},
+    kick:{d:'kick',g:.5,o:{f:56,dec:.32,click:.15}}, brush:{d:'brush',g:.36,rv:.25,o:{dec:.26}},
+    shk:{d:'shaker',g:.2,pan:-.3}, rim:{d:'rim',g:.22,rv:.35,pan:.2} },
+  sec:{
+    I:{bars:2,ch:'Dmaj9 | A7sus',p:{ep:'x:16',arp:".:2 0'' 1'' 2'' 3'' .:2 3'' 2'' .:2 1'' 2'' .:2",bass:'.:16 | .:12 A1:4'},last:{shk:'x.g.x.g.x.g.xgxg'}},
+    A:{bars:8,ch:'Dmaj9 | Bm9 | Gmaj9 | A7sus A7 | Dmaj9 | Bm9 | Em9 | A7b9',
+      p:{lead:'.:4 F#5:2 E5:2 C#5:6 A4:2 | B4:6 C#5:2 D5:4 E5:4 | F#5:6 E5:2 D5:4 B4:4 | E5:12 .:4 | .:4 F#5:2 E5:2 C#5:6 A4:2 | B4:6 C#5:2 D5:4 F#5:4 | G5:6 F#5:2 E5:4 D5:2 B4:2 | C#5:6 D5:2 E5:4 .:4',
+        ep:'x:6 x:10',
+        arp:".:2 0'' 1'' 2'' 3'' .:2 3'' 2'' .:2 1'' 2'' .:2",
+        bass:'D2:6 A2:2 .:2 D3:2 C#3:4 | B1:6 F#2:2 .:2 B2:2 A2:4 | G2:6 D3:2 .:2 G2:2 F#2:4 | A1:6 E2:2 A2:4 G2:4 | D2:6 A2:2 .:2 D3:2 C#3:4 | B1:6 F#2:2 .:2 B2:2 A2:4 | E2:6 B2:2 .:2 E2:2 G2:4 | A1:6 E2:2 A2:4 A1:4',
+        kick:'X.........x.....',brush:'....x.......x...',shk:'x.g.x.g.x.g.x.g.',rim:'.......x........'},
+      last:{brush:'....x...x.xgx.xx',kick:'X.........x...x.'}},
+    B:{bars:8,ch:'Gmaj9 | F#m7 | Em9 | D/F# | Gmaj9 | F#7 | Bm7 E9 | Em7 A7',
+      p:{lead:'.:2 B4:2 D5:2 F#5:2 A5:6 F#5:2 | E5:6 F#5:2 C#5:8 | .:2 G4:2 B4:2 D5:2 F#5:6 E5:2 | D5:4 C#5:4 A4:8 | .:2 B4:2 D5:2 F#5:2 B5:6 A5:2 | F#5:6 E5:2 C#5:4 A#4:4 | D5:6 C#5:2 B4:4 G#4:4 | A4:8 B4:4 C#5:4',
+        ep:'x:6 x:6 x:4',
+        'arp@1':".:2 0'' 1'' 2'' 3'' .:2 3'' 2'' .:2 1'' 2'' .:2",
+        bass:'G2:6 D3:2 .:2 G2:2 A2:4 | F#2:6 C#3:2 .:2 F#2:2 E2:4 | E2:6 B2:2 .:2 E2:2 C#2:4 | F#2:6 A2:2 .:2 D3:2 F#2:4 | G2:6 D3:2 .:2 B2:2 G2:4 | F#2:6 C#3:2 .:2 A#2:2 F#2:4 | B1:6 F#2:2 E2:6 B1:2 | E2:6 B1:2 A1:6 C#2:2',
+        kick:'X.........x..x..',brush:'....x.......x...',shk:'x.gxx.g.x.gxx.g.',rim:'...x.......x....'},
+      last:{brush:'....x...xgxgx.xx'}},
+    T:{bars:2,ch:'Em9 | A7sus A7',
+      p:{lead:'G5:6 F#5:2 E5:8 | .:12 A4:2 C#5:2',ep:'x:6 x:10',arp:".:2 0'' 1'' 2'' 3'' .:2 3'' 2'' .:2 1'' 2'' .:2",
+        bass:'E2:6 B2:2 .:2 E2:2 F#2:4 | A1:6 E2:2 G2:4 A2:4',kick:'X.........x.....',brush:'....x.......x...',shk:'x.g.x.g.x.g.x.g.'},
+      last:{brush:'....x..xx.xxxxxX'}}},
+  intro:['I'],loop:['A','B','T']};
+
+/* ---- CAPSULE: Tokyo city pop at midnight, A minor, 112 bpm. Royal-road changes (IVmaj7 V iii vi),
+   octave-jumping synth bass, gated snare, bright FM keys, a lonely gliding lead, orchestra hits in the turnaround. */
+TRACKS.capsule={bpm:112,spb:4,bar:16,vol:0.151,echo:[.75,.22,0,2600],
+  chords:{'Fmaj9':'F2|A3 C4 E4 G4','G6':'G2|B3 D4 E4 G4','Em9':'E2|G3 B3 D4 F#4','Am9':'A2|G3 B3 C4 E4','Dm9':'D2|F3 A3 C4 E4','E7#9':'E2|G#3 D4 G4'},
+  parts:{ lead:{i:'sv',g:.42,rv:.35,dl:.3,v:.82,o:{w:[['square',1,0,.55],['sawtooth',1,7,.5]],cut:5,env:2,ftau:.15,q:2,a:.012,dec:.5,sus:.75,r:.12,vib:18,vdel:.22,glide:.05,amp:.25}},
+    keys:{i:'ep',g:.42,rv:.25,chorus:.9,v:.66,o:{idx:2.6,dec:.45,tg:.07,r:.15}},
+    pad:{i:'sv',g:.32,rv:.45,v:.7,o:{w:[['sawtooth',1,-8,.5],['sawtooth',1,8,.5]],cut:2.5,a:.25,dec:.5,sus:.8,r:.4,amp:.15}},
+    bass:{i:'sv',g:.62,v:.85,pri:1,o:{w:[['sawtooth',1,0,.7],['square',1,0,.45]],cut:2,env:9,ftau:.06,q:5,a:.003,dec:.18,sus:.35,r:.05,amp:.4}},
+    orch:{i:'sv',g:.38,rv:.55,v:.9,o:{w:[['sawtooth',1,-10,.5],['sawtooth',1,10,.5],['square',.5,0,.4]],nz:.6,nzf:2,nzd:.12,cut:3,env:5,ftau:.12,a:.003,dec:.25,sus:0,r:.15,amp:.22}},
+    kick:{d:'kick',g:.82,o:{f:52,dec:.4}}, snare:{d:'snare',g:.55,rv:.6,o:{gate:.17,f:1700,tone:190}},
+    hat:{d:'hat',g:.2,pan:.25}, ohat:{d:'hat',g:.18,pan:.25,o:{dec:.28}}, tom:{d:'tom',g:.5,rv:.3,o:{f:120}}, tomh:{d:'tom',g:.45,rv:.3,o:{f:175}} },
+  sec:{
+    I:{bars:2,ch:'Am9 | E7#9',p:{bass:'A2:3 A2:1 A3:2 A2:2 .:2 G2:2 E2:2 G2:2 | E2:3 E2:1 E3:2 E2:2 .:2 E2:2 G#2:2 B2:2',kick:'X.....x...X.....',hat:'xgxgxgxgxgxgxgxg'},
+      first:{orch:'A3+E4+A4+C5:4 .:12'},last:{snare:'....X.......X.XX',tomh:'........x.x.....'}},
+    A:{bars:8,ch:'Fmaj9 | G6 | Em9 | Am9 | Fmaj9 | G6 | Em9 | Dm9 E7#9',
+      p:{lead:'C5:2 E5:2 A5:3 G5:3 E5:2 G5:4 | .:4 D5:2 E5:2 G5:3 E5:3 D5:2 | B4:2 D5:2 G5:3 F#5:3 D5:2 E5:4 | E5:10 .:2 C5:2 D5:2 | C5:2 E5:2 A5:3 G5:3 E5:2 G5:4 | .:4 D5:2 E5:2 G5:3 A5:3 B5:2 | C6:3 B5:3 G5:2 E5:4 D5:4 | F5:6 E5:2 D5:4 B4:2 G#4:2',
+        keys:'x:2 .:4 x:2 .:2 x:2 .:2 x:2',
+        bass:'F2:3 F2:1 F3:2 F2:2 .:2 F2:2 E3:2 C3:2 | G2:3 G2:1 G3:2 G2:2 .:2 G2:2 D3:2 B2:2 | E2:3 E2:1 E3:2 E2:2 .:2 E2:2 B2:2 D3:2 | A2:3 A2:1 A3:2 A2:2 .:2 G2:2 E2:2 G2:2 | F2:3 F2:1 F3:2 F2:2 .:2 F2:2 E3:2 C3:2 | G2:3 G2:1 G3:2 G2:2 .:2 G2:2 D3:2 B2:2 | E2:3 E2:1 E3:2 E2:2 .:2 E2:2 B2:2 D3:2 | D2:3 D2:1 D3:2 D2:2 E2:3 E2:1 E3:2 G#2:2',
+        kick:'X.....x...X..x..',snare:'....X.......X...',hat:'xgxgxgxgxgxgxgxg',ohat:'..............x.'},
+      last:{snare:'....X.......X...',tom:'............x.x.',tomh:'..........x.x...'}},
+    B:{bars:8,ch:'Dm9 | Em9 | Fmaj9 | G6 | Dm9 | Em9 | Fmaj9 | E7#9',
+      p:{lead:'A4:4 C5:4 E5:6 F5:2 | G5:6 E5:2 D5:4 B4:4 | C5:4 E5:4 A5:6 G5:2 | G5:6 E5:2 D5:8 | A4:4 C5:4 E5:6 F5:2 | G5:4 A5:2 B5:2 D6:4 B5:4 | C6:6 B5:2 A5:4 G5:4 | B5:4 A5:2 G#5:6 E5:4',
+        keys:'x:2 .:6 x:2 .:2 x:4', pad:'x:16',
+        bass:'D2:3 D2:1 D3:2 D2:2 .:2 D2:2 A2:2 C3:2 | E2:3 E2:1 E3:2 E2:2 .:2 E2:2 B2:2 D3:2 | F2:3 F2:1 F3:2 F2:2 .:2 F2:2 E3:2 C3:2 | G2:3 G2:1 G3:2 G2:2 .:2 G2:2 D3:2 B2:2 | D2:3 D2:1 D3:2 D2:2 .:2 D2:2 A2:2 C3:2 | E2:3 E2:1 E3:2 E2:2 .:2 E2:2 B2:2 D3:2 | F2:3 F2:1 F3:2 F2:2 .:2 F2:2 E3:2 C3:2 | E2:3 E2:1 E3:2 E2:2 .:2 E2:2 G#2:2 B2:2',
+        kick:'X.....x.X.....x.',snare:'....X.......X...',hat:'xgxgxgxgxgxgxgxg',ohat:'..x...x...x...x.'},
+      last:{snare:'....X...x.x.XXXX',ohat:'..x...x.........'}},
+    T:{bars:2,ch:'Am9 | E7#9',
+      p:{lead:'A5:12 .:4 | .:16',keys:'x:2 .:4 x:2 .:2 x:2 .:2 x:2',bass:'A2:3 A2:1 A3:2 A2:2 .:2 G2:2 E2:2 G2:2 | E2:3 .:3 E2:3 .:7',
+        kick:'X.....x...X.....',hat:'xgxgxgxgxgxgxgxg'},
+      first:{orch:'A3+E4+A4+C5:3 .:13'},last:{orch:'G#3+D4+G4+B4:3 .:3 G#3+D4+G4+B4:3 .:7',kick:'X.....X.........',snare:'........XxXxXXXX',hat:'................'}}},
+  intro:['I'],loop:['A','B','T']};
+
+/* ---- DIM SUM: Hong Kong triad kitchen, D minor pentatonic, 96 bpm. Plucked zither leads A,
+   bowed erhu sings B (and shadows A on odd loops), low strings hold the tension, taiko, woodblock clock, gong. */
+const T_ZITHER={w:[['sawtooth',1,0,.6],['triangle',2,0,.4]],cut:3,env:5,ftau:.06,q:1.5,a:.002,dec:.35,sus:0,ring:.6,r:.15,nz:.25,nzf:4,nzd:.02,amp:.36};
+TRACKS.dimsum={bpm:96,spb:4,bar:16,vol:0.162,echo:[.5,.28,0,2200],
+  chords:{'Dm':'D2|D3 F3 A3','Bb':'Bb1|D3 F3 Bb3','C':'C2|E3 G3 C4','Gm':'G1|D3 G3 Bb3','A':'A1|C#3 E3 A3','A7':'A1|C#3 G3 A3'},
+  parts:{ zither:{i:'sv',g:.46,rv:.45,dl:.2,pan:-.15,v:.85,o:T_ZITHER},
+    zarp:{i:'sv',g:.28,rv:.45,dl:.3,pan:-.3,v:.7,hum:0,o:T_ZITHER},
+    erhu:{i:'sv',g:.44,rv:.45,pan:.15,v:.8,o:{w:[['sawtooth',1,0,1]],ft:'bandpass',cut:2.2,q:.9,a:.09,dec:.4,sus:.85,r:.18,vib:32,vdel:.16,slide:.93,slideT:.06,glide:.09,amp:.4}},
+    pad:{i:'sv',g:.3,rv:.4,v:.7,o:{w:[['sawtooth',1,-6,.5],['sawtooth',1,6,.5]],cut:2.2,a:.4,dec:.6,sus:.85,r:.6,amp:.14}},
+    bass:{i:'sv',g:.6,v:.85,pri:1,o:{w:[['triangle',1,0,1],['sawtooth',1,0,.3]],cut:4,env:3,ftau:.08,a:.004,dec:.25,sus:.3,r:.08,amp:.48}},
+    taiko:{d:'tom',g:.85,rv:.35,o:{f:64,sweep:1.6,dec:.8,nz:.5,nzf:350}}, shime:{d:'tom',g:.32,rv:.2,pan:.2,o:{f:330,dec:.12,nz:.3,nzf:2500}},
+    wood:{d:'wood',g:.32,pan:.35,o:{f:1150}}, gong:{d:'gong',g:.5,rv:.6} },
+  sec:{
+    I:{bars:2,ch:'Dm | Dm',p:{pad:'x:32',taiko:'X.......X..x.X..'},first:{gong:'X'},last:{zither:'D4 F4 G4 A4 C5 D5 F5 G5 A5:8',wood:'..x...x...x...xx'}},
+    A:{bars:8,ch:'Dm | Dm | Bb | C | Dm | Dm | Bb C | Dm',
+      p:{zither:'D5:2 F5:2 G5:2 A5:6 G5:2 F5:2 | G5:2 A5:2 C6:2 A5:4 G5:2 F5:4 | D5:3 F5:3 G5:2 F5:4 D5:4 | C5:2 D5:2 F5:2 G5:4 A5:2 G5:2 F5:2 | D5:2 F5:2 G5:2 A5:6 C6:2 D6:2 | C6:2 A5:2 G5:2 A5:6 G5:2 F5:2 | D5:3 F5:3 G5:2 C5:3 D5:3 F5:2 | D5:8 .:4 A4:2 C5:2',
+        'erhu@1':'A4:16 | C5:16 | D5:16 | E5:16 | A4:16 | C5:16 | D5:8 E5:8 | F5:16',
+        pad:'x:16',bass:'r:2 .:2 r:2 r-5:2 r:2 .:2 r12:2 r-5:2',
+        taiko:'X......x..x.X...',shime:'....x.......x...',wood:'..x...x...x...x.'},
+      last:{taiko:'X.x.X.x.XxXxXXXX',shime:'x...............'}},
+    B:{bars:8,ch:'Gm | Dm | Bb | A | Gm | Dm | Bb C | A7',
+      p:{erhu:'D5:6 C5:2 A4:4 G4:4 | A4:12 C5:2 D5:2 | F5:6 D5:2 C5:4 D5:4 | E5:12 .:4 | G5:6 F5:2 D5:4 C5:4 | D5:6 F5:2 A5:8 | G5:4 F5:4 E5:4 G5:4 | A5:6 G5:2 E5:4 C#5:4',
+        zarp:"0':2 1':2 2':2 1':2 0'':2 2':2 1':2 2':2",
+        pad:'x:16',bass:'r:2 .:2 r:2 r-5:2 r:2 .:2 r12:2 r-5:2',
+        taiko:'X..x..x.X..x..x.',shime:'....x.......x..x',wood:'..x...x...x...x.'},
+      first:{gong:'X'},last:{taiko:'X..x..x.XxXxXXXX'}}},
+  intro:['I'],loop:['A','B']};
+
+/* ---- BANYA: Siberian sauna hard bass, G minor, 140 bpm. Four-on-the-floor, distorted offbeat bass,
+   balalaika tremolo hook, accordion. B swings to harmonic minor, the breakdown builds on a snare roll. */
+TRACKS.banya={bpm:140,spb:4,bar:16,vol:0.141,
+  chords:{'Gm':'G1|D4 G4 Bb4','Eb':'Eb2|Eb4 G4 Bb4','Bb':'Bb1|D4 F4 Bb4','D':'D2|D4 F#4 A4','Cm':'C2|C4 Eb4 G4','D7':'D2|C4 F#4 A4'},
+  parts:{ bala:{i:'sv',g:.42,rv:.25,pan:-.1,v:.85,o:{w:[['sawtooth',1,0,.7],['triangle',1,5,.4]],cut:5,env:2,ftau:.05,q:1.5,a:.003,dec:.15,sus:.55,r:.06,trem:15,td:.5,tmin:.15,nz:.2,nzf:4,nzd:.015,amp:.36}},
+    acc:{i:'sv',g:.3,rv:.25,pan:.15,v:.75,o:T_ACC},
+    bass:{i:'sv',g:.5,tr:12,v:.9,pri:1,o:{w:[['sawtooth',1,0,.6],['sawtooth',1,10,.5],['square',.5,0,.45]],drive:4,cut:5,env:3,ftau:.05,q:3,a:.003,dec:.08,sus:.6,r:.03,drop:1.25,dropT:.04,amp:.3}},
+    kick:{d:'kick',g:.9,o:{f:48,dec:.38,drive:2.5,click:.5}}, clap:{d:'clap',g:.45,rv:.3},
+    ohat:{d:'hat',g:.24,o:{dec:.18,f:8000}}, hat:{d:'hat',g:.14}, snr:{d:'snare',g:.38,rv:.2}, crash:{d:'crash',g:.3} },
+  sec:{
+    I:{bars:2,ch:'Gm | D',p:{acc:'x:16',kick:'X...X...X...X...'},last:{snr:'x.x.x.x.xxxxXXXX'}},
+    A:{bars:8,ch:'Gm | Eb | Bb | D | Gm | Eb | Cm D | Gm',
+      p:{bala:'D5:2 D5:2 G5:4 F5:2 Eb5:2 D5:4 | Eb5:2 D5:2 C5:2 Bb4:2 C5:4 G4:4 | D5:2 D5:2 F5:4 Eb5:2 D5:2 C5:4 | A4:4 F#4:2 G4:2 A4:8 | D5:2 D5:2 G5:4 F5:2 Eb5:2 D5:4 | Eb5:2 D5:2 C5:2 Bb4:2 C5:4 G4:4 | Eb5:2 Eb5:2 G5:4 F#5:4 A5:4 | G5:8 D5:2 Bb4:2 G4:4',
+        acc:'x:16',bass:'.:2 r:2 .:2 r:2 .:2 r:2 .:1 r:1 r12:2',
+        kick:'X...X...X...X...',clap:'....X.......X...',ohat:'..x...x...x...x.',hat:'x.x.x.x.x.x.x.x.'},
+      first:{crash:'X'},last:{snr:'........x.x.xxxx'}},
+    B:{bars:8,ch:'Cm | Gm | D7 | Gm | Cm | Gm | Eb D | Gm',
+      p:{bala:'G5:4 Eb5:4 C5:4 Eb5:4 | D5:8 Bb4:4 G4:4 | F#5:4 A5:4 C6:4 A5:4 | Bb5:8 A5:4 G5:4 | G5:4 Eb5:2 F5:2 G5:4 C6:4 | Bb5:4 A5:2 G5:2 D5:8 | Eb5:4 G5:4 F#5:4 A5:4 | G5:8 .:8',
+        acc:'.:2 x:2 .:2 x:2 .:2 x:2 .:2 x:2',bass:'.:2 r:2 .:2 r:2 .:2 r:2 .:2 r12:2',
+        kick:'X...X...X...X...',clap:'....X.......X...',ohat:'..x...x...x...x.',hat:'xgxgxgxgxgxgxgxg'},
+      first:{crash:'X'},last:{snr:'....x...x.x.xxxx'}},
+    BR:{bars:4,ch:'Gm | Eb | Cm | D',
+      p:{acc:'x:16',bala:'G4:16 | Bb4:16 | C5:8 Eb5:8 | D5:4 F#5:4 A5:4 D6:4',hat:'x.x.x.x.x.x.x.x.'},
+      last:{snr:'x...x...x...x...x.x.x.x.xxxxXXXX'}},
+    A2:{from:'A',p:{bass:'.:2 r:2 .:1 r:1 r:2 .:2 r:2 .:1 r:1 r12:2',hat:'xgxgxgxgxgxgxgxg'},first:{crash:'X'}}},
+  intro:['I'],loop:['A','B','BR','A2']};
+
+/* ---- TRATTORIA: Naples tarantella, 6/8 at 120 dotted-quarter (bar = two 6/8 bars, 12 eighths).
+   A minor with mandolin tremolo, accordion oom-pa-pa, tambourine; B lifts to A major and gets cheeky. */
+const TA_A='A4 C5 E5 A5:2 E5 C5 E5 A5 C6:3 | B5:2 A5 G#5:2 E5 D5 E5 F5 E5:3 | G#4 B4 D5 F5:2 E5 D5:2 C5 B4:3 | C5:2 B4 A4:2 G#4 A4:3 .:3 | E5 E5 E5 E5:2 F5 E5 D5 C5 B4:2 C5 | F5:2 E5 D5:2 A4 D5 F5 A5 D6:3 | C6 B5 A5 G#5:2 F5 E5 D5 C5 B4:3 | A4:2 C5 E5:2 C5 A4:3 .:3';
+TRACKS.trattoria={bpm:120,spb:3,bar:12,vol:0.2,
+  chords:{'Am':'A1|A3 C4 E4','E7':'E2|G#3 B3 D4','Dm':'D2|A3 D4 F4','A':'A1|A3 C#4 E4','A7':'A1|G3 C#4 E4','D':'D2|A3 D4 F#4'},
+  parts:{ mand:{i:'sv',g:.42,rv:.3,pan:-.1,v:.85,o:{w:[['sawtooth',1,0,.5],['square',1,6,.35]],cut:6,env:1.8,ftau:.05,q:2,a:.002,dec:.12,sus:.5,r:.05,trem:13,td:.55,tmin:.3,nz:.25,nzf:5,nzd:.012,amp:.36}},
+    mandhi:{i:'sv',g:.22,rv:.35,pan:.25,tr:12,v:.75,o:{w:[['sawtooth',1,0,.5],['square',1,-6,.35]],cut:5,env:1.8,ftau:.05,q:2,a:.002,dec:.12,sus:.5,r:.05,trem:13.5,td:.55,tmin:.3,amp:.3}},
+    acc:{i:'sv',g:.3,rv:.2,pan:.15,v:.72,gap:.02,o:{w:[['sawtooth',1,-8,.45],['sawtooth',1,8,.45],['square',1,0,.2]],cut:4,q:1,a:.015,dec:.2,sus:.6,r:.06,amp:.13}},
+    bass:{i:'sv',g:.55,tr:12,v:.85,pri:1,o:{w:[['sawtooth',1,0,.5],['square',1,0,.4],['sine',.5,0,.5]],cut:3,a:.01,dec:.15,sus:.5,r:.05,amp:.42}},
+    tamb:{d:'tamb',g:.34,pan:.3}, drum:{d:'tom',g:.5,o:{f:95,dec:.25,nz:.3,nzf:600}} },
+  sec:{
+    I:{bars:2,ch:'Am | E7',p:{tamb:'XggxggXggxgg',drum:'X.....x.....',bass:'r:2 .:1 r-5:2 .:1 r:2 .:1 r-5:2 .:1',acc:'. x x . x x . x x . x x'}},
+    A:{bars:8,ch:'Am | E7 | E7 | Am | Am | Dm | E7 | Am',
+      p:{mand:TA_A,acc:'. x x . x x . x x . x x',bass:'r:2 .:1 r-5:2 .:1 r:2 .:1 r-5:2 .:1',tamb:'XggxggXggxgg',drum:'X.....x.....'}},
+    B:{bars:8,ch:'A | E7 | E7 | A | A7 | D | E7 | A E7',
+      p:{mand:'C#5 E5 A5 C#6:2 B5 A5:2 E5 C#5:3 | D6:2 B5 G#5:2 E5 D5 E5 F#5 G#5:3 | B5 A5 G#5 F#5:2 E5 D5:2 B4 G#4:3 | A4 C#5 E5 A5:2 G#5 A5:3 .:3 | G5 G5 G5 G5:2 F#5 E5 C#5 A4 G5:3 | F#5 F#5 F#5 F#5:2 E5 D5 F#5 A5 D6:3 | B5 C#6 D6 B5:2 G#5 E5 F#5 G#5 B5:3 | A5:3 .:1 C#5 E5 G#5:3 B5:3',
+        acc:'. x x . x x . x x . x x',bass:'r:2 .:1 r-5:2 .:1 r:2 .:1 r-5:2 .:1',tamb:'XgxXgxXgxXgx',drum:'X..x..X..x..'},
+      last:{tamb:'XgxXgxXxXxXX'}},
+    A2:{from:'A',p:{mandhi:TA_A,acc:'x x x x x x x x x x x x',tamb:'XgxxgxXgxxgx'},last:{tamb:'XxXxXxXXXXXX',drum:'X.xX.xX.xXXX'}}},
+  intro:['I'],loop:['A','B','A2']};
+
+/* ---- PUB: London match day terrace stomp, E mixolydian, 128 bpm. Stomp-clap, chugging overdriven power
+   chords (root+5th+octave in one voice), honky-tonk piano riff in octaves; B is the terrace chant on guitar. */
+const PUB_RIFF='E5:2 E5:2 G#5:2 B5:4 G#5:2 E5:4 | F#5:2 F#5:2 A5:2 D6:4 A5:2 F#5:4 | E5:2 E5:2 C#5:2 A4:4 B4:2 C#5:4 | B4:4 D5:4 E5:8 | E5:2 E5:2 G#5:2 B5:4 G#5:2 E5:4 | F#5:2 F#5:2 A5:2 D6:4 A5:2 F#5:4 | A5:2 A5:2 E5:2 C#5:2 B4:2 D#5:2 F#5:4 | E5:6 .:2 G#4+E5:2 .:2 G#4+E5:4';
+const PUB_LEAD={w:[['sawtooth',1,0,.6],['square',1,8,.4]],drive:3,cut:3000,cabs:1,q:1.5,a:.005,dec:.4,sus:.8,r:.1,vib:20,vdel:.25,glide:.04,amp:.2};
+TRACKS.pub={bpm:128,spb:4,bar:16,vol:0.157,
+  chords:{'E':'E2|E3 B3 E4 G#4','D':'D2|D3 A3 D4 F#4','A':'A1|E3 A3 C#4 E4','B':'B1|D#3 F#3 B3 D#4','C#m':'C#2|C#3 G#3 C#4 E4'},
+  parts:{ piano:{i:'sv',g:.38,rv:.25,pan:.1,v:.85,dbl:-12,o:{w:[['triangle',1,-9,.55],['sawtooth',1,9,.25],['sine',2,0,.15]],cut:7,env:2,ftau:.12,a:.002,dec:.35,sus:0,ring:.4,r:.1,nz:.15,nzf:3,nzd:.01,amp:.36}},
+    keys:{i:'sv',g:.28,rv:.25,pan:.2,v:.75,o:{w:[['triangle',1,-9,.55],['sawtooth',1,9,.25]],cut:6,env:2,ftau:.1,a:.002,dec:.25,sus:0,ring:.2,r:.08,amp:.3}},
+    gtr:{i:'sv',g:.3,rv:.15,pan:-.2,tr:12,v:.85,pri:1,o:{w:[['sawtooth',1,0,.5],['sawtooth',1.4983,0,.45],['sawtooth',2,6,.3]],drive:6,cut:2400,cabs:1,q:1.2,a:.003,dec:.18,sus:.45,r:.05,amp:.22}},
+    lead:{i:'sv',g:.34,rv:.3,v:.85,o:PUB_LEAD}, lead2:{i:'sv',g:.24,rv:.3,tr:-12,v:.8,o:PUB_LEAD},
+    bass:{i:'sv',g:.52,tr:12,v:.85,pri:1,o:{w:[['sawtooth',1,0,.5],['square',1,0,.4]],drive:2,cut:3.5,env:2,ftau:.06,q:2,a:.003,dec:.15,sus:.55,r:.04,amp:.36}},
+    stomp:{d:'stomp',g:.85}, clap:{d:'clap',g:.5,rv:.4}, snare:{d:'snare',g:.45,rv:.25}, hat:{d:'hat',g:.18}, crash:{d:'crash',g:.28} },
+  sec:{
+    I:{bars:2,ch:'E | E',p:{stomp:'X...X...X...X...',clap:'....X.......X...'},last:{gtr:'r:2 r:2 r:2 r:2 r:8',snare:'........x.x.XXXX'}},
+    A:{bars:8,ch:'E | D | A | E | E | D | A B | E',
+      p:{piano:PUB_RIFF,gtr:'r:2 r:2 r:2 r:2 r:2 r:2 r:2 r:2',bass:'r:2 r:2 r12:2 r:2 r:2 r:2 r12:2 r7:2',
+        stomp:'X...X...X...X...',clap:'....X.......X...',hat:'x.x.x.x.x.x.x.x.'},
+      first:{crash:'X'},last:{snare:'........x.x.XXXX'}},
+    B:{bars:8,ch:'C#m | A | E | B | C#m | A | B | B',
+      p:{lead:'G#4:4 G#4:4 C#5:6 B4:2 | A4:4 B4:4 C#5:8 | B4:4 G#4:4 E4:6 F#4:2 | F#4:12 .:4 | G#4:4 G#4:4 E5:6 D#5:2 | C#5:4 B4:4 A4:8 | B4:4 C#5:4 D#5:4 F#5:4 | F#5:8 .:8',
+        keys:'.:2 x:2 .:2 x:2 .:2 x:2 .:2 x:2',gtr:'r:6 r:6 r:4',bass:'r:2 r:2 r:2 r:2 r:2 r:2 r:2 r:2',
+        stomp:'X...X...X...X...',clap:'x...X...x...X...',hat:'x.x.x.x.x.x.x.x.'},
+      first:{crash:'X'},last:{snare:'....x...x.x.XxXX'}},
+    A2:{from:'A',p:{lead2:PUB_RIFF,hat:'xxx.xxx.xxx.xxx.'}}},
+  intro:['I'],loop:['A','B','A2']};
+
+/* ---- POOL: Rio deck party, baile funk, Bb minor, 130 bpm. Tamborzao drums (low atabaque + high tak),
+   808 sub with pitch drop, syncopated brass stabs locked to the drums, square-lead hook, apito whistles. */
+TRACKS.pool={bpm:130,spb:4,bar:16,vol:0.104,echo:[.75,.22,0,2600],
+  chords:{'Bbm':'Bb1|Bb3 Db4 F4','Gb':'Gb1|Bb3 Db4 Gb4','Ab':'Ab1|C4 Eb4 Ab4','Ebm':'Eb2|Bb3 Eb4 Gb4','F':'F1|A3 C4 F4'},
+  parts:{ stab:{i:'sv',g:.34,rv:.3,v:.85,o:{w:[['sawtooth',1,-12,.5],['sawtooth',1,12,.5]],nz:.3,nzf:2.5,nzd:.04,cut:3,env:4,ftau:.07,q:1.5,a:.003,dec:.12,sus:.2,r:.06,amp:.22}},
+    lead:{i:'sv',g:.36,rv:.25,dl:.2,v:.85,o:{w:[['square',1,0,.6],['square',1,7,.4]],cut:6,env:2,ftau:.08,q:1,a:.003,dec:.12,sus:.45,r:.05,amp:.24}},
+    sub:{i:'sv',g:.72,v:.9,pri:1,o:{w:[['sine',1,0,1],['triangle',2,0,.2]],drive:1.8,drop:1.6,dropT:.05,a:.003,dec:.6,sus:.6,r:.08,amp:.55}},
+    kick:{d:'kick',g:.85,o:{f:48,dec:.5,click:.4}}, tum:{d:'tom',g:.55,o:{f:105,sweep:1.8,dec:.2,nz:.25,nzf:800}},
+    tak:{d:'tom',g:.3,pan:.25,o:{f:420,sweep:1.3,dec:.08,nz:.3,nzf:3000}}, clap:{d:'clap',g:.5,rv:.25},
+    hat:{d:'hat',g:.17,pan:-.2}, whistle:{d:'whistle',g:.34,rv:.3,pan:-.3}, crash:{d:'crash',g:.28} },
+  sec:{
+    I:{bars:2,ch:'Bbm | Bbm',p:{whistle:'X.......X...x.x.',tum:'X..x..X...X..x..'},last:{sub:'Bb1:6 .:10',stab:'x:2 .:2 x:2 .:2 x:2 .:6',clap:'........x.x.xxxx'}},
+    A:{bars:8,ch:'Bbm | Bbm | Gb | Ab | Bbm | Bbm | Gb | Ab',
+      p:{lead:'F5:2 .:1 F5:1 .:2 Db5:2 .:2 Eb5:2 F5:2 .:2 | Ab5:2 .:1 F5:1 .:2 Eb5:2 Db5:4 Bb4:4 | F5:2 .:1 F5:1 .:2 Db5:2 .:2 Eb5:2 Gb5:2 .:2 | F5:2 Eb5:2 C5:4 Ab4:4 .:4 | F5:2 .:1 F5:1 .:2 Db5:2 .:2 Eb5:2 F5:2 .:2 | Ab5:2 .:1 F5:1 .:2 Eb5:2 Db5:4 Bb4:4 | F5:2 .:1 F5:1 .:2 Db5:2 .:2 Eb5:2 Gb5:2 .:2 | F5:2 Eb5:2 C5:2 Eb5:2 F5:4 .:4',
+        stab:'x:2 .:14',sub:'r:3 .:3 r:4 .:2 r:2 r12:2',
+        kick:'X......xX.......',tum:'X..x..X...X..x..',tak:'..x..x...x..x..x',clap:'....X.......X...',hat:'x.x.x.x.x.x.x.x.',whistle:'..............x.'},
+      first:{crash:'X'},last:{tum:'X.xX.xX.xXxXxXXX'}},
+    B:{bars:8,ch:'Ebm | Bbm | Gb | F | Ebm | Bbm | Gb | F',
+      p:{lead:'Bb5:3 Gb5:3 Eb5:2 .:2 Gb5:2 Bb5:4 | Ab5:3 F5:3 Db5:2 .:4 F5:4 | Bb5:3 Gb5:3 Db5:2 .:2 Eb5:2 Gb5:4 | A5:6 F5:2 C5:4 A4:4 | Bb5:3 Gb5:3 Eb5:2 .:2 Gb5:2 Bb5:4 | Ab5:3 F5:3 Db5:2 .:4 F5:4 | Bb5:3 Gb5:3 Db5:2 .:2 Eb5:2 Gb5:4 | A5:4 C6:4 A5:4 F5:4',
+        stab:'x:1 .:2 x:1 .:2 x:1 .:3 x:1 .:2 x:1 .:2',sub:'r:3 .:3 r:4 .:2 r:2 r12:2',
+        kick:'X......xX.......',tum:'X..x..X...X..x..',tak:'..x..x...x..x..x',clap:'....X.......X...',hat:'xxx.xxx.xxx.xxx.',whistle:'X...x.x.........'},
+      first:{crash:'X'},last:{clap:'....X...x.x.XxXX'}},
+    BR:{bars:4,ch:'Bbm | Bbm | Bbm | F',
+      p:{sub:'r:3 .:3 r:4 .:6',tum:'X..x..X...X..x..',tak:'..x..x...x..x..x',hat:'x.x.x.x.x.x.x.x.',whistle:'X...x.x.X...x.x.'},
+      first:{stab:'x:2 .:14'},last:{clap:'x.x.x.x.xxxxXXXX',stab:'.:12 x:1 .:1 x:1 .:1'}}},
+  intro:['I'],loop:['A','B','BR']};
+
+/* ---- CASINO: Vegas rockabilly / big-band swing, E, 160 bpm, written in triplet eighths (bar = 12).
+   Walking upright bass, brush ride spang-a-lang, saw-brass stabs on the swung upbeats, twang guitar
+   through slapback. A is a 12-bar blues with a I-VI-II-V turnaround, B is a rhythm-changes style bridge. */
+TRACKS.casino={bpm:160,spb:3,bar:12,vol:0.26,echo:[.11,.16,1,3000],
+  chords:{'E7':'E2|G#3 D4 F#4','A7':'A1|G3 C#4 F#4','C#7':'C#2|F3 B3 D#4','F#7':'F#2|E3 A#3 D#4','B7':'B1|D#3 A3 C#4','G#7':'G#1|C4 F#4 A#4'},
+  parts:{ bass:{i:'sv',g:.66,v:.85,pri:1,gap:.02,o:{w:[['triangle',1,0,1],['sine',2,0,.25]],cut:5,env:2.5,ftau:.05,a:.004,dec:.22,sus:.35,r:.06,nz:.12,nzf:2,nzd:.02,amp:.52}},
+    ride:{d:'brush',g:.26,pan:.2,o:{f:5200,dec:.25,a:.004}}, snare:{d:'snare',g:.4,rv:.3,o:{dec:.15}}, kick:{d:'kick',g:.45,o:{f:60,dec:.25,click:.2}},
+    brass:{i:'sv',g:.4,rv:.35,v:.85,o:{w:[['sawtooth',1,-7,.5],['sawtooth',1,7,.5]],cut:1.6,env:4,fa:.015,ftau:.06,q:1.2,a:.018,dec:.15,sus:.6,r:.08,amp:.16}},
+    gtr:{i:'sv',g:.4,rv:.2,dl:.5,pan:-.15,v:.85,o:{w:[['sawtooth',1,0,.5],['square',1,0,.4]],cut:4,env:3,ftau:.05,q:3,a:.002,dec:.25,sus:.35,r:.08,nz:.2,nzf:4,nzd:.01,amp:.3,vib:12,vdel:.3}} },
+  sec:{
+    I:{bars:2,ch:'B7 | B7',p:{bass:'B1:3 D#2:3 F#2:3 A2:3 | B2:3 A2:3 F#2:3 F2:3',ride:'X..x.xX..x.x',kick:'x.....x.....',brass:'x:2 .:4 x:2 .:4'},last:{snare:'...x.xx.xXxX'}},
+    A:{bars:12,ch:'E7 | A7 | E7 | E7 | A7 | A7 | E7 | C#7 | F#7 | B7 | E7 C#7 | F#7 B7',
+      p:{gtr:'E5:2 G5:1 G#5:3 E5:2 C#5:1 B4:3 | C#5:2 E5:1 G5:3 F#5:2 E5:1 C#5:3 | E5:2 G5:1 G#5:3 B5:2 G#5:1 E5:3 | G#4:6 .:3 B4:2 C#5:1 | E5:2 G5:1 A5:3 G5:2 E5:1 C#5:3 | A4:6 .:3 B4:2 C#5:1 | E5:3 G#5:3 B5:3 G#5:3 | B5:2 G#5:1 F5:3 E5:2 C#5:1 B4:3 | A#4:3 C#5:3 E5:2 F#5:1 A#5:3 | A5:2 F#5:1 D#5:3 B4:3 .:3 | E5:3 G#5:3 F5:3 G#5:3 | F#5:3 E5:2 C#5:1 D#5:3 B4:3',
+        brass:'.:5 x:1 .:5 x:1',
+        bass:'E2:3 G#2:3 B2:3 A#2:3 | A2:3 G2:3 F#2:3 F2:3 | E2:3 G#2:3 B2:3 C#3:3 | E3:3 D3:3 B2:3 G#2:3 | A2:3 C#3:3 E3:3 C#3:3 | A2:3 G2:3 F#2:3 F2:3 | E2:3 G#2:3 B2:3 C3:3 | C#3:3 G#2:3 F#2:3 G2:3 | F#2:3 A#2:3 C#3:3 C3:3 | B2:3 D#3:3 F#3:3 F3:3 | E3:3 B2:3 C#3:3 G#2:3 | F#2:3 C#3:3 B2:3 F2:3',
+        ride:'X..x.xX..x.x',snare:'...x.....x..',kick:'x.....x.....'},
+      last:{snare:'...x.xx.xXxX'}},
+    B:{bars:8,ch:'G#7 | G#7 | C#7 | C#7 | F#7 | F#7 | B7 | B7',
+      p:{gtr:'C5:3 D#5:3 F#5:3 G#5:3 | F#5:2 D#5:1 C5:6 .:3 | F5:3 G#5:3 B5:3 C#6:3 | B5:2 G#5:1 F5:6 .:3 | A#4:3 C#5:3 E5:3 F#5:3 | E5:2 C#5:1 A#4:6 .:3 | D#5:3 F#5:3 A5:3 B5:3 | A5:2 F#5:1 D#5:3 B4:3 .:3',
+        brass:'x:2 .:1 x:2 .:4 x:2 .:1',
+        bass:'G#2:3 C3:3 D#3:3 C3:3 | G#2:3 F#2:3 E2:3 D2:3 | C#2:3 F2:3 G#2:3 F2:3 | C#3:3 B2:3 G#2:3 G2:3 | F#2:3 A#2:3 C#3:3 A#2:3 | F#2:3 E2:3 C#2:3 C2:3 | B1:3 D#2:3 F#2:3 A2:3 | B2:3 A2:3 F#2:3 F2:3',
+        ride:'X..x.xX..x.x',snare:'...x..x..x.x',kick:'x.....x.....'},
+      last:{snare:'...x.xx.xXxX'}},
+    A2:{from:'A',p:{brass:'.:2 x:1 .:2 x:1 .:2 x:1 .:2 x:1'}}},
+  intro:['I'],loop:['A','B','A2']};
+
+/* ---- CAB: the locomotive. Dark techno / industrial, C minor-phrygian, 132 bpm. Driven kick, metal hats,
+   octave-pedal arpeggio, acid bass between the kicks, a siren pad that bends upward, a saw hook in B, breakdown. */
+TRACKS.cab={bpm:132,spb:4,bar:16,vol:0.14,echo:[.75,.3,0,2000],
+  chords:{'Cm':'C2|C3 G3 C4 Eb4','Db':'Db2|Db3 Ab3 Db4 F4','Bb':'Bb1|Bb2 F3 Bb3 D4','Ab':'Ab1|Ab2 Eb3 Ab3 C4','G':'G1|G2 D3 G3 B3'},
+  parts:{ arp:{i:'sv',g:.3,rv:.2,dl:.25,pan:.15,tr:12,v:.8,hum:0,o:{w:[['sawtooth',1,0,.6],['square',1,5,.4]],cut:3,env:5,ftau:.05,q:6,a:.002,dec:.09,sus:.15,r:.04,amp:.26}},
+    siren:{i:'sv',g:.24,rv:.45,v:.75,o:{w:[['sawtooth',1,-12,.5],['sawtooth',1,12,.5]],cut:2,q:2,a:1.2,dec:1,sus:.9,r:.8,bend:1.06,amp:.12}},
+    bass:{i:'sv',g:.55,v:.9,pri:1,hum:0,o:{w:[['sawtooth',1,0,.7],['square',1,0,.4]],cut:1.5,env:8,ftau:.05,q:8,a:.002,dec:.1,sus:.35,r:.03,amp:.38}},
+    lead:{i:'sv',g:.35,rv:.35,dl:.2,v:.85,o:{w:[['sawtooth',1,-6,.5],['sawtooth',1,6,.5],['square',.5,0,.3]],drive:2,cut:4,env:1.5,ftau:.2,q:2,a:.01,dec:.4,sus:.8,r:.15,vib:10,vdel:.3,amp:.22}},
+    kick:{d:'kick',g:.92,o:{f:46,dec:.42,drive:3,click:.5}}, clang:{d:'clap',g:.42,rv:.35,o:{f:1600}}, mclang:{d:'metal',g:.22,rv:.3,o:{f:1800,dec:.12}},
+    hat:{d:'metal',g:.16,pan:.2,o:{dec:.04}}, ohat:{d:'metal',g:.18,pan:-.15,o:{dec:.16,f:3600}}, snr:{d:'snare',g:.34,rv:.2}, crash:{d:'crash',g:.28} },
+  sec:{
+    I:{bars:2,ch:'Cm | Cm',p:{kick:'X...X...X...X...',ohat:'..x...x...x...x.',siren:'x:32'},last:{arp:"0 0' 2 0' 3 0' 2 1' 0 0' 2 0' 3 0' 3' 1'",snr:'........x.x.xxXX'}},
+    A:{bars:8,ch:'Cm | Cm | Db | Cm | Cm | Cm | Db | Bb',
+      p:{arp:"0 0' 2 0' 3 0' 2 1' 0 0' 2 0' 3 0' 3' 1'",siren:'x:32',
+        bass:'.:1 r:1 r:1 r12:1 .:1 r:1 r7:1 r:1 .:1 r:1 r12:1 r:1 .:1 r7:1 r:1 r12:1',
+        lead:'.:16 | .:16 | F5:4 .:2 F5:2 Ab5:4 F5:4 | G5:12 .:4 | .:16 | .:16 | F5:4 .:2 F5:2 Ab5:4 Db6:4 | D5:8 F5:4 Bb4:4',
+        kick:'X...X...X...X...',clang:'....X.......X...',mclang:'....x.......x...',hat:'xgxgxgxgxgxgxgxg',ohat:'..x...x...x...x.'},
+      first:{crash:'X'},last:{snr:'........x.x.xxXX'}},
+    B:{bars:8,ch:'Ab | Bb | Cm | Cm | Ab | Bb | Db | G',
+      p:{lead:'C5:4 .:2 C5:2 Eb5:4 C5:4 | D5:4 .:2 D5:2 F5:4 D5:4 | Eb5:6 D5:2 C5:4 G4:4 | C5:12 .:4 | C5:4 .:2 C5:2 Eb5:4 Ab5:4 | G5:4 .:2 F5:2 D5:4 Bb4:4 | Ab5:6 G5:2 F5:4 Db5:4 | B4:8 D5:4 F5:4',
+        arp:"0 1 2 3 0' 1 2 3 0'' 3 2 1 0' 3 2 1",siren:'x:32',
+        bass:'.:1 r:1 r:1 r12:1 .:1 r:1 r7:1 r:1 .:1 r:1 r12:1 r:1 .:1 r7:1 r:1 r12:1',
+        kick:'X...X...X...X...',clang:'....X.......X...',mclang:'....x.......x...',hat:'xgxgxgxgxgxgxgxg',ohat:'..x...x...x...x.'},
+      first:{crash:'X'},last:{kick:'X...X...X.X.XXXX'}},
+    C:{bars:4,ch:'Cm | Db | Ab | G',
+      p:{arp:"0 0' 2 0' 3 0' 2 1' 0 0' 2 0' 3 0' 3' 1'",siren:'x:16',hat:'xgxgxgxgxgxgxgxg',bass:'r:16'},
+      last:{snr:'x...x...x...x...x.x.x.x.xxxxXXXX'}}},
+  intro:['I'],loop:['A','B','C']};
+
+/* =====================================================================
+   AMBIENCE. Continuous beds plus random one-shots, placed in five fixed "positions"
+   (near left/right, far left/right, far centre) that feed the big tiled-hall reverb.
+   ===================================================================== */
+function later(P,t,fn){ P.later.push({t,fn}); }
+function positions(P,wet){ const ac=P.ac; P.pos=[];
+  for(const [pan,dry,w,cut] of [[-.55,.75,.45,9000],[.55,.75,.45,9000],[-.85,.28,1,2400],[.85,.28,1,2400],[0,.16,1.1,1300]]){
+    const i=F(ac,'lowpass',cut,.5),p=PAN(ac,pan),d=G(ac,dry),s=G(ac,w*wet); chain(i,p,d,P.out); p.connect(s); s.connect(P.rv); P.keep.push(i,p,d,s); P.nodes+=4; P.pos.push(i); } }
+const near=P=>P.pos[Math.random()<.5?0:1], far=P=>P.pos[2+((Math.random()*3)|0)], anyPos=P=>Math.random()<.4?near(P):far(P);
+/* looping filtered-noise bed; returns its gain so callers can modulate it */
+function bed(P,dst,type,f,q,g){ const ac=P.ac,n=NZ(P),fl=F(ac,type,f,q),gg=G(ac,g); chain(n,fl,gg,dst); n.start(ac.currentTime,Math.random()*3); cont(P,n.detune); keep(P,n,fl,gg); return {g:gg,f:fl}; }
+function hum(P,dst,type,f,g){ const ac=P.ac,o=O(ac,type,f),gg=G(ac,g); chain(o,gg,dst); o.start(ac.currentTime); cont(P,o.detune); keep(P,o,gg); return gg; }
+function lfo(P,param,hz,depth){ const ac=P.ac,o=O(ac,'sine',hz),g=G(ac,depth); chain(o,g,param); o.start(ac.currentTime,0); keep(P,o,g); }
+function blip(P,dst,t,type,f,dec,v,f2){ const ac=P.ac,pf=pitch(P,t),o=O(ac,type,f*pf),g=G(ac,0); if(f2){ o.frequency.setValueAtTime(f*pf,t); o.frequency.exponentialRampToValueAtTime(f2*pf,t+dec*.6); } perc(g,t,v,dec); chain(o,g,dst); o.start(t); V(P,[o],[g],t+dec); }
+function toneOn(P,dst,t,type,f,len,v){ const ac=P.ac,o=O(ac,type,f*pitch(P,t)),g=G(ac,0); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.006); g.gain.setValueAtTime(v,t+len); g.gain.linearRampToValueAtTime(0,t+len+.012); chain(o,g,dst); o.start(t); V(P,[o],[g],t+len+.02); }
+const VOWEL=[[730,1090],[530,1840],[270,2290],[570,840],[440,1020],[660,1720],[300,870]];
+function syllable(P,dst,t,f0,dur,v){ const ac=P.ac,pf=pitch(P,t),o=O(ac,'sawtooth',f0*pf),a=pick(VOWEL),b=pick(VOWEL),f1=F(ac,'bandpass',a[0],6),f2=F(ac,'bandpass',a[1],8),g=G(ac,0),g2=G(ac,.6);
+  o.frequency.setValueAtTime(f0*pf,t); o.frequency.linearRampToValueAtTime(f0*pf*rnd(.82,1.18),t+dur);
+  f1.frequency.setValueAtTime(a[0],t); f1.frequency.linearRampToValueAtTime(b[0],t+dur); f2.frequency.setValueAtTime(a[1],t); f2.frequency.linearRampToValueAtTime(b[1],t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.03); g.gain.setValueAtTime(v,t+dur-.03); g.gain.linearRampToValueAtTime(0,t+dur);
+  o.connect(f1); o.connect(f2); f1.connect(g); chain(f2,g2,g); g.connect(dst); o.start(t); V(P,[o],[f1,f2,g,g2],t+dur+.02); }
+function utterance(P,t,v){ const dst=Math.random()<.25?near(P):far(P),f0=Math.random()<.5?rnd(95,140):rnd(180,250); let tt=t; const n=2+(Math.random()*5|0);
+  for(let i=0;i<n;i++){ const d=rnd(.09,.22); later(P,tt,(P,t)=>syllable(P,dst,t,f0*rnd(.9,1.12),d,v*rnd(.6,1))); tt+=d+rnd(.015,.09); } }
+function footstep(P,dst,t,v){ const [n,fl,g]=nzHit(P,dst,t,'bandpass',rnd(1700,2600),1.4,v,.045); blip(P,dst,t+.012,'sine',95,.06,v*.7,60); V(P,[n],[fl,g],t+.06); }
+function walker(P,t,v){ const dst=anyPos(P),pace=rnd(.46,.6); for(let i=0,n=4+(Math.random()*8|0);i<n;i++) later(P,t+i*pace,(P,t)=>footstep(P,dst,t,v*(i%2?.85:1))); }
+function distantTrain(P,t,dur,v){ const ac=P.ac,dst=P.pos[4],n=NZ(P),fl=F(ac,'lowpass',160,1),g=G(ac,0),o=O(ac,'sawtooth',42*pitch(P,t)),og=G(ac,0),of=F(ac,'lowpass',140,.7);
+  fl.frequency.setValueAtTime(140,t); fl.frequency.linearRampToValueAtTime(650,t+dur*.5); fl.frequency.linearRampToValueAtTime(160,t+dur);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+dur*.5); g.gain.linearRampToValueAtTime(0,t+dur);
+  og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(v*.5,t+dur*.5); og.gain.linearRampToValueAtTime(0,t+dur);
+  chain(n,fl,g,dst); chain(o,of,og,dst); n.start(t,Math.random()*3); o.start(t); V(P,[n,o],[fl,g,of,og],t+dur);
+  for(let x=dur*.25;x<dur*.8;x+=rnd(.22,.3)) later(P,t+x,(P,tt)=>{ const k=1-Math.abs((tt-t)/dur-.5)*2; const [a,b,c]=nzHit(P,dst,tt,'bandpass',700,1.2,v*.5*k,.05); V(P,[a],[b,c],tt+.06); }); }
+function stationBase(P,o){ const ac=P.ac; positions(P,o.wet||1);
+  bed(P,P.out,'lowpass',150,.7,.09*(o.room||1)); bed(P,P.pos[4],'bandpass',700,.6,.012*(o.room||1));
+  if(o.crowd>0){ const m=bed(P,P.pos[4],'bandpass',520,1.4,.05*o.crowd); lfo(P,m.g.gain,.13,.02*o.crowd); lfo(P,m.f.frequency,.21,140);
+    every(P,.2,.35/o.crowd,1.4/o.crowd,(P,t)=>utterance(P,t,.05)); }
+  if(o.steps>0) every(P,.8,2/o.steps,7/o.steps,(P,t)=>walker(P,t,.09));
+  every(P,o.trainFirst||6,o.train?o.train[0]:28,o.train?o.train[1]:50,(P,t)=>distantTrain(P,t,rnd(7,10),.35)); }
+/* small note players for buskers and chimes: notes as [midi, startBeat, beats] */
+function phrase(P,dst,t,bpm,notes,fn,o){ const b=60/bpm; for(const [m,s,l,v] of notes) later(P,t+s*b,(P,tt)=>INST[fn](P,dst,tt,hz(m)*pitch(P,tt),l*b,v||.8,o)); }
+const M=s=>{ const out=[]; for(const x of toks(s)){ const [n,st,l,v]=x.split(':'); for(const k of n.split('+')) out.push([midi(k),+st,+l,v?+v:.8]); } return out; };
+const T_PLUCK={w:[['triangle',1,0,.7],['sawtooth',1,0,.25]],cut:5,env:3,ftau:.07,a:.002,dec:.35,sus:0,ring:.8,r:.15,amp:.3};
+const T_MAND={w:[['sawtooth',1,0,.5],['square',1,6,.35]],cut:5,env:1.8,ftau:.05,q:2,a:.002,dec:.12,sus:.5,r:.05,trem:13,td:.55,tmin:.3,amp:.3};
+
+const AMB={
+  tokyo(P){ stationBase(P,{crowd:.9,steps:1});
+    const chime=M('E5:0:1 B5:.75:1 A5:1.5:1 E6:2.25:1.5 D6:3.25:2');
+    every(P,2,24,36,(P,t)=>phrase(P,P.pos[0],t,150,chime,'bell',{ratio:3.5,idx:2,dec:1.6,amp:.16}));
+    const esc=hum(P,P.pos[1],'sawtooth',50,.02); hum(P,P.pos[1],'triangle',100,.012); lfo(P,esc.gain,.7,.006);
+    every(P,.4,.85,.95,(P,t)=>{ const [n,f,g]=nzHit(P,P.pos[1],t,'bandpass',1200,2,.02,.03); V(P,[n],[f,g],t+.04); });
+    every(P,5,14,24,(P,t)=>{ for(let i=0;i<7;i++){ const d=P.pos[3],tt=t+i*.55; later(P,tt,(P,x)=>{ blip(P,d,x,'sine',2300,.08,.07,3500); blip(P,d,x+.12,'sine',3300,.05,.05,2700); blip(P,d,x+.2,'sine',3300,.05,.04,2700); }); } });
+    every(P,1,1.5,4,(P,t)=>{ const d=anyPos(P); if(Math.random()<.8) toneOn(P,d,t,'square',2400,.07,.025); else { toneOn(P,d,t,'square',3000,.06,.025); toneOn(P,d,t+.1,'square',3000,.06,.025); } }); },
+  tokyonight(P){ stationBase(P,{crowd:.12,steps:.25,room:1.2,train:[45,70],trainFirst:9});
+    const b=hum(P,P.pos[0],'sawtooth',120,.0045); const bf=F(P.ac,'bandpass',2600,3); b.disconnect(); chain(b,bf,P.pos[0]); P.keep.push(bf); hum(P,P.pos[0],'sine',120,.012);
+    every(P,3,4,9,(P,t)=>{ for(let i=0,n=1+(Math.random()*4|0);i<n;i++){ const tt=t+i*rnd(.04,.12); toneOn(P,P.pos[0],tt,'sawtooth',120,rnd(.02,.06),.02); } });
+    const chime=M('E5:0:1 B5:.75:1 A5:1.5:1 E6:2.25:1.5 D6:3.25:2');
+    every(P,4,30,45,(P,t)=>phrase(P,P.pos[4],t,150,chime,'bell',{ratio:3.5,idx:2,dec:2,amp:.2})); },
+  hongkong(P){ stationBase(P,{crowd:1.6,steps:1.4});
+    every(P,3,18,30,(P,t)=>{ const d=P.pos[1]; for(let i=0;i<5;i++) toneOn(P,d,t+i*.26,'square',1180,.12,.02); toneOn(P,d,t+5*.26,'square',880,.4,.02); });
+    every(P,1,4,8,(P,t)=>{ const d=far(P),n=6+(Math.random()*12|0); let tt=t; for(let i=0;i<n;i++){ tt+=rnd(.03,.16); later(P,tt,(P,x)=>{ const [a,b,c]=nzHit(P,d,x,'bandpass',rnd(3000,4200),3,.12,.025); V(P,[a],[b,c],x+.03); blip(P,d,x,'sine',rnd(2100,2800),.02,.05); }); } }); },
+  baikal(P){ stationBase(P,{crowd:.5,steps:.6,wet:1.6,room:1.1});
+    for(const [f,hz1,hz2] of [[480,.07,.11],[820,.05,.09]]){ const w=bed(P,P.pos[2+(f>600?1:0)],'bandpass',f,5,.05); lfo(P,w.f.frequency,hz1,f*.45); lfo(P,w.g.gain,hz2,.035); }
+    const ph=[M('A4:0:1 D5:1:1 E5:2:.5 F5:2.5:.5 E5:3:1 D5:4:1 C5:5:.5 A4:5.5:2.5 D3+A3:0:4:.4 D3+A3:4:4:.4'),
+              M('F5:0:1 E5:1:.5 D5:1.5:.5 C5:2:1 A4:3:1 Bb4:4:.5 A4:4.5:.5 G4:5:1 A4:6:2 Bb2+F3:0:4:.4 A2+E3:4:4:.4')];
+    every(P,2,13,20,(P,t)=>{ phrase(P,P.pos[3],t,66,pick(ph),'sv',T_ACC); }); },
+  london(P){ stationBase(P,{crowd:.7,steps:.8,train:[16,28],trainFirst:4});
+    const rumble=bed(P,P.pos[4],'lowpass',70,.8,.12); lfo(P,rumble.g.gain,.05,.06);
+    bed(P,P.pos[2],'highpass',3500,.5,.006);
+    every(P,.1,.08,.5,(P,t)=>blip(P,anyPos(P),t,'sine',rnd(900,2400),.05,rnd(.02,.06),rnd(2400,3800)));
+    const ch=[['E3','B3','E4','G4','B4'],['C3','G3','C4','E4','G4'],['G2','D3','G3','B3','D4'],['D3','A3','D4','F#4','A4']].map(c=>c.map(midi));
+    every(P,1.5,22,32,(P,t)=>{ const d=P.pos[3],b=60/92; ch.forEach((c,ci)=>[0,1,1.5,2.5,3].forEach((s,k)=>later(P,t+(ci*4+s)*b,(P,x)=>{ const up=k%2===1,ns=up?c.slice().reverse():c; ns.forEach((m,i)=>INST.sv(P,d,x+i*.016,hz(m)*pitch(P,x),.45,up?.5:.75,T_PLUCK)); }))); });
+    every(P,7,25,40,(P,t)=>{ INST.bell(P,P.pos[4],t,hz(79)*pitch(P,t),1,.8,{ratio:2,idx:1.2,dec:1.8,amp:.18}); INST.bell(P,P.pos[4],t+.55,hz(75)*pitch(P,t),1,.8,{ratio:2,idx:1.2,dec:2.2,amp:.18}); }); },
+  naples(P){ stationBase(P,{crowd:.8,steps:.7});
+    for(const [hz1,c] of [[.09,700],[.13,1100]]){ const w=bed(P,P.pos[2+(c>900?1:0)],'lowpass',c,.6,.05); lfo(P,w.g.gain,hz1,.045); lfo(P,w.f.frequency,hz1,c*.4); }
+    every(P,3,6,14,(P,t)=>{ const ac=P.ac,dur=rnd(2.5,4),pf=pitch(P,t),o=O(ac,'sawtooth',70*pf),am=O(ac,'square',35*pf),ag=G(ac,.5),bp=F(ac,'bandpass',900,1),g=G(ac,0),pn=PAN(ac,-1),f0=rnd(65,85)*pf;
+      o.frequency.setValueAtTime(f0,t); o.frequency.linearRampToValueAtTime(f0*1.8,t+dur*.45); o.frequency.linearRampToValueAtTime(f0*1.3,t+dur);
+      am.frequency.setValueAtTime(f0/2,t); am.frequency.linearRampToValueAtTime(f0*.9,t+dur*.45); am.frequency.linearRampToValueAtTime(f0*.65,t+dur);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.05,t+dur*.4); g.gain.linearRampToValueAtTime(0,t+dur);
+      const s=Math.random()<.5?1:-1; pn.pan.setValueAtTime(-s,t); pn.pan.linearRampToValueAtTime(s,t+dur);
+      chain(am,ag,g.gain); chain(o,bp,g,pn,P.pos[4]); o.start(t); am.start(t); V(P,[o,am],[ag,bp,g,pn],t+dur); });
+    const ph=[M('E5:0:1 F5:1:.5 E5:1.5:.5 D5:2:1 G5:3:2 F5:5:1 E5:6:.5 D5:6.5:.5 C5:7:2'),M('C5:0:.5 E5:.5:.5 G5:1:1.5 A5:2.5:.5 G5:3:1 F5:4:1 E5:5:1 D5:6:1 E5:7:2')];
+    every(P,5,16,24,(P,t)=>phrase(P,P.pos[2],t,84,pick(ph),'sv',T_MAND)); },
+  rio(P){ stationBase(P,{crowd:.6,steps:.5});
+    const w=bed(P,P.pos[2],'lowpass',800,.6,.06); lfo(P,w.g.gain,.08,.05); lfo(P,w.f.frequency,.08,400);
+    every(P,4,5,12,(P,t)=>{ const d=P.pos[3]; for(let i=0,n=2+(Math.random()*3|0);i<n;i++) later(P,t+i*rnd(.35,.5),(P,x)=>{ const ac=P.ac,pf=pitch(P,x),o=O(ac,'sawtooth',1300*pf),bp=F(ac,'bandpass',1800,4),g=G(ac,0);
+      o.frequency.setValueAtTime(1250*pf,x); o.frequency.linearRampToValueAtTime(2100*pf,x+.08); o.frequency.linearRampToValueAtTime(1150*pf,x+.32);
+      g.gain.setValueAtTime(0,x); g.gain.linearRampToValueAtTime(.05,x+.04); g.gain.linearRampToValueAtTime(0,x+.33); chain(o,bp,g,d); o.start(x); V(P,[o],[bp,g],x+.34); }); });
+    const TB=parseDr('x.xx.x.xx.x.x.xx');
+    every(P,1,18,26,(P,t)=>{ const d=P.pos[2],s=60/100/4; for(let i=0;i<16*8;i++) later(P,t+i*s,(P,x)=>{ const q=i%16;
+      if(q===8) DR.tom(P,d,x,.8,{f:68,dec:.6,sweep:1.3}); else if(q===0) DR.tom(P,d,x,.35,{f:68,dec:.15,sweep:1.2});
+      if(TB[q]) DR.tom(P,d,x,.35,{f:640,dec:.05,sweep:1.1,nz:.3,nzf:4000}); DR.shaker(P,d,x,q%4===2?.5:.25,{}); }); }); },
+  vegas(P){ stationBase(P,{crowd:1.1,steps:.8});
+    const h=hum(P,P.pos[4],'sawtooth',120,.006); const hf=F(P.ac,'bandpass',360,2); h.disconnect(); chain(h,hf,P.pos[4]); P.keep.push(hf);
+    every(P,1.5,3,7,(P,t)=>{ const d=anyPos(P),root=72+(Math.random()*7|0),iv=[0,4,7,12,16,19,24,19,24,28]; for(let i=0;i<iv.length;i++) toneOn(P,d,t+i*.055,'square',hz(root+iv[i]),.045,.012); });
+    every(P,6,6,14,(P,t)=>{ const d=anyPos(P); let tt=t; for(let i=0,n=12+(Math.random()*18|0);i<n;i++){ tt+=rnd(.02,.08); later(P,tt,(P,x)=>INST.bell(P,d,x,rnd(2800,5600)*pitch(P,x),.1,.7,{ratio:2.7,idx:1,dec:.1,amp:.05})); } });
+    const lounge=M('F3+Ab3+C4+Eb4:0:2:.5 G4:0:1 Ab4:1:1 Bb4:1.5:.5 D3+Ab3+C4+F4:2:2:.5 C5:2:1.5 Bb4:3.5:.5 G3+Bb3+D4+F4:4:4:.5 G4:4:1 F4:5:1 D4:6:2');
+    every(P,2,16,24,(P,t)=>phrase(P,P.pos[3],t,80,lounge,'ep',{idx:1.4,dec:.8,amp:.28})); }
+};
+
+/* ---------- rumble: interior bed, sway hum, double clack over rail joints ---------- */
+function rumblePlayer(s,fade){ const P=newPlayer(s,'rumble','rumble',fade,.26),ac=s.ac,t0=ac.currentTime;
+  const n=NZ(P),l1=F(ac,'lowpass',85,.9),g1=G(ac,.5),l2=F(ac,'bandpass',190,.8),g2=G(ac,.07); n.connect(l1); chain(l1,g1,P.out); n.connect(l2); chain(l2,g2,P.out); n.start(t0,Math.random()*3); keep(P,n,l1,g1,l2,g2);
+  const h=O(ac,'sine',46),hg=G(ac,.05),h2=O(ac,'triangle',92),h2g=G(ac,.012); chain(h,hg,P.out); chain(h2,h2g,P.out); h.start(t0); h2.start(t0); keep(P,h,hg); keep(P,h2,h2g);
+  lfo(P,hg.gain,.23,.03); lfo(P,g1.gain,.17,.15);
+  const clack=(P,t,v)=>{ const [a,b,c]=nzHit(P,P.out,t,'bandpass',900,1.2,v,.045); V(P,[a],[b,c],t+.05); blip(P,P.out,t,'sine',75,.07,v*1.1,52); };
+  every(P,.4,1.6,1.9,(P,t)=>{ for(const [dt,v] of [[0,.16],[.1,.13],[.48,.15],[.58,.12]]) clack(P,t+dt+rnd(0,.006),v); });
+  return P; }
+const AMB_LVL={tokyo:.93,tokyonight:1,hongkong:1.6,baikal:.68,london:.5,naples:.66,rio:.65,vegas:.5};
+function ambiencePlayer(s,key,fade){ const fn=AMB[key]; if(!fn) return null; const P=newPlayer(s,'ambience',key,fade,.8*(AMB_LVL[key]||1)); fn(P); return P; }
+function make(s,kind,key,fade){ if(kind==='music') return musicPlayer(s,key,fade); if(kind==='ambience') return ambiencePlayer(s,key,fade); if(kind==='rumble') return rumblePlayer(s,fade); return null; }
+
+/* ---------- realtime control ---------- */
+let R=null,timer=0; const cur={music:null,ambience:null,rumble:null},fading=new Set();
+function getRig(){ const ac=typeof audio==='function'?audio():null; if(!ac) return null; if(!R||R.ac!==ac) R=rig(ac); return R; }
+function dispose(P){ if(P.dead) return; P.dead=true; fading.delete(P); for(const o of P.keepSrc){ try{ o.stop(); }catch(e){} try{ o.disconnect(); }catch(e){} } for(const n of P.keep){ try{ n.disconnect(); }catch(e){} } try{ P.out.disconnect(); P.rv&&P.rv.disconnect(); }catch(e){} P.later=[]; P.ev=[]; }
+function fadeOut(P,dur){ const now=P.ac.currentTime; for(const g of P.fades){ g.cancelScheduledValues(now); g.setValueAtTime(g.value,now); g.linearRampToValueAtTime(0,now+dur); } P.stopAt=now+dur; fading.add(P); setTimeout(()=>dispose(P),(dur+5)*1000); }
+function tickAll(){ if(!R) return; const now=R.ac.currentTime,hor=now+.15; let any=false;
+  for(const P of [cur.music,cur.ambience,cur.rumble,...fading]){ if(!P||P.dead) continue; any=true; if(P.spec&&P.nt<now-.1) P.nt=now+.02; try{ tickPlayer(P,hor); }catch(e){ console.warn('MUSIC tick',e); } }
+  if(!any){ clearInterval(timer); timer=0; } }
+function swap(kind,key){ const s=getRig(); if(!s) return; const old=cur[kind]; if(old&&!old.dead&&old.key===key) return;
+  if(old){ fadeOut(old,1.5); cur[kind]=null; }
+  if(key!=null){ const P=make(s,kind,key,1.5); if(!P) console.warn('MUSIC: unknown '+kind+' key',key); cur[kind]=P; if(P&&!s.offline&&SL.on) applySlowTo(P,true,s.ac.currentTime); }
+  if(!timer){ timer=setInterval(tickAll,25); } tickAll(); }
+function applySlowTo(P,on,now){ for(const p of P.cont){ p.cancelScheduledValues(now); p.setValueAtTime(p.value,now); p.linearRampToValueAtTime(on?SLOW_CENTS:0,now+SLOW_RAMP); } }
+function setSlow(on){ on=!!on; const s=getRig(); if(!s){ SL.on=on; return; } const now=s.ac.currentTime; if(on===SL.on) return;
+  SL.from=curAmt(now); SL.on=on; SL.t=now;
+  for(const k of ['music','ambience']){ const f=s.L[k].lp.frequency; f.cancelScheduledValues(now); f.setValueAtTime(Math.max(40,f.value),now); f.exponentialRampToValueAtTime(on?(k==='music'?1100:1500):20000,now+SLOW_RAMP); }
+  for(const P of [cur.music,cur.ambience,...fading]) if(P&&P.kind!=='rumble') applySlowTo(P,on,now); }
+function curAmt(now){ const k=Math.min(1,Math.max(0,(now-SL.t)/SLOW_RAMP)); return SL.on?SL.from+(1-SL.from)*k:SL.from*(1-k); }
+
+return {
+  play:key=>swap('music',key),
+  ambience:key=>swap('ambience',key),
+  rumble:on=>swap('rumble',on?'rumble':null),
+  setVolumes(v){ v=v||{}; for(const k of ['music','ambience','rumble']) if(typeof v[k]==='number'){ VOL[k]=Math.max(0,Math.min(1,v[k])); if(R) R.L[k].vol.gain.setTargetAtTime(VOL[k],R.ac.currentTime,.05); } },
+  mute(m){ muted=!!m; if(R) R.master.gain.setTargetAtTime(muted?0:1,R.ac.currentTime,.05); },
+  setSlow,
+  stats(){ let voices=0,nodes=0; const ps=[cur.music,cur.ambience,cur.rumble,...fading].filter(p=>p&&!p.dead); for(const p of ps){ voices+=p.live; nodes+=p.nodes; }
+    return {voices,nodes,track:cur.music?cur.music.key:null,ambience:cur.ambience?cur.ambience.key:null,rumble:!!cur.rumble,slow:SL.on}; },
+  tracks:()=>Object.keys(TRACKS), stations:()=>Object.keys(AMB),
+  _renderOffline(kind,key,seconds=12){ const sr=44100,ac=new OfflineAudioContext(2,Math.ceil(sr*seconds),sr),s=rig(ac,true),P=make(s,kind,key,.02);
+    if(!P) return Promise.reject(new Error('MUSIC: unknown '+kind+' '+key));
+    /* walk the same scheduler in 0.5 s chunks so the later-queue fires in order */
+    for(let t=0;t<seconds;t+=.5) tickPlayer(P,Math.min(seconds,t+.5));
+    return ac.startRendering().then(buf=>{ buf._voicesPeakHint=P.live; return buf; }); },
+  _lint(){ for(const k of Object.keys(TRACKS)) build(TRACKS[k],k); return {warnings:WARN.slice(),loops:Object.fromEntries(Object.keys(TRACKS).map(k=>[k,+TRACKS[k]._b.loopSec.toFixed(1)]))}; }
+};
+})();
+
 /* ---------- boot ---------- */
 for(const k of ['bright','dark','dust']) dynNode(k,M(null,{color:k==='bright'?0x8e0c0c:k==='dark'?0x4c0606:0x7a7570,double:true})); dynNode('gib',M(null,{color:0x6a1414,double:true})); dynNode('bone',M(null,{color:0xd6cdb4,double:true}));
 dynNode('pool',M(tPoolB,{cut:true,double:true})); dynNode('splat',M(tSplat,{cut:true,double:true})); dynNode('hole',M(tHole,{cut:true,double:true}));
@@ -4777,10 +5402,9 @@ if(SAVE&&SAVE.leg>0){ $('cont').hidden=false; $('cont').textContent='Continue ·
 function startRun(cont){ if(GAME.started&&!cont) return; const sv=cont?loadProgress():null;
   if(sv&&sv.leg>0){ enterLeg(sv.leg); if(sv.R) equip(HANDS.R,newItem(sv.R)); if(sv.L) equip(HANDS.L,newItem(sv.L)); }
   else { if(!cont) try{ localStorage.removeItem('meridian.save'); }catch(_){} if(FLOW.leg!==0||!LEVEL.root) enterLeg(0); equip(HANDS.R,null); equip(HANDS.L,null); }
-  rememberArms(); GAME.fade=1; }
+  rememberArms(); GAME.fade=1; GAME.started=true; levelAudio(); }
 $('cont').addEventListener('click',()=>{ audio(); startRun(true); GAME.started=true; $('intro').hidden=true; document.body.classList.add('playing'); if(!isTouch){ try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(_){} } });
 enterLeg(0); GAME.fade=0;
-setVol();
 window.__game={GAME,PL,XR,FLOW,LEVEL,ROUTE,enemies:()=>enemies,goLeg,enterLeg,restartLevel,HANDS,equip,newItem,WPN,WPN_KEYS,spawnCrew,spawnNear,openMenu,closeMenu,menuAct,MENU,OPTS,PAGES,fireHand,shoot,stab,kick,camBasis,BOXES,FLOOR,LOOSE,hitEnemy,SEGS,X_,PI_,die,clearEnemies,state,L,CREWS,CREW_OF,explode,launchGrenade,toggleSlow,useRight,updateOut};
 window.__eval=s=>eval(s); /* test hook: headless smoke tests reach the game's internals */
 requestAnimationFrame(frame);

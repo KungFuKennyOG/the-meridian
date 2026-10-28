@@ -1193,7 +1193,8 @@ function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
     for(const run of runsOf(n.mesh)){ const m=run.m,paint=!m.tex&&!m.unlit&&GAME.paint!==false,k=texId(paint?PAINT:m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
       let G=groups.get(k); if(!G){ G={m,chunks:[],paint}; groups.set(k,G); }
       let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>40000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
-      const map=new Map(),col=m.color,rep=m.rep;
+      const map=new Map(),col=m.color; let rep=m.rep;
+      if(paint){ let um=0,vm=0; for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; um=Math.max(um,Math.abs(g.T[v*2])); vm=Math.max(vm,Math.abs(g.T[v*2+1])); } rep=[um>1.01?1/um:1,vm>1.01?1/vm:1]; } /* a flat colour gets one painted panel per surface, never a tile grid */
       for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; let o=map.get(v);
         if(o===undefined){ o=ch.n++; map.set(v,o); const x=g.P[v*3],y=g.P[v*3+1],zz=g.P[v*3+2];
           ch.P.push(W[0]*x+W[4]*y+W[8]*zz+W[12],W[1]*x+W[5]*y+W[9]*zz+W[13],W[2]*x+W[6]*y+W[10]*zz+W[14]);
@@ -1681,6 +1682,11 @@ Object.assign(SCENES.atlantic,{name:'South Atlantic tunnel',country:'Under the o
 SCENES.tokyo.time='Day 1 · 06:10';
 SCENE_ORDER.splice(0,SCENE_ORDER.length,'japan','hongkong','siberia','london','naples','atlantic','rio','vegas','tokyonight');
 
+/* the Pacific tunnel, Las Vegas to Tokyo by night: the same kind of glass tube as the Atlantic, deeper and darker (placeholder: the art pass gives it its own look) */
+SCENES.pacific=Object.assign({},SCENES.atlantic,{name:'Pacific tunnel',country:'Under the ocean',sub:'A glass tube from California to Japan',
+  note:'Nine thousand kilometres of glass on the floor of the Pacific, run through the night. Deeper and darker than the Atlantic: jellyfish, lantern fish, and the lights of the train.',
+  light:{amb:[.1,.16,.26],dir:[0,1,.2],dirCol:[.12,.24,.42]},horizon:'#06182e',top:'#020812'});
+
 
 /* =====================================================================================================
    SCENERY SYSTEM (super-gauge). The Meridian runs on 3 m track with cars 6.2 m wide, so everything
@@ -1791,20 +1797,24 @@ const WAGONS=[
     sub:'Crew only · the front of the train',note:'A flight deck more than a cab: a horseshoe of consoles, two captain\'s chairs, a wall of route screens and a windscreen full of oncoming track. Reach it and the trip ends where you say.',sw:['#e8e4dc','#14203a','#d4ad5a','#5ab8e8','#c8302a']},
   {key:'capsule',num:'02',name:'Capsule Hotel',label:'CAPSULES',crew:'ren',wins:[[.42,.5],[.56,.64]],glow:0xe8f4ff,color:'#29e0e6',
     sub:'Boards in Tokyo, last stop · the Kagami-gumi',note:'Two storeys of glowing white sleep pods down both walls, a strip of lockers, vending machines and a neon-lit lounge in the middle. Clean, bright and very narrow to fight in.',sw:['#eeeee8','#29e0e6','#2a2a34','#ff4fae','#f5c542']},
-  {key:'casino',num:'03',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
+  {key:'sushi',num:'03',name:'Sushi Bar Kaiten',label:'KAITEN',crew:'chef',wins:[[.06,.94]],glow:0xbfe8ff,color:'#e8e4d8',
+    sub:'The Pacific tunnel · the chefs are Kagami-gumi',note:'A long hinoki counter with a conveyor belt of plates running round it, glass to the sea floor on both sides. The chefs have been aboard since Tokyo, waiting for the tunnel.',sw:['#e8e4d8','#a87a4a','#1e3a6a','#c8202a','#0e3a52']},
+  {key:'casino',num:'04',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
     sub:'Boards in Las Vegas · the Kings',note:'Red carpet with gold diamonds, a mirrored ceiling, rows of slot machines, a roulette wheel, blackjack tables and a stage with a gold curtain. The King holds court on the stage.',sw:['#8a1424','#f5c542','#12101a','#ff3fa4','#2a8a4a']},
-  {key:'pool',num:'04',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
+  {key:'pool',num:'05',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
     sub:'Boards in Rio · Tremor\'s crew',note:'The roof opens: a long turquoise pool, a wave-mosaic deck, striped loungers, potted palms, a bar under a thatch and a DJ booth stacked with speakers.',sw:['#2ac0d0','#f2ece0','#2a9a5a','#f2c230','#e0473a']},
-  {key:'aquarium',num:'05',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
+  {key:'aquarium',num:'06',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
     sub:'The South Atlantic tunnel · the Espositos fall back here',note:'Floor-to-ceiling glass, a column tank of fish and blue velvet booths. Under the Atlantic the windows fill with whales; in the desert they fill with stars.',sw:['#0e3a52','#1a6a86','#bfefff','#2a2a5a','#d4ad5a']},
-  {key:'trattoria',num:'06',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
+  {key:'trattoria',num:'07',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
     sub:'Boards in Naples · the Esposito family',note:'Lemon-yellow walls, red-check tablecloths, hams and garlic hanging over a deli counter, a wood-fired oven and family photographs everywhere. Nonna eats here every day.',sw:['#f2d27a','#c8302a','#f4efe6','#2a7a4a','#8a5a36']},
-  {key:'pub',num:'07',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
+  {key:'pub',num:'08',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
     sub:'Boards in London · the Southside firm',note:'A proper pub: bottle-green tiles, dark wood, brass taps, red leather booths, a dartboard, scarves pinned over the bar and the match on every screen.',sw:['#1f4a36','#4a2a1a','#c8202a','#d4ad5a','#e8dcc0']},
-  {key:'banya',num:'08',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
+  {key:'banya',num:'09',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
     sub:'Boards in Siberia · the Volkov brotherhood',note:'Half pine sauna, half bar carved from ice: log walls, steam, birch switches and buckets on one end; a glowing blue ice bar and bottles in frost on the other.',sw:['#c89a62','#7a4a2a','#bfefff','#2a6ab0','#d8d0c4']},
-  {key:'dimsum',num:'09',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
-    sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']}
+  {key:'dimsum',num:'10',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
+    sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']},
+  {key:'izakaya',num:'11',name:'Izakaya Hanami',label:'IZAKAYA',crew:'tanaka',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffb070,color:'#8a2a1e',
+    sub:'Leaving Tokyo · Tanaka & Associates',note:'Red paper lanterns, a cedar counter with stools, tatami booths behind low partitions, sake barrels stacked at the end. The salarymen were already drinking when you boarded.',sw:['#8a2a1e','#c89a5a','#e8d8b0','#2a2420','#ffb070']}
 ];
 const CAR_L=30, CAR_GAP=1.0, CAR_PITCH=CAR_L+CAR_GAP, CAR_HW=3.1+DW, WIDE=CAR_HW/3.1;
 const PROF=[[0,-.7],[2.9,-.7],[3.05,-.4],[3.1,.4],[3.1,3.5],[3.02,3.95],[2.75,4.28],[2.1,4.48],[1.0,4.56],[0,4.58]];
@@ -2283,6 +2293,20 @@ function addCrewSpots(key){ const B_=-Math.PI/2, F_=Math.PI/2, P=Math.PI, add=(k
   add('aquarium',{nonna_c3:{x:-2.5,z:2.1,ry:Math.PI,pose:'sit'},nonna_c4:{x:4.4,z:-1.3,ry:B_},nonna_c5:{x:9.4,z:.7,ry:B_},nonna_c6:{x:11,z:-2.1,ry:0,pose:'sit'},nonna_c7:{x:-3.6,z:-.9,ry:B_}});
 }
 
+/* ---------- 11 · Izakaya Hanami: leaving Tokyo by day, Tanaka & Associates (placeholder: the art pass builds this) ---------- */
+CAR_BUILD.izakaya=function izakaya(){
+  const g=shell('izakaya',{floor:C('#6a4a2e'),ceil:C('#2a2420'),dado:C('#5a2a1e'),upper:C('#e8d8b0'),pier:C('#e8d8b0'),trim:C('#3a2a1e'),end:C('#5a2a1e'),
+    wins:[[-11,-8.2],[-5.6,-2.8],[2.8,5.6],[8.2,11]],lamps:[lamp(-8,2.8,0,[1.1,.7,.4],7),lamp(0,2.8,0,[1.1,.7,.4],7),lamp(8,2.8,0,[1.1,.7,.4],7)]});
+  WG.izakaya.spots={tanaka:{x:8,z:0,ry:-Math.PI/2},tanaka_c1:{x:-4,z:1.2,ry:-Math.PI/2},tanakab_1:{x:0,z:-1.2,ry:-Math.PI/2},tanaka_c2:{x:4,z:1.4,ry:-Math.PI/2},tanakab_2:{x:5.5,z:-1.3,ry:-Math.PI/2}};
+};
+
+/* ---------- 03 · Sushi Bar Kaiten: the Pacific tunnel, Kagami-gumi sleepers (placeholder: the art pass builds this) ---------- */
+CAR_BUILD.sushi=function sushi(){
+  const g=shell('sushi',{floor:C('#3a3430'),ceil:C('#e8e4d8'),dado:C('#a87a4a'),upper:C('#e8e4d8'),pier:C('#e8e4d8'),trim:C('#2a2420'),end:C('#a87a4a'),
+    wins:[[-12.4,12.4]],lamps:[lamp(-8,2.8,0,[1,.95,.85],7),lamp(0,2.8,0,[1,.95,.85],7),lamp(8,2.8,0,[1,.95,.85],7)]});
+  WG.sushi.spots={chefc_1:{x:-3,z:.6,ry:-Math.PI/2},chefc_2:{x:2,z:-.6,ry:-Math.PI/2},chefc_3:{x:6,z:.8,ry:-Math.PI/2},chefc_4:{x:9.5,z:-.5,ry:-Math.PI/2}};
+};
+
 
 /* =====================================================================================================
    THE CAST on the Stairwell rig: a hitman on vacation, and the seven crews who board to collect the bounty
@@ -2468,6 +2492,48 @@ function makeChar(id,parent,grp){
   return Cc; }
 
 /* (the art page's line-up and decorative crews are not built in the game: 70-crews.js spawns them as people) */
+
+/* =====================================================================================================
+   TWO MORE CREWS for the two new cars.
+   Tanaka & Associates: hitmen dressed as salarymen, the first to try for the bounty, in the izakaya car
+   leaving Tokyo by day. Fists, bottles, loosened ties. Section Chief Tanaka runs them like a sales team.
+   The sushi chefs: Kagami-gumi sleepers who have ridden the whole loop behind the counter of the sushi
+   bar, waiting for the Pacific tunnel. White coats, headbands, long yanagiba knives.
+   ===================================================================================================== */
+Object.assign(HEADS,{
+  tanaka:{seed:581,skin:'#dcb894',skinD:'#ae8a6c',hair:'slick',hairC:'#2a2624',hairFront:12,sideburn:40,brow:'#2a2624',browT:2,iris:'#2a1a12',lip:'#9a6050',age:true,glasses:'#1a1a1a'},
+  tanakac:{seed:582,skin:'#d8b490',skinD:'#a88668',hair:'fringe',hairC:'#16120f',hairFront:16,brow:'#16120f',browT:2,iris:'#2a1a12',lip:'#9a5c4c'},
+  chefc:{seed:583,skin:'#d0a884',skinD:'#a07e60',hair:'buzz',hairC:'#121010',hairFront:15,brow:'#121010',browT:2,iris:'#22160e',lip:'#8e5242',scar:true}
+});
+for(const k of ['tanaka','tanakac','chefc']) FACE[k]=lazyFace(k);
+/* salarymen: charcoal suits, white shirts, ties pulled loose after a long day */
+const tTanakaTorso=torsoP('tanaka',641,(x,y)=>{ if(vNeck(x,y,11,44)) return Math.abs(x-64)<3&&y>T3.neck+4?['#5a1a22','poly',.3]:['#f2f0ea','cotton',.4]; return ['#2e3034','wool']; },{decor:I=>{ neckShadow(I); sideSeams(I,T3.neck,256);
+  for(const s of [-1,1]) softLine(I,64+s*11,T3.neck,64+s*3,T3.neck+44,'#3e4046',.95,1.8); buttons(I,[66],T3.neck+56,T3.belt-4,22,'#141416'); softRect(I,84,T3.chest-6,14,3,'#f2f0ea',.9,.5); softLine(I,32,T3.chest+30,52,T3.chest+30,'#24262a',.6,1); }});
+const tTanakaArm=armP(643,(x,y)=>y>118?['#f2f0ea','cotton',.2]:['#2e3034','wool'],{decor:I=>softRect(I,40,110,14,6,'#d4ad5a',.9,.5)});
+const tTanakaLeg=legP(645,()=>['#2e3034','wool'],{decor:I=>softLine(I,32,0,32,128,'#3e4046',.8,1)});
+const tSalaryTorso=torsoP('tanakac',651,(x,y)=>{ const tie=Math.abs(x-64-(y-T3.neck)*.08)<3.2&&y>T3.neck+8&&y<T3.chest+20; if(vNeck(x,y,14,52)) return tie?['#1e3a6a','poly',.3]:['#eef0f2','cotton',.4]; return ['#3a3e48','wool']; },{decor:I=>{ neckShadow(I); sideSeams(I,T3.neck,256);
+  for(const s of [-1,1]) softLine(I,64+s*14,T3.neck,64+s*4,T3.neck+52,'#4a4e58',.95,1.8); softRect(I,58,T3.neck+2,12,6,'#eef0f2',.9,.6); buttons(I,[66],T3.neck+60,T3.belt-4,22,'#16181c'); blob(I,90,T3.chest+10,10,8,-.1); softRect(I,24,T3.chest+30,10,2,'#2a2e36',.8,.5); }});
+const tSalaryArm=armP(653,(x,y)=>y>116?['#eef0f2','cotton',.2]:['#3a3e48','wool']);
+const tSalaryLeg=legP(655,()=>['#3a3e48','wool'],{decor:I=>softLine(I,32,0,32,128,'#4a4e58',.8,1)});
+/* sushi chefs: white coats, blue aprons, wooden geta clogs */
+const tChefTorso=torsoP('chefc',661,(x,y)=>{ if(vNeck(x,y,10,26)) return sk('chefc'); return y>T3.chest+16?['#1e3a6a','cotton',.4]:['#f4f2ec','cotton',.5]; },{decor:I=>{ neckShadow(I); sideSeams(I,T3.neck,256);
+  softLine(I,54,T3.neck,86,T3.chest+12,'#d8d4c8',.95,1.6); softRect(I,0,T3.chest+14,128,4,'#16305a',.9,.6); for(let x=10;x<128;x+=24) softRect(I,x,T3.chest+30,6,1,'#2a4a7a',.6,.4); }});
+const tChefArm=armP(663,(x,y)=>y>96?sk('chefc'):['#f4f2ec','cotton',.5],{decor:I=>softRect(I,0,92,64,6,'#e4e0d6',.9,.6)});
+const tChefLeg=legP(665,(x,y)=>y<72?['#1e3a6a','cotton',.4]:['#2a2a2e','cotton',.4]);
+const tGeta=garment(64,32,667,(x,y)=>y<14?['#2a2a2e','cotton',.3]:['#a87a4a','leather',.2],{folds:2,grime:0,decor:I=>softRect(I,0,26,64,6,'#6a4a2a',1,1)});
+function hachimaki(J){ const m=M(P2(32,8,(g,w,h)=>{ vfill(g,0,0,w,h,[[0,'#f8f6f0'],[1,'#dcd8ce']]); ell(g,16,4,2.6,2.6,'#c8202a'); })); mk(torus(.098,.014,4,16),m,J.head,0,.15,.005,Math.PI/2,0,0); }
+function yanagiba(par){ const n=N(par); mk(box(.022,.11,.03),M(null,{color:0x3a2a1a}),n,0,0,0); mk(box(.006,.3,.032,{at:[0,.2,0]}),M(null,{color:0xd8dce0}),n,0,0,0); return n; }
+Object.assign(ROSTER,{
+  tanaka:Object.assign({name:'Section Chief Tanaka',role:'Boss · Tanaka & Associates',stop:'Boards in Tokyo, the first stop',color:'#5a1a22',crew:'tanakac',note:'Runs a team of contract killers like a sales department, and the bounty is this quarter\'s target. Grey at the temples, glasses, a gold watch, and he fights with his fists like it is a team-building exercise.',
+    o:{hf:.98,w:1.04,depth:1.04,belly:1.08,lg:.98,ag:1.02,jacket:.01,pants:.01},torso:tTanakaTorso,arm:tTanakaArm,leg:tTanakaLeg,foot:tShoeBlack,gripHand:true,fight:GUARD}),
+  tanakac:Object.assign({name:'Tanaka & Associates',role:'Crew · Tokyo',stop:'Boards in Tokyo, the first stop',color:'#3a3e48',note:'Hitmen dressed as salarymen after a long night out: loose ties, rolled sleeves, beer bottles. Fists and glass. The fight that makes it personal.',
+    o:{hf:.99,w:.98,depth:.98,lg:.98,ag:.98,jacket:.008,pants:.008},torso:tSalaryTorso,arm:tSalaryArm,leg:tSalaryLeg,foot:tShoeBlack,gripHand:true,fight:GUARD}),
+  tanakab:null,
+  chefc:Object.assign({name:'The sushi chefs',role:'Crew · Kagami-gumi sleepers',stop:'Have been aboard since Tokyo',color:'#f4f2ec',note:'Kagami-gumi who have worked the sushi counter for the whole loop, waiting for the Pacific tunnel. White coats, headbands, a long knife each.',
+    o:{hf:.99,w:1.0,depth:1.0,lg:.98,ag:1.02,jacket:.006,pants:.008},torso:tChefTorso,arm:tChefArm,leg:tChefLeg,foot:tGeta,extra:J=>hachimaki(J)},BLADE(yanagiba))
+});
+ROSTER.tanakab=Object.assign({},ROSTER.tanakac,BLADE(pBottle));
+FACE.tanakab=FACE.tanakac; HEADS.tanakab=HEADS.tanakac;
 
 
 /* =====================================================================================================
@@ -4513,7 +4579,7 @@ const CREW_OF={
   renc:{crew:'kagami',kind:'gunman',wkey:'pistol'},          ren:{crew:'kagami',kind:'cutter',wkey:'waki',boss:true,tough:.7,name:'Ren Kagami',voice:{f0:128,rasp:.12,breath:.4}}
 };
 /* a spot's name is the character id, maybe with a crew suffix and a number: 'king', 'king_c3', 'lauc2' */
-function crewIdOf(name){ if(CREW_OF[name]) return name; const m=name.match(/^([a-z]+?)_?c\d*$/); return m&&CREW_OF[m[1]+'c']?m[1]+'c':null; }
+function crewIdOf(name){ if(CREW_OF[name]) return name; const bare=name.replace(/_?\d+$/,''); if(CREW_OF[bare]) return bare; const m=name.match(/^([a-z]+?)_?c\d*$/); return m&&CREW_OF[m[1]+'c']?m[1]+'c':null; }
 const nameUse={};
 function spawnCrew(id,x,z,hd,o={}){
   const D=CREW_OF[id]; if(!D) return null; const K=CREWS[D.crew]; const L=Object.assign({},K.lines);
@@ -4536,19 +4602,64 @@ function crewChatter(dt){ GAME.chatT=(GAME.chatT||0)-dt; if(GAME.chatT>0||GAME.b
 function clearEnemies(){ meleeClear(); for(const G of GRABS.slice()) endGrab(G); for(const E of enemies){ disposeTree(E.holder); const i=world.kids.indexOf(E.holder); if(i>=0) world.kids.splice(i,1); E.barkEl.remove(); if(E.label){ const k=world.kids.indexOf(E.label); if(k>=0) world.kids.splice(k,1); } }
   enemies=[]; chars.length=0; GAME.clear=false; }
 
+/* the two crews for the izakaya (leaving Tokyo by day) and the sushi bar (under the Pacific) */
+Object.assign(CREWS,{
+  associates:{label:'Tanaka & Associates',voice:{f0:118,rasp:.2,breath:.4},
+    names:['Sato','Suzuki','Takahashi','Watanabe','Ito','Yamamoto','Nakamura','Kobayashi','Kato','Yoshida','Yamada','Sasaki'],
+    lines:crewLines({
+      alert:['That\'s him. That\'s the Tourist.','Gentlemen, our quarterly target.','Excuse me, sir. You\'ll need to come with us.','Oi! Over here! It\'s him!','Close the deal, boys!','Put your drink down. He\'s here.'],
+      leg:['My knee! My knee—','I can\'t stand— I can\'t stand up—','Itai, itai, itai—'],
+      torso:['Ugh— my ribs—','He hit me— he really hit me—','Kuso... I can\'t breathe...'],
+      arm:['My arm! My typing arm!','I can\'t lift it—'],
+      stab:['Get it out— get it out of me—','Itai— itai— itai—','Not glass— not glass—'],
+      beg:['Please! I have a mortgage!','I\'m just middle management! Please!','I resign! I resign effective immediately!','Sumimasen— sumimasen— please—','Let me go home. Please. Just let me go home.'],
+      crawl:['Somebody... call... HR...','The door... the door...','I just wanted the overtime...'],
+      dying:['...okaasan...','...I never took my holidays...','...tell the office... I tried...','...so tired...'],
+      friend:n=>[`${n}-san!`,`${n}! Get up, we have a deadline!`,`You killed ${n}! He had two kids!`],
+      call:n=>[`${n}-san! Help me!`,`${n}... don\'t leave me here...`],
+      idle:['Kanpai! To the bonus!','The chief says the first one to the Tourist gets promoted.','My wife thinks I\'m at a conference in Osaka.','One more round. One more, then we work.','Ten years at the company and this is my first train ride.','Why is the boss drinking tea? Is that a test?','Remember: we are a team. Teamwork!'],
+      pleas:['My daughter has her entrance exams on Monday—','I only joined for the pension—','I\'ve never even killed anyone, I do the spreadsheets—','My father worked at this company forty years—','I have a mortgage in Saitama—']}),
+    boss:{taunt:['Let\'s circle back to your death.','This is a performance review, Varga-san.','I have closed bigger deals than you.','No overtime pay for this, boys. Just glory.','Synergy! Surround him!','You are this quarter\'s target.'],
+      beg:['Wait! Wait. We can negotiate.','Please... I have twenty years at the company...','I\'ll write you a glowing reference—']} },
+  sleepers:{label:'Kagami-gumi sleepers',voice:{f0:116,rasp:.25,breath:.35},
+    names:['Itamae Goro','Masa','Hiro','Jiro','Kenji','Taku','Sho','Daisuke','Ryo','Tetsu'],
+    lines:crewLines({
+      alert:['Irasshaimase, Tourist.','We have been waiting since Tokyo.','The young master sends his regards.','Omakase. Chef\'s choice.','Knives out. Now.','Close the shutters. Nobody leaves the counter.'],
+      leg:['My leg— ahh—','I can\'t stand—','Kuso— kuso—'],
+      torso:['Ugh— I\'m hit—','Hnn— not the stomach—','Ahh—'],
+      arm:['My knife hand— my hand—','I can\'t hold the blade—'],
+      stab:['Get it out— nuite kure—','Hnnh— cold— it\'s cold—','No— no—'],
+      beg:['Please. I only make sushi now.','Yamete kure. I\'m begging you.','I\'ll tell you where Ren is. Anything.','Forgive me. Forgive me.','I have a shop in Tsukiji. Please.'],
+      crawl:['Tasukete...','The counter... I have to reach the counter...','So much blood... on the rice...'],
+      dying:['...okaasan...','...the sea is so dark...','...forgive me, young master...','...samui...'],
+      friend:n=>[`${n}!`,`${n}, get up!`,`You killed ${n}!`],
+      call:n=>[`${n}! Tasukete!`,`${n}... don\'t go...`],
+      idle:['Twenty-two hours rolling rice for tourists.','When the windows go blue, we do it.','The young master said not before the tunnel.','The tuna is good tonight. Shame.','Sharpen it again. Again.','Smile. He might be watching the counter.'],
+      pleas:['I trained twelve years to make sushi—','My father had a stall at the fish market—','I just wanted my own shop—','The gumi owns my debt, I had no choice—','I have a boy in Yokohama—']}),
+    boss:null }
+});
+Object.assign(CREW_OF,{
+  tanakac:{crew:'associates',kind:'brawler',wkey:null},
+  tanakab:{crew:'associates',kind:'corner',wkey:'bottle'},
+  tanaka:{crew:'associates',kind:'brawler',wkey:null,boss:true,tough:.5,name:'Section Chief Tanaka',voice:{f0:104,rasp:.3,breath:.35}},
+  chefc:{crew:'sleepers',kind:'cutter',wkey:'knife'}
+});
+
 /* =====================================================================
    THE ROUTE: the whole game, one level after another.
-   You walk onto platform 0 in Tokyo, take the pistol from the locker and board; the train runs you straight to Hong Kong.
+   You walk onto platform 0 in Tokyo, take the pistol from the locker and board into the izakaya car, where Tanaka's salarymen are already drinking.
    Then it alternates: a car, taken over by the crew that boarded at the last stop, and the next underground
    station, where you get off, fight whoever is waiting on the platform, and pick up the weapon left for you.
    Between Naples and Rio the train runs under the South Atlantic: the Espositos who are left fall back into the
    glass observation car, with whales going past the windows.
+   Between Vegas and Tokyo the train runs under the Pacific, and the sushi chefs turn out to be Kagami-gumi.
    Every car's far door stays shut until nobody in it can still fight. Back in Tokyo at night, the
    Kagami-gumi hold the capsule hotel, and after that there is only the locomotive.
    Progress saves when you reach a station.
    ===================================================================== */
 const ROUTE=[
   {kind:'station',key:'tokyo',amb:'tokyo',title:'Tokyo · B5',sub:'Platform 0 · board the Meridian 24',first:true},
+  {kind:'car',key:'izakaya',scene:'japan',title:'Izakaya Hanami',sub:'Leaving Tokyo · Section Chief Tanaka'},
   {kind:'station',key:'hongkong',amb:'hongkong',title:'Hong Kong',sub:'Meridian Central'},
   {kind:'car',key:'dimsum',scene:'hongkong',title:'Golden Crane Dim Sum',sub:'Madam Lau'},
   {kind:'station',key:'baikal',amb:'baikal',title:'Lake Baikal',sub:'Baikalskaya'},
@@ -4562,6 +4673,7 @@ const ROUTE=[
   {kind:'car',key:'pool',scene:'rio',title:'Copacabana Pool Deck',sub:'DJ Tremor'},
   {kind:'station',key:'vegas',amb:'vegas',title:'Las Vegas',sub:'Meridian Strip'},
   {kind:'car',key:'casino',scene:'vegas',title:'The King\'s Casino',sub:'"The King"'},
+  {kind:'car',key:'sushi',scene:'pacific',title:'Sushi Bar Kaiten',sub:'Under the Pacific · the chefs are Kagami-gumi'},
   {kind:'station',key:'tokyo',amb:'tokyonight',night:true,title:'Tokyo by night',sub:'Back where it started'},
   {kind:'car',key:'capsule',scene:'tokyonight',title:'Capsule Hotel',sub:'Ren Kagami'},
   {kind:'car',key:'cab',scene:'tokyonight',title:'The Locomotive',sub:'The end of the line',last:true}];

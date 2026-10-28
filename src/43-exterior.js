@@ -9,20 +9,24 @@ const WAGONS=[
     sub:'Crew only · the front of the train',note:'A flight deck more than a cab: a horseshoe of consoles, two captain\'s chairs, a wall of route screens and a windscreen full of oncoming track. Reach it and the trip ends where you say.',sw:['#e8e4dc','#14203a','#d4ad5a','#5ab8e8','#c8302a']},
   {key:'capsule',num:'02',name:'Capsule Hotel',label:'CAPSULES',crew:'ren',wins:[[.42,.5],[.56,.64]],glow:0xe8f4ff,color:'#29e0e6',
     sub:'Boards in Tokyo, last stop · the Kagami-gumi',note:'Two storeys of glowing white sleep pods down both walls, a strip of lockers, vending machines and a neon-lit lounge in the middle. Clean, bright and very narrow to fight in.',sw:['#eeeee8','#29e0e6','#2a2a34','#ff4fae','#f5c542']},
-  {key:'casino',num:'03',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
+  {key:'sushi',num:'03',name:'Sushi Bar Kaiten',label:'KAITEN',crew:'chef',wins:[[.06,.94]],glow:0xbfe8ff,color:'#e8e4d8',
+    sub:'The Pacific tunnel · the chefs are Kagami-gumi',note:'A long hinoki counter with a conveyor belt of plates running round it, glass to the sea floor on both sides. The chefs have been aboard since Tokyo, waiting for the tunnel.',sw:['#e8e4d8','#a87a4a','#1e3a6a','#c8202a','#0e3a52']},
+  {key:'casino',num:'04',name:'The King\'s Casino',label:'CASINO',crew:'king',wins:[[.1,.16],[.3,.36],[.5,.56],[.7,.76],[.86,.92]],glow:0xff4fae,color:'#f5c542',
     sub:'Boards in Las Vegas · the Kings',note:'Red carpet with gold diamonds, a mirrored ceiling, rows of slot machines, a roulette wheel, blackjack tables and a stage with a gold curtain. The King holds court on the stage.',sw:['#8a1424','#f5c542','#12101a','#ff3fa4','#2a8a4a']},
-  {key:'pool',num:'04',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
+  {key:'pool',num:'05',name:'Copacabana Pool Deck',label:'POOL DECK',crew:'tremor',wins:[[.05,.95]],glow:0x7ae8f0,color:'#2a9a5a',
     sub:'Boards in Rio · Tremor\'s crew',note:'The roof opens: a long turquoise pool, a wave-mosaic deck, striped loungers, potted palms, a bar under a thatch and a DJ booth stacked with speakers.',sw:['#2ac0d0','#f2ece0','#2a9a5a','#f2c230','#e0473a']},
-  {key:'aquarium',num:'05',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
+  {key:'aquarium',num:'06',name:'Aquarium Lounge',label:'AQUARIUM',crew:null,wins:[[.06,.94]],glow:0x7ae8f0,color:'#1a6a86',
     sub:'The South Atlantic tunnel · the Espositos fall back here',note:'Floor-to-ceiling glass, a column tank of fish and blue velvet booths. Under the Atlantic the windows fill with whales; in the desert they fill with stars.',sw:['#0e3a52','#1a6a86','#bfefff','#2a2a5a','#d4ad5a']},
-  {key:'trattoria',num:'06',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
+  {key:'trattoria',num:'07',name:'Trattoria Assunta',label:'TRATTORIA',crew:'nonna',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffd8a0,color:'#e0a040',
     sub:'Boards in Naples · the Esposito family',note:'Lemon-yellow walls, red-check tablecloths, hams and garlic hanging over a deli counter, a wood-fired oven and family photographs everywhere. Nonna eats here every day.',sw:['#f2d27a','#c8302a','#f4efe6','#2a7a4a','#8a5a36']},
-  {key:'pub',num:'07',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
+  {key:'pub',num:'08',name:'The Rusty Anchor',label:'THE RUSTY ANCHOR',crew:'gaffer',wins:[[.12,.2],[.3,.38],[.5,.58],[.7,.78]],glow:0xffc070,color:'#c8202a',
     sub:'Boards in London · the Southside firm',note:'A proper pub: bottle-green tiles, dark wood, brass taps, red leather booths, a dartboard, scarves pinned over the bar and the match on every screen.',sw:['#1f4a36','#4a2a1a','#c8202a','#d4ad5a','#e8dcc0']},
-  {key:'banya',num:'08',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
+  {key:'banya',num:'09',name:'Banya & Ice Bar',label:'BANYA',crew:'volkov',wins:[[.08,.14],[.24,.3],[.56,.62],[.82,.88]],glow:0x9ad8ff,color:'#5aa8d8',
     sub:'Boards in Siberia · the Volkov brotherhood',note:'Half pine sauna, half bar carved from ice: log walls, steam, birch switches and buckets on one end; a glowing blue ice bar and bottles in frost on the other.',sw:['#c89a62','#7a4a2a','#bfefff','#2a6ab0','#d8d0c4']},
-  {key:'dimsum',num:'09',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
-    sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']}
+  {key:'dimsum',num:'10',name:'Golden Crane Dim Sum',label:'GOLDEN CRANE',crew:'lau',wins:[[.12,.2],[.3,.38],[.5,.58],[.66,.74]],glow:0xff6040,color:'#c8302a',
+    sub:'Boards in Hong Kong · the Golden Crane triad',note:'Red lacquer and gold, round tables with lazy susans, trolleys stacked with bamboo steamers, red lanterns overhead, a gold crane mural, and a steaming kitchen full of woks.',sw:['#a81c1c','#d4ad5a','#1a1414','#2a8a6a','#f2ece0']},
+  {key:'izakaya',num:'11',name:'Izakaya Hanami',label:'IZAKAYA',crew:'tanaka',wins:[[.1,.2],[.3,.4],[.5,.6],[.7,.8]],glow:0xffb070,color:'#8a2a1e',
+    sub:'Leaving Tokyo · Tanaka & Associates',note:'Red paper lanterns, a cedar counter with stools, tatami booths behind low partitions, sake barrels stacked at the end. The salarymen were already drinking when you boarded.',sw:['#8a2a1e','#c89a5a','#e8d8b0','#2a2420','#ffb070']}
 ];
 const CAR_L=30, CAR_GAP=1.0, CAR_PITCH=CAR_L+CAR_GAP, CAR_HW=3.1+DW, WIDE=CAR_HW/3.1;
 const PROF=[[0,-.7],[2.9,-.7],[3.05,-.4],[3.1,.4],[3.1,3.5],[3.02,3.95],[2.75,4.28],[2.1,4.48],[1.0,4.56],[0,4.58]];

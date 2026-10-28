@@ -141,7 +141,7 @@ const CREW_OF={
   renc:{crew:'kagami',kind:'gunman',wkey:'pistol'},          ren:{crew:'kagami',kind:'cutter',wkey:'waki',boss:true,tough:.7,name:'Ren Kagami',voice:{f0:128,rasp:.12,breath:.4}}
 };
 /* a spot's name is the character id, maybe with a crew suffix and a number: 'king', 'king_c3', 'lauc2' */
-function crewIdOf(name){ if(CREW_OF[name]) return name; const m=name.match(/^([a-z]+?)_?c\d*$/); return m&&CREW_OF[m[1]+'c']?m[1]+'c':null; }
+function crewIdOf(name){ if(CREW_OF[name]) return name; const bare=name.replace(/_?\d+$/,''); if(CREW_OF[bare]) return bare; const m=name.match(/^([a-z]+?)_?c\d*$/); return m&&CREW_OF[m[1]+'c']?m[1]+'c':null; }
 const nameUse={};
 function spawnCrew(id,x,z,hd,o={}){
   const D=CREW_OF[id]; if(!D) return null; const K=CREWS[D.crew]; const L=Object.assign({},K.lines);

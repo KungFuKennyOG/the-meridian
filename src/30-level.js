@@ -153,7 +153,8 @@ function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
     for(const run of runsOf(n.mesh)){ const m=run.m,paint=!m.tex&&!m.unlit&&GAME.paint!==false,k=texId(paint?PAINT:m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
       let G=groups.get(k); if(!G){ G={m,chunks:[],paint}; groups.set(k,G); }
       let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>40000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
-      const map=new Map(),col=m.color,rep=m.rep;
+      const map=new Map(),col=m.color; let rep=m.rep;
+      if(paint){ let um=0,vm=0; for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; um=Math.max(um,Math.abs(g.T[v*2])); vm=Math.max(vm,Math.abs(g.T[v*2+1])); } rep=[um>1.01?1/um:1,vm>1.01?1/vm:1]; } /* a flat colour gets one painted panel per surface, never a tile grid */
       for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; let o=map.get(v);
         if(o===undefined){ o=ch.n++; map.set(v,o); const x=g.P[v*3],y=g.P[v*3+1],zz=g.P[v*3+2];
           ch.P.push(W[0]*x+W[4]*y+W[8]*zz+W[12],W[1]*x+W[5]*y+W[9]*zz+W[13],W[2]*x+W[6]*y+W[10]*zz+W[14]);

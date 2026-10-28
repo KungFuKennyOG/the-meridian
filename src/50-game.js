@@ -846,7 +846,7 @@ function update(dt,now){
   if(MENU.open&&MENU.pause){ menuTick(dt); return; }
   GAME.ts=lerp(GAME.ts,(GAME.slow?.22:1)*(GAME.tsBase||1),Math.min(1,dt*6)); const gdt=dt*GAME.ts; GAME.t+=gdt; GAME.barkGlobal-=gdt;
   if(GAME.started&&!PL.dead&&!XR.on){ let mx=(KEYS.KeyD||KEYS.ArrowRight?1:0)-(KEYS.KeyA||KEYS.ArrowLeft?1:0)+stick.dx,mz=(KEYS.KeyW||KEYS.ArrowUp?1:0)-(KEYS.KeyS||KEYS.ArrowDown?1:0)-stick.dy;
-    const l=Math.hypot(mx,mz); if(l>1){ mx/=l; mz/=l; } const sp=2.6*(XR.moveK||1)*dt*Math.max(GAME.ts,.3),fx=-Math.sin(PL.yaw),fz=-Math.cos(PL.yaw),rx=Math.cos(PL.yaw),rz=-Math.sin(PL.yaw);
+    const l=Math.hypot(mx,mz); if(l>1){ mx/=l; mz/=l; } const sp=3.4*(XR.moveK||1)*dt*Math.max(GAME.ts,.3),fx=-Math.sin(PL.yaw),fz=-Math.cos(PL.yaw),rx=Math.cos(PL.yaw),rz=-Math.sin(PL.yaw);
     PL.x+=(fx*mz+rx*mx)*sp; PL.z+=(fz*mz+rz*mx)*sp; collidePlayer(); }
   if(GAME.started&&!PL.dead){ PL.hurtT+=dt; if(PL.hurtT>3.5) PL.hp=Math.min(100,PL.hp+9*dt); }
   PL.kickCd-=dt; XR.flash=Math.max(0,XR.flash-dt);
@@ -988,7 +988,7 @@ function xrFrame(t,xf){
     if(grip) grabOrDrop(h);
     if(h.item&&WPN[h.item.key].gun){ if(trig||(WPN[h.item.key].auto&&pressed(0))) fireHand(h); }
     if(ab){ if(h.item&&WPN[h.item.key].melee) flipGrip(h); else reloadHand(h); } if(by) kick();
-    if(hand==='left'){ const sx=ax[2]||0,sz=ax[3]||0; if(GAME.started&&Math.hypot(sx,sz)>.15){ const fl=norm3([f[0],0,f[2]]),rl=[-fl[2],0,fl[0]],sp=2.2*(XR.moveK||1)*dt*Math.max(GAME.ts,.3); /* bullet time slows you too */
+    if(hand==='left'){ const sx=ax[2]||0,sz=ax[3]||0; if(GAME.started&&Math.hypot(sx,sz)>.15){ const fl=norm3([f[0],0,f[2]]),rl=[-fl[2],0,fl[0]],sp=3.0*(XR.moveK||1)*dt*Math.max(GAME.ts,.3); /* bullet time slows you too */
         const before=[PL.x,PL.z]; PL.x+=(rl[0]*sx-fl[0]*sz)*sp; PL.z+=(rl[2]*sx-fl[2]*sz)*sp; collidePlayer(); XR.origin[0]+=PL.x-before[0]; XR.origin[2]+=PL.z-before[1]; }
       menuStick(pressed(3),dt); }
     else { const sx=ax[2]||0; if(XR.smoothTurn){ if(Math.abs(sx)>.2) turnBy(-sx*2.4*dt,eye); } else if(Math.abs(sx)>.7&&!XR.snapHeld){ XR.snapHeld=true; const a=-Math.sign(sx)*(XR.snapA||Math.PI/6),c=Math.cos(a),s=Math.sin(a),dx=XR.origin[0]-eye[0],dz=XR.origin[2]-eye[2];

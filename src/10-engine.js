@@ -441,11 +441,12 @@ uniform vec2 uRes;
 uniform vec3 uAmb, uDirDir, uDirCol;
 uniform vec3 uPLPos[8]; uniform vec3 uPLCol[8]; uniform float uPLDist[8];
 uniform float uFogNear, uFogFar;
-out vec3 vAff; out vec3 vLight; out float vFog; out vec3 vCol;
+out vec3 vAff; out vec3 vLight; out float vFog; out vec3 vCol; out vec4 vW;
 void main(){
   vCol = vcol;
   vec4 wp = modelMatrix * vec4(position,1.0);
   vec3 n = normalize(mat3(modelMatrix) * normal);
+  vW = vec4(wp.xyz, n.y);
   vec3 L = uAmb + uDirCol * max(dot(n, normalize(uDirDir)), 0.0);
   for(int i=0;i<8;i++){
     vec3 d = uPLPos[i] - wp.xyz; float dist = length(d);
@@ -464,13 +465,18 @@ const FS=`#version 300 es
 precision highp float;
 uniform sampler2D map; uniform float uHasMap, uCut;
 uniform vec3 uColor, uEmissive, uFogCol; uniform vec2 uRepeat;
-in vec3 vAff; in vec3 vLight; in float vFog; in vec3 vCol;
+uniform vec4 uSh[12]; uniform int uShN;
+in vec3 vAff; in vec3 vLight; in float vFog; in vec3 vCol; in vec4 vW;
 out vec4 outColor;
 void main(){
   vec2 uv = vAff.xy / vAff.z * uRepeat;
   vec4 t = uHasMap > 0.5 ? texture(map, uv) : vec4(1.0);
   if(uCut > 0.5 && t.a < 0.5) discard;
   vec3 c = t.rgb * uColor * vCol * vLight + t.rgb * uEmissive;
+  if(uShN > 0 && vW.w > 0.6){ float s = 0.0; /* soft contact shadows under people, painted onto the floor */
+    for(int i=0;i<12;i++){ if(i >= uShN) break; vec4 q = uSh[i]; float dh = vW.y - q.y; if(dh < -0.12 || dh > 0.45) continue;
+      vec2 d = (vW.xz - q.xz) / q.w; float r = dot(d,d); if(r < 1.0) s = max(s, (1.0 - r) * (1.0 - r) * 0.62 * (1.0 - dh * 1.6)); }
+    c *= 1.0 - s; }
   outColor = vec4(mix(c, uFogCol, vFog), 1.0);
 }`;
 const PVS=`#version 300 es
@@ -504,9 +510,9 @@ function glTex(t){
   return t.glt; }
 function upload(g){ g.vao=gl.createVertexArray(); gl.bindVertexArray(g.vao); g.bufs=[];
   [[g.P,3],[g.Nm,3],[g.T,2]].concat(g.C?[[g.C,3]]:[]).forEach(([arr,size],i)=>{ const b=gl.createBuffer(); g.bufs.push(b); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW); gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i,size,gl.FLOAT,false,0,0); });
-  const ib=gl.createBuffer(); g.bufs.push(ib); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(g.I),gl.STATIC_DRAW); gl.bindVertexArray(null); }
+  const ib=gl.createBuffer(); g.bufs.push(ib); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib); g.i32=g.P.length/3>65535; gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.i32?new Uint32Array(g.I):new Uint16Array(g.I),gl.STATIC_DRAW); gl.bindVertexArray(null); }
 function disposeTree(n){ if(n.mesh){ const g=n.mesh.geo; if(g.temp&&g.vao){ gl.deleteVertexArray(g.vao); for(const b of g.bufs) gl.deleteBuffer(b); g.vao=null; } } for(const k of n.kids) disposeTree(k); }
-const L={amb:[.1,.1,.1],dirDir:[0,1,0],dirCol:[0,0,0],plPos:new Float32Array(24),plCol:new Float32Array(24),plDist:new Float32Array([1,1,1,1,1,1,1,1]),fog:[0,0,0],fogNear:8,fogFar:30};
+const L={sh:new Float32Array(48),shN:0,amb:[.1,.1,.1],dirDir:[0,1,0],dirCol:[0,0,0],plPos:new Float32Array(24),plCol:new Float32Array(24),plDist:new Float32Array([1,1,1,1,1,1,1,1]),fog:[0,0,0],fogNear:8,fogFar:30};
 function setLights(o){ L.amb=o.amb; L.dirDir=o.dir; L.dirCol=o.dirCol; L.fog=o.fog; L.fogNear=o.fogNear; L.fogFar=o.fogFar; L.plPos.fill(0); L.plCol.fill(0); L.plDist.fill(1);
   o.pl.forEach((pl,i)=>{ L.plPos.set(pl[0],i*3); L.plCol.set(pl[1],i*3); L.plDist[i]=pl[2]; }); }
 let fb=null,fbTex=null,fbDepth=null,fbW=0,fbH=0;
@@ -541,7 +547,7 @@ function drawTree(n){ if(!n.vis) return;
       if(m!==curMat){ curMat=m; if(m.tex){ const t=glTex(m.tex); if(t!==curTex){ gl.bindTexture(gl.TEXTURE_2D,t); curTex=t; } }
         gl.uniform1f(MAIN.loc.uHasMap,m.tex?1:0); gl.uniform3fv(MAIN.loc.uColor,m.color); gl.uniform3fv(MAIN.loc.uEmissive,m.emis);
         gl.uniform1f(MAIN.loc.uUnlit,m.unlit); gl.uniform2fv(MAIN.loc.uRepeat,m.rep); gl.uniform1f(MAIN.loc.uCut,m.cut); }
-      gl.drawElements(gl.TRIANGLES,run.count,gl.UNSIGNED_SHORT,run.start*2); } } }
+      gl.drawElements(gl.TRIANGLES,run.count,g.i32?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT,run.start*(g.i32?4:2)); } } }
   for(const k of n.kids) drawTree(k); }
 function renderScene(root,eye,target,w,h,snapRes){
   m4.persp(proj,50*Math.PI/180,w/h,0.05,120); proj[8]=-viewShift[0]; proj[9]=-viewShift[1]; m4.lookAt(view,eye,target,[0,1,0]);
@@ -552,7 +558,7 @@ function renderScene(root,eye,target,w,h,snapRes){
   gl.uniform1f(u.uSnap,state.ps1&&state.snap?1:0); gl.uniform1f(u.uAffine,state.ps1&&state.affine?1:0); gl.uniform2f(u.uRes,snapRes[0],snapRes[1]);
   gl.uniform3fv(u.uAmb,L.amb); gl.uniform3fv(u.uDirDir,L.dirDir); gl.uniform3fv(u.uDirCol,L.dirCol);
   gl.uniform3fv(u.uPLPos,L.plPos); gl.uniform3fv(u.uPLCol,L.plCol); gl.uniform1fv(u.uPLDist,L.plDist);
-  gl.uniform3fv(u.uFogCol,L.fog); gl.uniform1f(u.uFogNear,L.fogNear); gl.uniform1f(u.uFogFar,L.fogFar); gl.uniform1i(u.map,0);
+  gl.uniform4fv(u.uSh,L.sh); gl.uniform1i(u.uShN,state.shadows===false?0:L.shN); gl.uniform3fv(u.uFogCol,L.fog); gl.uniform1f(u.uFogNear,L.fogNear); gl.uniform1f(u.uFogFar,L.fogFar); gl.uniform1i(u.map,0);
   drawTree(root); gl.bindVertexArray(null); }
 
 /* ================= world ================= */

@@ -572,11 +572,12 @@ uniform vec2 uRes;
 uniform vec3 uAmb, uDirDir, uDirCol;
 uniform vec3 uPLPos[8]; uniform vec3 uPLCol[8]; uniform float uPLDist[8];
 uniform float uFogNear, uFogFar;
-out vec3 vAff; out vec3 vLight; out float vFog; out vec3 vCol;
+out vec3 vAff; out vec3 vLight; out float vFog; out vec3 vCol; out vec4 vW;
 void main(){
   vCol = vcol;
   vec4 wp = modelMatrix * vec4(position,1.0);
   vec3 n = normalize(mat3(modelMatrix) * normal);
+  vW = vec4(wp.xyz, n.y);
   vec3 L = uAmb + uDirCol * max(dot(n, normalize(uDirDir)), 0.0);
   for(int i=0;i<8;i++){
     vec3 d = uPLPos[i] - wp.xyz; float dist = length(d);
@@ -595,13 +596,18 @@ const FS=`#version 300 es
 precision highp float;
 uniform sampler2D map; uniform float uHasMap, uCut;
 uniform vec3 uColor, uEmissive, uFogCol; uniform vec2 uRepeat;
-in vec3 vAff; in vec3 vLight; in float vFog; in vec3 vCol;
+uniform vec4 uSh[12]; uniform int uShN;
+in vec3 vAff; in vec3 vLight; in float vFog; in vec3 vCol; in vec4 vW;
 out vec4 outColor;
 void main(){
   vec2 uv = vAff.xy / vAff.z * uRepeat;
   vec4 t = uHasMap > 0.5 ? texture(map, uv) : vec4(1.0);
   if(uCut > 0.5 && t.a < 0.5) discard;
   vec3 c = t.rgb * uColor * vCol * vLight + t.rgb * uEmissive;
+  if(uShN > 0 && vW.w > 0.6){ float s = 0.0; /* soft contact shadows under people, painted onto the floor */
+    for(int i=0;i<12;i++){ if(i >= uShN) break; vec4 q = uSh[i]; float dh = vW.y - q.y; if(dh < -0.12 || dh > 0.45) continue;
+      vec2 d = (vW.xz - q.xz) / q.w; float r = dot(d,d); if(r < 1.0) s = max(s, (1.0 - r) * (1.0 - r) * 0.62 * (1.0 - dh * 1.6)); }
+    c *= 1.0 - s; }
   outColor = vec4(mix(c, uFogCol, vFog), 1.0);
 }`;
 const PVS=`#version 300 es
@@ -635,9 +641,9 @@ function glTex(t){
   return t.glt; }
 function upload(g){ g.vao=gl.createVertexArray(); gl.bindVertexArray(g.vao); g.bufs=[];
   [[g.P,3],[g.Nm,3],[g.T,2]].concat(g.C?[[g.C,3]]:[]).forEach(([arr,size],i)=>{ const b=gl.createBuffer(); g.bufs.push(b); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW); gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i,size,gl.FLOAT,false,0,0); });
-  const ib=gl.createBuffer(); g.bufs.push(ib); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(g.I),gl.STATIC_DRAW); gl.bindVertexArray(null); }
+  const ib=gl.createBuffer(); g.bufs.push(ib); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib); g.i32=g.P.length/3>65535; gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.i32?new Uint32Array(g.I):new Uint16Array(g.I),gl.STATIC_DRAW); gl.bindVertexArray(null); }
 function disposeTree(n){ if(n.mesh){ const g=n.mesh.geo; if(g.temp&&g.vao){ gl.deleteVertexArray(g.vao); for(const b of g.bufs) gl.deleteBuffer(b); g.vao=null; } } for(const k of n.kids) disposeTree(k); }
-const L={amb:[.1,.1,.1],dirDir:[0,1,0],dirCol:[0,0,0],plPos:new Float32Array(24),plCol:new Float32Array(24),plDist:new Float32Array([1,1,1,1,1,1,1,1]),fog:[0,0,0],fogNear:8,fogFar:30};
+const L={sh:new Float32Array(48),shN:0,amb:[.1,.1,.1],dirDir:[0,1,0],dirCol:[0,0,0],plPos:new Float32Array(24),plCol:new Float32Array(24),plDist:new Float32Array([1,1,1,1,1,1,1,1]),fog:[0,0,0],fogNear:8,fogFar:30};
 function setLights(o){ L.amb=o.amb; L.dirDir=o.dir; L.dirCol=o.dirCol; L.fog=o.fog; L.fogNear=o.fogNear; L.fogFar=o.fogFar; L.plPos.fill(0); L.plCol.fill(0); L.plDist.fill(1);
   o.pl.forEach((pl,i)=>{ L.plPos.set(pl[0],i*3); L.plCol.set(pl[1],i*3); L.plDist[i]=pl[2]; }); }
 let fb=null,fbTex=null,fbDepth=null,fbW=0,fbH=0;
@@ -672,7 +678,7 @@ function drawTree(n){ if(!n.vis) return;
       if(m!==curMat){ curMat=m; if(m.tex){ const t=glTex(m.tex); if(t!==curTex){ gl.bindTexture(gl.TEXTURE_2D,t); curTex=t; } }
         gl.uniform1f(MAIN.loc.uHasMap,m.tex?1:0); gl.uniform3fv(MAIN.loc.uColor,m.color); gl.uniform3fv(MAIN.loc.uEmissive,m.emis);
         gl.uniform1f(MAIN.loc.uUnlit,m.unlit); gl.uniform2fv(MAIN.loc.uRepeat,m.rep); gl.uniform1f(MAIN.loc.uCut,m.cut); }
-      gl.drawElements(gl.TRIANGLES,run.count,gl.UNSIGNED_SHORT,run.start*2); } } }
+      gl.drawElements(gl.TRIANGLES,run.count,g.i32?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT,run.start*(g.i32?4:2)); } } }
   for(const k of n.kids) drawTree(k); }
 function renderScene(root,eye,target,w,h,snapRes){
   m4.persp(proj,50*Math.PI/180,w/h,0.05,120); proj[8]=-viewShift[0]; proj[9]=-viewShift[1]; m4.lookAt(view,eye,target,[0,1,0]);
@@ -683,7 +689,7 @@ function renderScene(root,eye,target,w,h,snapRes){
   gl.uniform1f(u.uSnap,state.ps1&&state.snap?1:0); gl.uniform1f(u.uAffine,state.ps1&&state.affine?1:0); gl.uniform2f(u.uRes,snapRes[0],snapRes[1]);
   gl.uniform3fv(u.uAmb,L.amb); gl.uniform3fv(u.uDirDir,L.dirDir); gl.uniform3fv(u.uDirCol,L.dirCol);
   gl.uniform3fv(u.uPLPos,L.plPos); gl.uniform3fv(u.uPLCol,L.plCol); gl.uniform1fv(u.uPLDist,L.plDist);
-  gl.uniform3fv(u.uFogCol,L.fog); gl.uniform1f(u.uFogNear,L.fogNear); gl.uniform1f(u.uFogFar,L.fogFar); gl.uniform1i(u.map,0);
+  gl.uniform4fv(u.uSh,L.sh); gl.uniform1i(u.uShN,state.shadows===false?0:L.shN); gl.uniform3fv(u.uFogCol,L.fog); gl.uniform1f(u.uFogNear,L.fogNear); gl.uniform1f(u.uFogFar,L.fogFar); gl.uniform1i(u.map,0);
   drawTree(root); gl.bindVertexArray(null); }
 
 /* ================= world ================= */
@@ -1143,15 +1149,50 @@ function collidersFrom(root,dyn,area){ let n0=0;
     const low=z[1]<.5&&a[1]<.06&&(x1-x0)*(z1-z0)>1.5; /* a stage, a pool basin: low and wide, you step onto it */
     addBox(x0,x1,z0,z1,Math.max(0,a[1]),z[1],low?'step':z[1]>1.5?'wall':'furn'); n0++; });
   return n0; }
+/* ---------- the painted look: PS1 games baked their light into the vertices of finely cut geometry. Big flat faces
+   are cut into ~0.6 m pieces (only along edges that are long, so neighbours always agree and nothing cracks), then
+   every vertex gets a painted shade: dark where things meet the floor, soft shadows under tables and booths, darker
+   corners and floor edges, lighter tops. The real lamps still light it per vertex, so now they make pools. ---------- */
+function tessellate(ch,maxE){ const m2=maxE*maxE, P=ch.P,Nm=ch.Nm,T=ch.T,C=ch.C; let I=ch.I;
+  for(let pass=0;pass<7;pass++){ const cache=new Map(), out=[]; let any=false;
+    const sp=(a,b)=>{ const dx=P[a*3]-P[b*3],dy=P[a*3+1]-P[b*3+1],dz=P[a*3+2]-P[b*3+2]; if(dx*dx+dy*dy+dz*dz<=m2) return -1;
+      const key=a<b?a*4194304+b:b*4194304+a; let m=cache.get(key); if(m!==undefined) return m; m=P.length/3;
+      for(let k=0;k<3;k++) P.push((P[a*3+k]+P[b*3+k])/2); const n=norm3([Nm[a*3]+Nm[b*3],Nm[a*3+1]+Nm[b*3+1],Nm[a*3+2]+Nm[b*3+2]]); Nm.push(n[0],n[1],n[2]);
+      T.push((T[a*2]+T[b*2])/2,(T[a*2+1]+T[b*2+1])/2); for(let k=0;k<3;k++) C.push((C[a*3+k]+C[b*3+k])/2); cache.set(key,m); any=true; return m; };
+    for(let i=0;i<I.length;i+=3){ let a=I[i],b=I[i+1],c=I[i+2]; let ab=sp(a,b),bc=sp(b,c),ca=sp(c,a); const n=(ab>=0)+(bc>=0)+(ca>=0);
+      if(n===0){ out.push(a,b,c); continue; }
+      if(n===3){ out.push(a,ab,ca, ab,b,bc, ca,bc,c, ab,bc,ca); continue; }
+      /* rotate so the split pattern starts at edge a-b */
+      for(let r=0;r<3&&!(ab>=0&&(n===1||bc>=0));r++){ [a,b,c]=[b,c,a]; [ab,bc,ca]=[bc,ca,ab]; }
+      if(n===1) out.push(a,ab,c, ab,b,c);
+      else out.push(ab,b,bc, a,ab,bc, a,bc,c); }
+    I=out; if(!any) break; }
+  ch.I=I; ch.n=P.length/3; }
+function bakeShade(ch,boxes,paint){ const P=ch.P,Nm=ch.Nm,C=ch.C,n=P.length/3, ss=(e0,e1,x)=>{ const t=clamp((x-e0)/(e1-e0),0,1); return t*t*(3-2*t); };
+  for(let v=0;v<n;v++){ const x=P[v*3],y=P[v*3+1],z=P[v*3+2],ny=Nm[v*3+1]; let ao=paint?1.1:1;
+    const dWall=Math.min(RZ-Math.abs(z),RX-Math.abs(x));
+    if(ny>.6){ /* floors and tops: shadow under anything standing on or over them, darker toward the walls */
+      let sh=0; for(const b of boxes){ if(b.h<y+.08||b.y0>y+1.4) continue; const dx=Math.max(b.x0-x,0,x-b.x1),dz=Math.max(b.z0-z,0,z-b.z1),d=Math.hypot(dx,dz),r=.18+(b.y0-y)*.35,k=(1-ss(0,1.5,b.y0-y))*.5+.12;
+        if(d<r) sh=Math.max(sh,k*(1-ss(0,r,d))); }
+      ao*=1-Math.min(.55,sh); if(y<.3) ao*=.72+.28*ss(0,.9,dWall); }
+    else if(ny<-.6){ ao*=.62+.25*ss(0,1.2,y); } /* undersides: tables, shelves, the ceiling a little */
+    else { ao*=.66+.34*ss(0,.85,y); ao*=1-.16*ss(RH-.7,RH,y); ao*=.86+.14*ss(0,.5,RX-Math.abs(x)); }
+    C[v*3]*=ao; C[v*3+1]*=ao; C[v*3+2]*=ao; } }
+/* one greyscale paint layer for everything that was a flat colour: light from above, soft dark bevels at the edges, a breath of brush grain */
+const PAINT=tex(64,64,null,g=>{ const I=g.createImageData(64,64),r=rng(4242);
+  for(let y=0;y<64;y++) for(let x=0;x<64;x++){ const e=Math.min(x,63-x,y,63-y)/64; let v=.9+.1*(1-y/63);
+    if(e<.07) v*=.8+.2*(e/.07); if(y<2) v=Math.min(1,v*1.06); v+=(r()-.5)*.035+(Math.sin(x*.4+y*.13)*.008);
+    const c=Math.round(Math.min(1,Math.max(0,v))*255),i=(y*64+x)*4; I.data[i]=I.data[i+1]=I.data[i+2]=c; I.data[i+3]=255; }
+  g.putImageData(I,0,0); });
 /* bake the static meshes: one geometry per (texture, emissive, unlit, cut, two-sided), colour per vertex, UV repeat baked in */
 const texIds=new WeakMap(); let texIdN=1; const texId=t=>{ if(!t) return 0; if(!texIds.has(t)) texIds.set(t,texIdN++); return texIds.get(t); };
 function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
   walkMeshes(root,n=>{ if(dyn.has(n)||n.noMerge||n.mesh.geo.noCull||!n.vis||!visibleUp(n)) return; const g=n.mesh.geo,W=n.world;
     const [a,z]=worldAABB(n); if(z[1]<-.02&&LEVEL.kind==='car') { n.mesh=null; return; } /* under the floor: bogies, underframe */
     const nm=[W[0],W[1],W[2],W[4],W[5],W[6],W[8],W[9],W[10]];
-    for(const run of runsOf(n.mesh)){ const m=run.m,k=texId(m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
-      let G=groups.get(k); if(!G){ G={m,chunks:[]}; groups.set(k,G); }
-      let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>56000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
+    for(const run of runsOf(n.mesh)){ const m=run.m,paint=!m.tex&&!m.unlit&&GAME.paint!==false,k=texId(paint?PAINT:m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
+      let G=groups.get(k); if(!G){ G={m,chunks:[],paint}; groups.set(k,G); }
+      let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>40000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
       const map=new Map(),col=m.color,rep=m.rep;
       for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; let o=map.get(v);
         if(o===undefined){ o=ch.n++; map.set(v,o); const x=g.P[v*3],y=g.P[v*3+1],zz=g.P[v*3+2];
@@ -1161,8 +1202,9 @@ function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
         ch.I.push(o); } }
     n.mesh=null; merged++; });
   let calls=0;
-  for(const G of groups.values()) for(const ch of G.chunks){ if(!ch.I.length) continue; const geo=new Geo(); geo.P=ch.P; geo.Nm=ch.Nm; geo.T=ch.T; geo.C=ch.C; geo.I=ch.I; geo.temp=true; geo.groups=[{start:0,count:ch.I.length,mi:0}];
-    const m=G.m; mk(geo,M(m.tex,{color:0xffffff,emissive:0,unlit:m.unlit,cut:m.cut,double:m.dbl}),out).mesh.mats[0].emis=m.emis.slice(); calls++; }
+  const shadeBoxes=BOXES.filter(b=>b.kind!=="wall"||b.h-b.y0<2.2), lit=G=>!G.m.unlit&&!(G.m.emis[0]+G.m.emis[1]+G.m.emis[2]>.6)&&GAME.bake!==false;
+  for(const G of groups.values()) for(const ch of G.chunks){ if(!ch.I.length) continue; if(lit(G)){ tessellate(ch,GAME.tessE||.6); bakeShade(ch,shadeBoxes,G.paint); } const geo=new Geo(); geo.P=ch.P; geo.Nm=ch.Nm; geo.T=ch.T; geo.C=ch.C; geo.I=ch.I; geo.temp=true; geo.groups=[{start:0,count:ch.I.length,mi:0}];
+    const m=G.m; mk(geo,M(G.paint?PAINT:m.tex,{color:0xffffff,emissive:0,unlit:m.unlit,cut:m.cut,double:m.dbl}),out).mesh.mats[0].emis=m.emis.slice(); calls++; }
   return {merged,calls}; }
 function visibleUp(n){ for(let p=n;p;p=p.par) if(!p.vis) return false; return true; }
 function pruneEmpty(n){ n.kids=n.kids.filter(k=>pruneEmpty(k)); return !!n.mesh||n.kids.length>0||n.keepNode; }
@@ -3582,7 +3624,7 @@ function update(dt,now){
   if(MENU.open&&MENU.pause){ menuTick(dt); return; }
   GAME.ts=lerp(GAME.ts,(GAME.slow?.22:1)*(GAME.tsBase||1),Math.min(1,dt*6)); const gdt=dt*GAME.ts; GAME.t+=gdt; GAME.barkGlobal-=gdt;
   if(GAME.started&&!PL.dead&&!XR.on){ let mx=(KEYS.KeyD||KEYS.ArrowRight?1:0)-(KEYS.KeyA||KEYS.ArrowLeft?1:0)+stick.dx,mz=(KEYS.KeyW||KEYS.ArrowUp?1:0)-(KEYS.KeyS||KEYS.ArrowDown?1:0)-stick.dy;
-    const l=Math.hypot(mx,mz); if(l>1){ mx/=l; mz/=l; } const sp=2.6*(XR.moveK||1)*dt*Math.max(GAME.ts,.3),fx=-Math.sin(PL.yaw),fz=-Math.cos(PL.yaw),rx=Math.cos(PL.yaw),rz=-Math.sin(PL.yaw);
+    const l=Math.hypot(mx,mz); if(l>1){ mx/=l; mz/=l; } const sp=3.4*(XR.moveK||1)*dt*Math.max(GAME.ts,.3),fx=-Math.sin(PL.yaw),fz=-Math.cos(PL.yaw),rx=Math.cos(PL.yaw),rz=-Math.sin(PL.yaw);
     PL.x+=(fx*mz+rx*mx)*sp; PL.z+=(fz*mz+rz*mx)*sp; collidePlayer(); }
   if(GAME.started&&!PL.dead){ PL.hurtT+=dt; if(PL.hurtT>3.5) PL.hp=Math.min(100,PL.hp+9*dt); }
   PL.kickCd-=dt; XR.flash=Math.max(0,XR.flash-dt);
@@ -3724,7 +3766,7 @@ function xrFrame(t,xf){
     if(grip) grabOrDrop(h);
     if(h.item&&WPN[h.item.key].gun){ if(trig||(WPN[h.item.key].auto&&pressed(0))) fireHand(h); }
     if(ab){ if(h.item&&WPN[h.item.key].melee) flipGrip(h); else reloadHand(h); } if(by) kick();
-    if(hand==='left'){ const sx=ax[2]||0,sz=ax[3]||0; if(GAME.started&&Math.hypot(sx,sz)>.15){ const fl=norm3([f[0],0,f[2]]),rl=[-fl[2],0,fl[0]],sp=2.2*(XR.moveK||1)*dt*Math.max(GAME.ts,.3); /* bullet time slows you too */
+    if(hand==='left'){ const sx=ax[2]||0,sz=ax[3]||0; if(GAME.started&&Math.hypot(sx,sz)>.15){ const fl=norm3([f[0],0,f[2]]),rl=[-fl[2],0,fl[0]],sp=3.0*(XR.moveK||1)*dt*Math.max(GAME.ts,.3); /* bullet time slows you too */
         const before=[PL.x,PL.z]; PL.x+=(rl[0]*sx-fl[0]*sz)*sp; PL.z+=(rl[2]*sx-fl[2]*sz)*sp; collidePlayer(); XR.origin[0]+=PL.x-before[0]; XR.origin[2]+=PL.z-before[1]; }
       menuStick(pressed(3),dt); }
     else { const sx=ax[2]||0; if(XR.smoothTurn){ if(Math.abs(sx)>.2) turnBy(-sx*2.4*dt,eye); } else if(Math.abs(sx)>.7&&!XR.snapHeld){ XR.snapHeld=true; const a=-Math.sign(sx)*(XR.snapA||Math.PI/6),c=Math.cos(a),s=Math.sin(a),dx=XR.origin[0]-eye[0],dz=XR.origin[2]-eye[2];
@@ -3881,10 +3923,21 @@ function newItem(key,ammo){ const w=WPN[key],a=w.gun?(ammo??w.mag):0; return {ke
 /* ---------- hands ---------- */
 function ammoTexNew(){ const t=tex(16,8,'#0a0b0d'); t.dyn=true; return t; }
 const UPPER_ARM=.3,FOREARM=.27,WRIST=[0,-.04,-.05]; /* metres; the wrist sits just inside the back of the fist */
+/* Nico's own arms: the camp shirt is short-sleeved, so it is bare tanned forearm all the way to the fist, a little dark hair,
+   and his gold watch on the left wrist. (Canvas top is the wrist end of the forearm.) */
+const NSK=HEADS.nico.skin;
+const nicoFore=watch=>armP(watch?611:612,()=>[NSK,'skin',0],{folds:3,decor:I=>{ const r=rng(watch?613:614);
+  for(let i=0;i<260;i++){ const x=r()*64,y=20+r()*100; softLine(I,x,y,x+.6,y+2.2,'#5a3a26',.22,.6); }
+  blob(I,32,120,30,8,-.12); blob(I,10,60,8,40,-.08); blob(I,52,60,8,40,.06);
+  if(watch){ softRect(I,0,7,64,9,'#b08a3a',.95,.6); softLine(I,0,8,64,8,'#f0d07a',.8,1); softLine(I,0,15,64,15,'#6a4e1e',.7,1);
+    softEll(I,48,11,9,8,'#e8c46a',1,.5); softEll(I,48,11,6.5,5.5,'#16263a',1,.4); softLine(I,48,11,48,7,'#f2ece0',.9,.8); softLine(I,48,11,51,12,'#f2ece0',.9,.8); }
+  else blob(I,32,10,26,5,-.1); }});
+const tNicoFore=nicoFore(false), tNicoForeW=nicoFore(true);
+const tNicoFist=flat(16,16,615,NSK,'skin',{decor:I=>{ for(const x of [3,7,11]) { softEll(I,x+1,4,1.8,1.4,'#e0a888',.7,.6); softLine(I,x+3,2,x+3,9,'#8e5a40',.35,.7); } blob(I,8,13,7,3,-.18); }});
 function makeHand(side){ const n=N(world);
-  mk(box(.072,.084,.094),M(side==='R'?tTape:tRayGlove),n,FIST[0],FIST[1],FIST[2]);
+  mk(box(.074,.086,.096),M(tNicoFist),n,FIST[0],FIST[1],FIST[2]);
   /* the forearm is its own piece (updateArms): it runs from the wrist back to where your elbow is, so turning your wrist only turns the fist */
-  const arm=N(world); mk(lathe([[-FOREARM,.05,.05],[0,.044,.044]],6),M(side==='R'?tRayArmR:tRayArmL),arm,0,0,0,Math.PI/2,0,0);
+  const arm=N(world); mk(lathe([[-FOREARM,.05,.05],[0,.044,.044]],6),M(side==='R'?tNicoFore:tNicoForeW),arm,0,0,0,Math.PI/2,0,0);
   return {side,armN:arm,hand:side==='R'?'right':'left',node:n,item:null,itemNode:null,M:m4.make(),prevPts:null,cd:0,rec:0,ammoTex:ammoTexNew(),ammoShown:-9,ammoN:null,swingT:-1,swingDone:false,vel:[0,0,0],prevPos:null}; }
 const HANDS={L:makeHand('L'),R:makeHand('R')};
 /* frame rate on the inside of the left wrist (VR) */
@@ -4585,7 +4638,14 @@ function placeGift(key,pos){ if(!pos) return; const Mw=m4.make(); m4.compose(Mw,
   const P=addPickup(newItem(key),Mw,[0,0,0],[0,0,0]); P.rest=true; P.gift=true; FLOW.gift=P; FLOW.giftKey=key; }
 
 /* each frame: open the door when it is safe, check the exits, turn the gift, run the train, fade between levels */
-function flowTick(dt,gdt){
+/* contact shadows: the nearest dozen people (you included) darken the floor under them */
+const SH_TMP=[];
+function updateShadows(){ const L_=L; SH_TMP.length=0; SH_TMP.push([PL.x,PL.z,.3,0]);
+  for(const E of enemies){ const x=E.B.x,a=PI_.pelvis*3,c=PI_.chest*3,h=PI_.head*3,mx=(x[a]+x[c])/2,mz=(x[a+2]+x[c+2])/2,lying=x[h+1]<.7;
+    const sp=Math.hypot(x[h]-x[a],x[h+2]-x[a+2]); SH_TMP.push([lying?(x[a]+x[h])/2:mx,lying?(x[a+2]+x[h+2])/2:mz,lying?.35+sp*.5:.4,(mx-PL.x)**2+(mz-PL.z)**2]); }
+  SH_TMP.sort((p,q)=>p[3]-q[3]); const n=Math.min(12,SH_TMP.length);
+  for(let i=0;i<n;i++){ const q=SH_TMP[i]; L_.sh[i*4]=q[0]; L_.sh[i*4+1]=0; L_.sh[i*4+2]=q[1]; L_.sh[i*4+3]=q[2]; } L_.shN=n; }
+function flowTick(dt,gdt){ updateShadows();
   /* fading between levels */
   if(FLOW.transTo>=0){ FLOW.trans+=dt; GAME.fade=clamp(FLOW.trans/.45,0,1); if(FLOW.trans>=.5){ rememberArms(); const keepR=HANDS.R.item,keepL=HANDS.L.item; enterLeg(FLOW.transTo); equip(HANDS.R,keepR); equip(HANDS.L,keepL); rememberArms(); FLOW.transTo=-1; FLOW.trans=0; } return; }
   GAME.fade=Math.max(0,GAME.fade-dt/.5);
@@ -4683,7 +4743,7 @@ opt('AUDIO',()=>'EVERYTHING: '+(GAME.muted?'MUTED':'ON'),()=>{ GAME.muted=!GAME.
 opt('AUDIO',()=>'NOW PLAYING: '+((typeof MUSIC!=='undefined'&&MUSIC.stats().track)||(typeof MUSIC!=='undefined'&&MUSIC.stats().ambience)||'-').toUpperCase(),()=>levelAudio());
 /* COMFORT */
 opt('COMFORT',()=>'TURNING: '+(XR.smoothTurn?'SMOOTH':'SNAP '+Math.round((XR.snapA||Math.PI/6)*57.3)+'°'),()=>{ if(XR.smoothTurn){ XR.smoothTurn=false; XR.snapA=Math.PI/6; } else if((XR.snapA||Math.PI/6)<.6) XR.snapA=Math.PI/4; else if(XR.snapA<1) XR.snapA=Math.PI/2; else XR.smoothTurn=true; });
-opt('COMFORT',()=>'WALK SPEED: '+({1:'NORMAL',.7:'SLOW',1.4:'FAST'}[XR.moveK||1]),()=>{ XR.moveK=cyc(XR.moveK||1,[1,1.4,.7]); });
+opt('COMFORT',()=>'WALK SPEED: '+({1:'NORMAL',.75:'SLOW',1.3:'FAST',1.6:'FASTEST'}[XR.moveK||1]),()=>{ XR.moveK=cyc(XR.moveK||1,[1,1.3,1.6,.75]); });
 opt('COMFORT',()=>'HEIGHT: '+((XR.hOff||0)>0?'+':'')+Math.round((XR.hOff||0)*100)+' CM',()=>{ const n=cyc(Math.round((XR.hOff||0)*100),[0,10,20,-10]); XR.origin[1]+= -(n/100-(XR.hOff||0)); XR.hOff=n/100; });
 opt('COMFORT','FACE FORWARD',()=>{ closeMenu(); vrRecenter(); });
 opt('COMFORT',()=>'PAUSE IN MENU: '+onoff(MENU.pause),()=>{ MENU.pause=!MENU.pause; });

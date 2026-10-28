@@ -66,7 +66,7 @@ opt('AUDIO',()=>'EVERYTHING: '+(GAME.muted?'MUTED':'ON'),()=>{ GAME.muted=!GAME.
 opt('AUDIO',()=>'NOW PLAYING: '+((typeof MUSIC!=='undefined'&&MUSIC.stats().track)||(typeof MUSIC!=='undefined'&&MUSIC.stats().ambience)||'-').toUpperCase(),()=>levelAudio());
 /* COMFORT */
 opt('COMFORT',()=>'TURNING: '+(XR.smoothTurn?'SMOOTH':'SNAP '+Math.round((XR.snapA||Math.PI/6)*57.3)+'°'),()=>{ if(XR.smoothTurn){ XR.smoothTurn=false; XR.snapA=Math.PI/6; } else if((XR.snapA||Math.PI/6)<.6) XR.snapA=Math.PI/4; else if(XR.snapA<1) XR.snapA=Math.PI/2; else XR.smoothTurn=true; });
-opt('COMFORT',()=>'WALK SPEED: '+({1:'NORMAL',.7:'SLOW',1.4:'FAST'}[XR.moveK||1]),()=>{ XR.moveK=cyc(XR.moveK||1,[1,1.4,.7]); });
+opt('COMFORT',()=>'WALK SPEED: '+({1:'NORMAL',.75:'SLOW',1.3:'FAST',1.6:'FASTEST'}[XR.moveK||1]),()=>{ XR.moveK=cyc(XR.moveK||1,[1,1.3,1.6,.75]); });
 opt('COMFORT',()=>'HEIGHT: '+((XR.hOff||0)>0?'+':'')+Math.round((XR.hOff||0)*100)+' CM',()=>{ const n=cyc(Math.round((XR.hOff||0)*100),[0,10,20,-10]); XR.origin[1]+= -(n/100-(XR.hOff||0)); XR.hOff=n/100; });
 opt('COMFORT','FACE FORWARD',()=>{ closeMenu(); vrRecenter(); });
 opt('COMFORT',()=>'PAUSE IN MENU: '+onoff(MENU.pause),()=>{ MENU.pause=!MENU.pause; });

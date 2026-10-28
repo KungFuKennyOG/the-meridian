@@ -23,10 +23,21 @@ function newItem(key,ammo){ const w=WPN[key],a=w.gun?(ammo??w.mag):0; return {ke
 /* ---------- hands ---------- */
 function ammoTexNew(){ const t=tex(16,8,'#0a0b0d'); t.dyn=true; return t; }
 const UPPER_ARM=.3,FOREARM=.27,WRIST=[0,-.04,-.05]; /* metres; the wrist sits just inside the back of the fist */
+/* Nico's own arms: the camp shirt is short-sleeved, so it is bare tanned forearm all the way to the fist, a little dark hair,
+   and his gold watch on the left wrist. (Canvas top is the wrist end of the forearm.) */
+const NSK=HEADS.nico.skin;
+const nicoFore=watch=>armP(watch?611:612,()=>[NSK,'skin',0],{folds:3,decor:I=>{ const r=rng(watch?613:614);
+  for(let i=0;i<260;i++){ const x=r()*64,y=20+r()*100; softLine(I,x,y,x+.6,y+2.2,'#5a3a26',.22,.6); }
+  blob(I,32,120,30,8,-.12); blob(I,10,60,8,40,-.08); blob(I,52,60,8,40,.06);
+  if(watch){ softRect(I,0,7,64,9,'#b08a3a',.95,.6); softLine(I,0,8,64,8,'#f0d07a',.8,1); softLine(I,0,15,64,15,'#6a4e1e',.7,1);
+    softEll(I,48,11,9,8,'#e8c46a',1,.5); softEll(I,48,11,6.5,5.5,'#16263a',1,.4); softLine(I,48,11,48,7,'#f2ece0',.9,.8); softLine(I,48,11,51,12,'#f2ece0',.9,.8); }
+  else blob(I,32,10,26,5,-.1); }});
+const tNicoFore=nicoFore(false), tNicoForeW=nicoFore(true);
+const tNicoFist=flat(16,16,615,NSK,'skin',{decor:I=>{ for(const x of [3,7,11]) { softEll(I,x+1,4,1.8,1.4,'#e0a888',.7,.6); softLine(I,x+3,2,x+3,9,'#8e5a40',.35,.7); } blob(I,8,13,7,3,-.18); }});
 function makeHand(side){ const n=N(world);
-  mk(box(.072,.084,.094),M(side==='R'?tTape:tRayGlove),n,FIST[0],FIST[1],FIST[2]);
+  mk(box(.074,.086,.096),M(tNicoFist),n,FIST[0],FIST[1],FIST[2]);
   /* the forearm is its own piece (updateArms): it runs from the wrist back to where your elbow is, so turning your wrist only turns the fist */
-  const arm=N(world); mk(lathe([[-FOREARM,.05,.05],[0,.044,.044]],6),M(side==='R'?tRayArmR:tRayArmL),arm,0,0,0,Math.PI/2,0,0);
+  const arm=N(world); mk(lathe([[-FOREARM,.05,.05],[0,.044,.044]],6),M(side==='R'?tNicoFore:tNicoForeW),arm,0,0,0,Math.PI/2,0,0);
   return {side,armN:arm,hand:side==='R'?'right':'left',node:n,item:null,itemNode:null,M:m4.make(),prevPts:null,cd:0,rec:0,ammoTex:ammoTexNew(),ammoShown:-9,ammoN:null,swingT:-1,swingDone:false,vel:[0,0,0],prevPos:null}; }
 const HANDS={L:makeHand('L'),R:makeHand('R')};
 /* frame rate on the inside of the left wrist (VR) */

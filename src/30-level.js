@@ -109,15 +109,50 @@ function collidersFrom(root,dyn,area){ let n0=0;
     const low=z[1]<.5&&a[1]<.06&&(x1-x0)*(z1-z0)>1.5; /* a stage, a pool basin: low and wide, you step onto it */
     addBox(x0,x1,z0,z1,Math.max(0,a[1]),z[1],low?'step':z[1]>1.5?'wall':'furn'); n0++; });
   return n0; }
+/* ---------- the painted look: PS1 games baked their light into the vertices of finely cut geometry. Big flat faces
+   are cut into ~0.6 m pieces (only along edges that are long, so neighbours always agree and nothing cracks), then
+   every vertex gets a painted shade: dark where things meet the floor, soft shadows under tables and booths, darker
+   corners and floor edges, lighter tops. The real lamps still light it per vertex, so now they make pools. ---------- */
+function tessellate(ch,maxE){ const m2=maxE*maxE, P=ch.P,Nm=ch.Nm,T=ch.T,C=ch.C; let I=ch.I;
+  for(let pass=0;pass<7;pass++){ const cache=new Map(), out=[]; let any=false;
+    const sp=(a,b)=>{ const dx=P[a*3]-P[b*3],dy=P[a*3+1]-P[b*3+1],dz=P[a*3+2]-P[b*3+2]; if(dx*dx+dy*dy+dz*dz<=m2) return -1;
+      const key=a<b?a*4194304+b:b*4194304+a; let m=cache.get(key); if(m!==undefined) return m; m=P.length/3;
+      for(let k=0;k<3;k++) P.push((P[a*3+k]+P[b*3+k])/2); const n=norm3([Nm[a*3]+Nm[b*3],Nm[a*3+1]+Nm[b*3+1],Nm[a*3+2]+Nm[b*3+2]]); Nm.push(n[0],n[1],n[2]);
+      T.push((T[a*2]+T[b*2])/2,(T[a*2+1]+T[b*2+1])/2); for(let k=0;k<3;k++) C.push((C[a*3+k]+C[b*3+k])/2); cache.set(key,m); any=true; return m; };
+    for(let i=0;i<I.length;i+=3){ let a=I[i],b=I[i+1],c=I[i+2]; let ab=sp(a,b),bc=sp(b,c),ca=sp(c,a); const n=(ab>=0)+(bc>=0)+(ca>=0);
+      if(n===0){ out.push(a,b,c); continue; }
+      if(n===3){ out.push(a,ab,ca, ab,b,bc, ca,bc,c, ab,bc,ca); continue; }
+      /* rotate so the split pattern starts at edge a-b */
+      for(let r=0;r<3&&!(ab>=0&&(n===1||bc>=0));r++){ [a,b,c]=[b,c,a]; [ab,bc,ca]=[bc,ca,ab]; }
+      if(n===1) out.push(a,ab,c, ab,b,c);
+      else out.push(ab,b,bc, a,ab,bc, a,bc,c); }
+    I=out; if(!any) break; }
+  ch.I=I; ch.n=P.length/3; }
+function bakeShade(ch,boxes,paint){ const P=ch.P,Nm=ch.Nm,C=ch.C,n=P.length/3, ss=(e0,e1,x)=>{ const t=clamp((x-e0)/(e1-e0),0,1); return t*t*(3-2*t); };
+  for(let v=0;v<n;v++){ const x=P[v*3],y=P[v*3+1],z=P[v*3+2],ny=Nm[v*3+1]; let ao=paint?1.1:1;
+    const dWall=Math.min(RZ-Math.abs(z),RX-Math.abs(x));
+    if(ny>.6){ /* floors and tops: shadow under anything standing on or over them, darker toward the walls */
+      let sh=0; for(const b of boxes){ if(b.h<y+.08||b.y0>y+1.4) continue; const dx=Math.max(b.x0-x,0,x-b.x1),dz=Math.max(b.z0-z,0,z-b.z1),d=Math.hypot(dx,dz),r=.18+(b.y0-y)*.35,k=(1-ss(0,1.5,b.y0-y))*.5+.12;
+        if(d<r) sh=Math.max(sh,k*(1-ss(0,r,d))); }
+      ao*=1-Math.min(.55,sh); if(y<.3) ao*=.72+.28*ss(0,.9,dWall); }
+    else if(ny<-.6){ ao*=.62+.25*ss(0,1.2,y); } /* undersides: tables, shelves, the ceiling a little */
+    else { ao*=.66+.34*ss(0,.85,y); ao*=1-.16*ss(RH-.7,RH,y); ao*=.86+.14*ss(0,.5,RX-Math.abs(x)); }
+    C[v*3]*=ao; C[v*3+1]*=ao; C[v*3+2]*=ao; } }
+/* one greyscale paint layer for everything that was a flat colour: light from above, soft dark bevels at the edges, a breath of brush grain */
+const PAINT=tex(64,64,null,g=>{ const I=g.createImageData(64,64),r=rng(4242);
+  for(let y=0;y<64;y++) for(let x=0;x<64;x++){ const e=Math.min(x,63-x,y,63-y)/64; let v=.9+.1*(1-y/63);
+    if(e<.07) v*=.8+.2*(e/.07); if(y<2) v=Math.min(1,v*1.06); v+=(r()-.5)*.035+(Math.sin(x*.4+y*.13)*.008);
+    const c=Math.round(Math.min(1,Math.max(0,v))*255),i=(y*64+x)*4; I.data[i]=I.data[i+1]=I.data[i+2]=c; I.data[i+3]=255; }
+  g.putImageData(I,0,0); });
 /* bake the static meshes: one geometry per (texture, emissive, unlit, cut, two-sided), colour per vertex, UV repeat baked in */
 const texIds=new WeakMap(); let texIdN=1; const texId=t=>{ if(!t) return 0; if(!texIds.has(t)) texIds.set(t,texIdN++); return texIds.get(t); };
 function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
   walkMeshes(root,n=>{ if(dyn.has(n)||n.noMerge||n.mesh.geo.noCull||!n.vis||!visibleUp(n)) return; const g=n.mesh.geo,W=n.world;
     const [a,z]=worldAABB(n); if(z[1]<-.02&&LEVEL.kind==='car') { n.mesh=null; return; } /* under the floor: bogies, underframe */
     const nm=[W[0],W[1],W[2],W[4],W[5],W[6],W[8],W[9],W[10]];
-    for(const run of runsOf(n.mesh)){ const m=run.m,k=texId(m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
-      let G=groups.get(k); if(!G){ G={m,chunks:[]}; groups.set(k,G); }
-      let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>56000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
+    for(const run of runsOf(n.mesh)){ const m=run.m,paint=!m.tex&&!m.unlit&&GAME.paint!==false,k=texId(paint?PAINT:m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
+      let G=groups.get(k); if(!G){ G={m,chunks:[],paint}; groups.set(k,G); }
+      let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>40000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
       const map=new Map(),col=m.color,rep=m.rep;
       for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; let o=map.get(v);
         if(o===undefined){ o=ch.n++; map.set(v,o); const x=g.P[v*3],y=g.P[v*3+1],zz=g.P[v*3+2];
@@ -127,8 +162,9 @@ function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
         ch.I.push(o); } }
     n.mesh=null; merged++; });
   let calls=0;
-  for(const G of groups.values()) for(const ch of G.chunks){ if(!ch.I.length) continue; const geo=new Geo(); geo.P=ch.P; geo.Nm=ch.Nm; geo.T=ch.T; geo.C=ch.C; geo.I=ch.I; geo.temp=true; geo.groups=[{start:0,count:ch.I.length,mi:0}];
-    const m=G.m; mk(geo,M(m.tex,{color:0xffffff,emissive:0,unlit:m.unlit,cut:m.cut,double:m.dbl}),out).mesh.mats[0].emis=m.emis.slice(); calls++; }
+  const shadeBoxes=BOXES.filter(b=>b.kind!=="wall"||b.h-b.y0<2.2), lit=G=>!G.m.unlit&&!(G.m.emis[0]+G.m.emis[1]+G.m.emis[2]>.6)&&GAME.bake!==false;
+  for(const G of groups.values()) for(const ch of G.chunks){ if(!ch.I.length) continue; if(lit(G)){ tessellate(ch,GAME.tessE||.6); bakeShade(ch,shadeBoxes,G.paint); } const geo=new Geo(); geo.P=ch.P; geo.Nm=ch.Nm; geo.T=ch.T; geo.C=ch.C; geo.I=ch.I; geo.temp=true; geo.groups=[{start:0,count:ch.I.length,mi:0}];
+    const m=G.m; mk(geo,M(G.paint?PAINT:m.tex,{color:0xffffff,emissive:0,unlit:m.unlit,cut:m.cut,double:m.dbl}),out).mesh.mats[0].emis=m.emis.slice(); calls++; }
   return {merged,calls}; }
 function visibleUp(n){ for(let p=n;p;p=p.par) if(!p.vis) return false; return true; }
 function pruneEmpty(n){ n.kids=n.kids.filter(k=>pruneEmpty(k)); return !!n.mesh||n.kids.length>0||n.keepNode; }

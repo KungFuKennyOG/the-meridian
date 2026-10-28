@@ -100,7 +100,14 @@ function placeGift(key,pos){ if(!pos) return; const Mw=m4.make(); m4.compose(Mw,
   const P=addPickup(newItem(key),Mw,[0,0,0],[0,0,0]); P.rest=true; P.gift=true; FLOW.gift=P; FLOW.giftKey=key; }
 
 /* each frame: open the door when it is safe, check the exits, turn the gift, run the train, fade between levels */
-function flowTick(dt,gdt){
+/* contact shadows: the nearest dozen people (you included) darken the floor under them */
+const SH_TMP=[];
+function updateShadows(){ const L_=L; SH_TMP.length=0; SH_TMP.push([PL.x,PL.z,.3,0]);
+  for(const E of enemies){ const x=E.B.x,a=PI_.pelvis*3,c=PI_.chest*3,h=PI_.head*3,mx=(x[a]+x[c])/2,mz=(x[a+2]+x[c+2])/2,lying=x[h+1]<.7;
+    const sp=Math.hypot(x[h]-x[a],x[h+2]-x[a+2]); SH_TMP.push([lying?(x[a]+x[h])/2:mx,lying?(x[a+2]+x[h+2])/2:mz,lying?.35+sp*.5:.4,(mx-PL.x)**2+(mz-PL.z)**2]); }
+  SH_TMP.sort((p,q)=>p[3]-q[3]); const n=Math.min(12,SH_TMP.length);
+  for(let i=0;i<n;i++){ const q=SH_TMP[i]; L_.sh[i*4]=q[0]; L_.sh[i*4+1]=0; L_.sh[i*4+2]=q[1]; L_.sh[i*4+3]=q[2]; } L_.shN=n; }
+function flowTick(dt,gdt){ updateShadows();
   /* fading between levels */
   if(FLOW.transTo>=0){ FLOW.trans+=dt; GAME.fade=clamp(FLOW.trans/.45,0,1); if(FLOW.trans>=.5){ rememberArms(); const keepR=HANDS.R.item,keepL=HANDS.L.item; enterLeg(FLOW.transTo); equip(HANDS.R,keepR); equip(HANDS.L,keepL); rememberArms(); FLOW.transTo=-1; FLOW.trans=0; } return; }
   GAME.fade=Math.max(0,GAME.fade-dt/.5);

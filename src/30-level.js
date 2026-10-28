@@ -113,20 +113,20 @@ function collidersFrom(root,dyn,area){ let n0=0;
    are cut into ~0.6 m pieces (only along edges that are long, so neighbours always agree and nothing cracks), then
    every vertex gets a painted shade: dark where things meet the floor, soft shadows under tables and booths, darker
    corners and floor edges, lighter tops. The real lamps still light it per vertex, so now they make pools. ---------- */
-function tessellate(ch,maxE){ const m2=maxE*maxE, P=ch.P,Nm=ch.Nm,T=ch.T,C=ch.C; let I=ch.I;
-  for(let pass=0;pass<7;pass++){ const cache=new Map(), out=[]; let any=false;
+function tessellate(ch,maxE){ const m2=maxE*maxE, P=ch.P,Nm=ch.Nm,T=ch.T,C=ch.C; let I=ch.I, Fl=ch.F||[];
+  for(let pass=0;pass<7;pass++){ const cache=new Map(), out=[], fo=[]; let any=false;
     const sp=(a,b)=>{ const dx=P[a*3]-P[b*3],dy=P[a*3+1]-P[b*3+1],dz=P[a*3+2]-P[b*3+2]; if(dx*dx+dy*dy+dz*dz<=m2) return -1;
       const key=a<b?a*4194304+b:b*4194304+a; let m=cache.get(key); if(m!==undefined) return m; m=P.length/3;
       for(let k=0;k<3;k++) P.push((P[a*3+k]+P[b*3+k])/2); const n=norm3([Nm[a*3]+Nm[b*3],Nm[a*3+1]+Nm[b*3+1],Nm[a*3+2]+Nm[b*3+2]]); Nm.push(n[0],n[1],n[2]);
       T.push((T[a*2]+T[b*2])/2,(T[a*2+1]+T[b*2+1])/2); for(let k=0;k<3;k++) C.push((C[a*3+k]+C[b*3+k])/2); cache.set(key,m); any=true; return m; };
-    for(let i=0;i<I.length;i+=3){ let a=I[i],b=I[i+1],c=I[i+2]; let ab=sp(a,b),bc=sp(b,c),ca=sp(c,a); const n=(ab>=0)+(bc>=0)+(ca>=0);
-      if(n===0){ out.push(a,b,c); continue; }
-      if(n===3){ out.push(a,ab,ca, ab,b,bc, ca,bc,c, ab,bc,ca); continue; }
+    for(let i=0;i<I.length;i+=3){ let a=I[i],b=I[i+1],c=I[i+2]; if(Fl[i/3]){ out.push(a,b,c); fo.push(1); continue; } let ab=sp(a,b),bc=sp(b,c),ca=sp(c,a); const n=(ab>=0)+(bc>=0)+(ca>=0);
+      if(n===0){ out.push(a,b,c); fo.push(0); continue; }
+      if(n===3){ out.push(a,ab,ca, ab,b,bc, ca,bc,c, ab,bc,ca); fo.push(0,0,0,0); continue; }
       /* rotate so the split pattern starts at edge a-b */
       for(let r=0;r<3&&!(ab>=0&&(n===1||bc>=0));r++){ [a,b,c]=[b,c,a]; [ab,bc,ca]=[bc,ca,ab]; }
-      if(n===1) out.push(a,ab,c, ab,b,c);
-      else out.push(ab,b,bc, a,ab,bc, a,bc,c); }
-    I=out; if(!any) break; }
+      if(n===1){ out.push(a,ab,c, ab,b,c); fo.push(0,0); }
+      else { out.push(ab,b,bc, a,ab,bc, a,bc,c); fo.push(0,0,0); } }
+    I=out; Fl=fo; if(!any) break; }
   ch.I=I; ch.n=P.length/3; }
 function bakeShade(ch,boxes,paint){ const P=ch.P,Nm=ch.Nm,C=ch.C,n=P.length/3, ss=(e0,e1,x)=>{ const t=clamp((x-e0)/(e1-e0),0,1); return t*t*(3-2*t); };
   for(let v=0;v<n;v++){ const x=P[v*3],y=P[v*3+1],z=P[v*3+2],ny=Nm[v*3+1]; let ao=paint?1.1:1;
@@ -148,11 +148,12 @@ const PAINT=tex(64,64,null,g=>{ const I=g.createImageData(64,64),r=rng(4242);
 const texIds=new WeakMap(); let texIdN=1; const texId=t=>{ if(!t) return 0; if(!texIds.has(t)) texIds.set(t,texIdN++); return texIds.get(t); };
 function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
   walkMeshes(root,n=>{ if(dyn.has(n)||n.noMerge||n.mesh.geo.noCull||!n.vis||!visibleUp(n)) return; const g=n.mesh.geo,W=n.world;
-    const [a,z]=worldAABB(n); if(z[1]<-.02&&LEVEL.kind==='car') { n.mesh=null; return; } /* under the floor: bogies, underframe */
+    const [a,z]=worldAABB(n); if(z[1]<-.02&&LEVEL.kind==='car') { n.mesh=null; return; }
+    const dims=[z[0]-a[0],z[1]-a[1],z[2]-a[2]].sort((p,q)=>p-q), thin=dims[1]<.22?1:0; /* trims, rails, poles: never cut up (a 28 m rail would become thousands of slivers) */ /* under the floor: bogies, underframe */
     const nm=[W[0],W[1],W[2],W[4],W[5],W[6],W[8],W[9],W[10]];
     for(const run of runsOf(n.mesh)){ const m=run.m,paint=!m.tex&&!m.unlit&&GAME.paint!==false,k=texId(paint?PAINT:m.tex)+'|'+m.emis.join()+'|'+m.unlit+'|'+m.cut+'|'+m.dbl;
       let G=groups.get(k); if(!G){ G={m,chunks:[],paint}; groups.set(k,G); }
-      let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>40000){ ch={P:[],Nm:[],T:[],C:[],I:[],n:0}; G.chunks.push(ch); }
+      let ch=G.chunks[G.chunks.length-1]; if(!ch||ch.n>40000){ ch={P:[],Nm:[],T:[],C:[],I:[],F:[],n:0}; G.chunks.push(ch); }
       const map=new Map(),col=m.color; let rep=m.rep;
       if(paint){ let um=0,vm=0; for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; um=Math.max(um,Math.abs(g.T[v*2])); vm=Math.max(vm,Math.abs(g.T[v*2+1])); } rep=[um>1.01?1/um:1,vm>1.01?1/vm:1]; } /* a flat colour gets one painted panel per surface, never a tile grid */
       for(let i=run.start;i<run.start+run.count;i++){ const v=g.I[i]; let o=map.get(v);
@@ -160,11 +161,11 @@ function mergeStatic(root,dyn,out){ const groups=new Map(); let merged=0;
           ch.P.push(W[0]*x+W[4]*y+W[8]*zz+W[12],W[1]*x+W[5]*y+W[9]*zz+W[13],W[2]*x+W[6]*y+W[10]*zz+W[14]);
           const nx=g.Nm[v*3],ny=g.Nm[v*3+1],nz=g.Nm[v*3+2],q=norm3([nm[0]*nx+nm[3]*ny+nm[6]*nz,nm[1]*nx+nm[4]*ny+nm[7]*nz,nm[2]*nx+nm[5]*ny+nm[8]*nz]);
           ch.Nm.push(q[0],q[1],q[2]); ch.T.push(g.T[v*2]*rep[0],g.T[v*2+1]*rep[1]); ch.C.push(col[0],col[1],col[2]); }
-        ch.I.push(o); } }
+        ch.I.push(o); if((i-run.start)%3===2) ch.F.push(thin); } }
     n.mesh=null; merged++; });
   let calls=0;
   const shadeBoxes=BOXES.filter(b=>b.kind!=="wall"||b.h-b.y0<2.2), lit=G=>!G.m.unlit&&!(G.m.emis[0]+G.m.emis[1]+G.m.emis[2]>.6)&&GAME.bake!==false;
-  for(const G of groups.values()) for(const ch of G.chunks){ if(!ch.I.length) continue; if(lit(G)){ tessellate(ch,GAME.tessE||.6); bakeShade(ch,shadeBoxes,G.paint); } const geo=new Geo(); geo.P=ch.P; geo.Nm=ch.Nm; geo.T=ch.T; geo.C=ch.C; geo.I=ch.I; geo.temp=true; geo.groups=[{start:0,count:ch.I.length,mi:0}];
+  for(const G of groups.values()) for(const ch of G.chunks){ if(!ch.I.length) continue; if(lit(G)){ tessellate(ch,GAME.tessE||(LEVEL.kind==='station'?.85:.6)); bakeShade(ch,shadeBoxes,G.paint); } const geo=new Geo(); geo.P=ch.P; geo.Nm=ch.Nm; geo.T=ch.T; geo.C=ch.C; geo.I=ch.I; geo.temp=true; geo.groups=[{start:0,count:ch.I.length,mi:0}];
     const m=G.m; mk(geo,M(G.paint?PAINT:m.tex,{color:0xffffff,emissive:0,unlit:m.unlit,cut:m.cut,double:m.dbl}),out).mesh.mats[0].emis=m.emis.slice(); calls++; }
   return {merged,calls}; }
 function visibleUp(n){ for(let p=n;p;p=p.par) if(!p.vis) return false; return true; }

@@ -11,7 +11,7 @@ function speakerOf(who){ const S=typeof STORY!=='undefined'?STORY:null;
   if(who==='nico') return {name:'NICO',col:'#3fae9a',v:(S&&S.nicoVoice)||{f0:100,rasp:.3,breath:.35}};
   if(who==='handler') return {name:((S&&S.handler&&(S.handler.short||S.handler.name))||'HANDLER').toUpperCase(),col:'#ffb020',v:(S&&S.handler&&S.handler.voice)||{f0:178,rasp:.15,breath:.4},radio:true};
   if(who==='pa') return {name:'STATION',col:'#29e0e6',v:{f0:196,rasp:.05,breath:.3},pa:true};
-  if(who==='phone') return {name:'PAYPHONE',col:'#b8d0ff',v:{f0:150,rasp:0,breath:.2},radio:true};
+  if(who==='phone') return FIN.on?{name:'CAB RADIO · OLD KAGAMI',col:'#e8e0c8',v:{f0:95,rasp:.62,breath:.45},radio:true}:{name:'PAYPHONE',col:'#b8d0ff',v:{f0:150,rasp:0,breath:.2},radio:true};
   const R_=typeof ROSTER!=='undefined'&&ROSTER[who], C_=typeof CREW_OF!=='undefined'&&CREW_OF[who], K=C_&&CREWS[C_.crew];
   return {name:((R_&&R_.name)||who).toUpperCase(),col:(R_&&R_.color)||'#ff6a3a',v:Object.assign({f0:120,rasp:.25,breath:.4},K&&K.voice,C_&&C_.voice)}; }
 function say(lines,o={}){ if(!lines||!lines.length) return false; if(o.key){ if(DLG.said.has(o.key)) return false; DLG.said.add(o.key); }

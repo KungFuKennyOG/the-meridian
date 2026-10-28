@@ -116,11 +116,13 @@ function storyEnter(i,R_){ if(typeof STORY==='undefined') return; const S=STORY;
   showCard(R_.title.replace(' · B5','').toUpperCase(),R_.sub);
   if(city&&S.stations[city]) setTimeout(()=>{ if(FLOW.leg===i) say(S.stations[city],{key:'st'+i}); },2200);
   if(R_.kind==='car'&&S.cars[R_.key]) setTimeout(()=>{ if(FLOW.leg===i) say(S.cars[R_.key].enter,{key:'car'+i}); },1600); }
+/* Nonna is never a threat: if you walk out of the trattoria and leave her be, she gets the last word */
+function storyLeave(R_){ if(typeof STORY==='undefined'||R_.key!=='trattoria') return; const n=enemies.find(E=>E.id==='nonna'); if(n&&!n.dead&&STORY.spare&&STORY.spare.nonna) setTimeout(()=>say(STORY.spare.nonna,{key:'spare'}),2600); }
 function storyCleared(i,R_){ if(typeof STORY==='undefined'||R_.kind!=='car') return; const c=STORY.cars[R_.key]; if(c&&!R_.last) setTimeout(()=>say(c.clear,{key:'clr'+i}),900); }
 function storyKill(E){ if(typeof STORY==='undefined') return; GAME.stats=GAME.stats||{kills:0,deaths:0}; GAME.stats.kills++;
   if(E.boss&&STORY.bossDown[E.id]) setTimeout(()=>say(STORY.bossDown[E.id],{key:'boss'+E.id}),1200);
   else if(Math.random()<.07&&!DLG.cur&&!DLG.q.length) setTimeout(()=>sayOne(STORY.kills,'nico'),700); }
-function storyPickup(key){ if(typeof STORY==='undefined') return; const l=STORY.pickup[key]; if(l) say([['nico',l]],{key:'pk'+key}); }
+function storyPickup(key){ if(typeof STORY==='undefined') return; const l=(key==='pistol'&&FLOW.leg>0&&STORY.pickup.pistol2)||STORY.pickup[key]; if(l) say([['nico',l]],{key:'pk'+key}); }
 function storyDeath(){ if(typeof STORY==='undefined') return; GAME.stats=GAME.stats||{kills:0,deaths:0}; GAME.stats.deaths++; dlgClear(); setTimeout(()=>sayOne(STORY.death,'handler'),1400); }
 
 /* ---------- the finale: Ren is down, take the controls, pull the horn ---------- */

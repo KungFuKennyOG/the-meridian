@@ -126,7 +126,7 @@ function flowTick(dt,gdt){ updateShadows(); dlgTick(dt); cardTick(dt); lobbyTick
   if(!threat&&!FLOW.cleared){ FLOW.cleared=true; if(R_.kind==='car'&&enemies.length){ if(R_.last) finaleArm(); else { vrToast('The door is open',2.2); storyCleared(FLOW.leg,R_); } sfx('click',.8); } }
   FLOW.exitOpen=FLOW.cleared||GAME.unlockAll;
   if(FLOW.lamp) FLOW.lamp.mesh.mats[0]=FLOW.exitOpen?mExitGreen:mExitRed;
-  if(R_.kind==='car'){ if(FLOW.exitOpen&&(R_.last?PL.x>9.2&&Math.abs(PL.z)<1.8:PL.x>RX-1.1&&Math.abs(PL.z)<1.3)){ if(!R_.last) goLeg(FLOW.leg+1); } }
+  if(R_.kind==='car'){ if(FLOW.exitOpen&&(R_.last?PL.x>9.2&&Math.abs(PL.z)<1.8:PL.x>RX-1.1&&Math.abs(PL.z)<1.3)){ if(!R_.last&&FLOW.transTo<0){ storyLeave(R_); goLeg(FLOW.leg+1); } } }
   else if(FLOW.marker){ FLOW.marker.r[1]+=dt*.4; if(Math.abs(PL.x-FLOW.boardX)<.9&&PL.z<-RZ+1.6&&GAME.t-FLOW.startT>1.5) goLeg(FLOW.leg+1); }
   /* the train runs: scenery scrolls past the windows */
   if(R_.kind==='car'&&OUT.vis){ const {eye}=camBasis(); updateOut(dt,FLOW.speed*(GAME.trainK??1)*GAME.ts,eye||[PL.x,1.6,PL.z],PL.x); }

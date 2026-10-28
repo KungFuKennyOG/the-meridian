@@ -122,3 +122,6 @@ function endOfLine(){ if(FLOW.done) return; FLOW.done=true; try{ localStorage.re
 function openSpotNear(st){ const c0=navCell(st.x,st.z); if(c0>=0&&!FLOOR.nav[c0]) return st; let best=null,bd=1e9;
   for(let k=0;k<NZ;k++) for(let i=0;i<NX;i++){ const id=k*NX+i; if(FLOOR.nav[id]) continue; const x=cellX(i),z=cellZ(k),d=Math.hypot(x-st.x,(z-st.z)*1.3)+(LEVEL.kind==='car'&&x<st.x?1.5:0); if(d<bd){ bd=d; best={x,z,yaw:st.yaw}; } }
   return best||st; }
+/* flat screen: G takes the nearest weapon lying within reach into your right hand */
+function flatPickup(){ let best=null,bd=1.7; for(const P of LOOSE){ const q=P.node.p,d=Math.hypot(q[0]-PL.x,q[2]-PL.z); if(d<bd){ bd=d; best=P; } }
+  if(!best) return false; equip(HANDS.R,best.item); removePickup(best); sfx('click',.6); return true; }

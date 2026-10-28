@@ -810,7 +810,7 @@ document.body.classList.toggle('touch',isTouch);
 addEventListener('keydown',e=>{ KEYS[e.code]=true; if(!GAME.started) return;
   if(e.code==='KeyF') stab(); else if(e.code==='KeyE') kick(); else if(e.code==='KeyR') reload(); else if(e.code==='KeyT') toggleSlow();
   else if(/^Digit[1-8]$/.test(e.code)){ const k=WPN_KEYS[+e.code.slice(5)-1]; equip(HANDS.R,k==='fists'?null:newItem(k)); }
-  else if(e.code==='KeyG') flatGrab();
+  else if(e.code==='KeyG'){ if(!flatPickup()) flatGrab(); }
   else if(e.code==='KeyQ'&&HANDS.L.grab){ endGrab(HANDS.L.grab,v3.add(v3.sc(camBasis().f,6),[0,1,0])); }
   else if(e.code==='KeyQ'&&HANDS.R.item){ HANDS.R.vel=v3.sc(camBasis().f,4); grabOrDrop(HANDS.R); } });
 addEventListener('mousedown',e=>{ if(e.button===0) KEYS.Mouse0=true; }); addEventListener('mouseup',e=>{ if(e.button===0) KEYS.Mouse0=false; });
